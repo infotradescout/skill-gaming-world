@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { AppPageHeader } from "@/components/app-shell";
 import { SolitaireBoard } from "@/components/solitaire-board";
 import { runtimeUserFromToken, SESSION_COOKIE } from "@/lib/auth";
+import { runtimeEligibilitySnapshot } from "@/lib/runtime-eligibility";
 
 export default async function PracticePage() {
   const cookieStore = await cookies();
@@ -10,7 +11,8 @@ export default async function PracticePage() {
   if (!user) {
     redirect("/auth/login");
   }
-  if (user.status !== "ACTIVE") {
+  const eligibility = await runtimeEligibilitySnapshot(user);
+  if (eligibility.monetairePlay.decision !== "ALLOW") {
     redirect("/app/responsible-play");
   }
   return (

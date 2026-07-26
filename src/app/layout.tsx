@@ -21,8 +21,8 @@ export const metadata: Metadata = {
     title: "Skill Gaming World",
   },
   robots: {
-    index: true,
-    follow: true,
+    index: false,
+    follow: false,
   },
 };
 

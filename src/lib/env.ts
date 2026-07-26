@@ -5,6 +5,12 @@ const booleanString = z
   .default("false")
   .transform((value) => value === "true");
 
+const optionalEmail = z.preprocess(
+  (value) =>
+    typeof value === "string" && value.trim() === "" ? undefined : value,
+  z.string().trim().toLowerCase().email().max(320).optional(),
+);
+
 const runtimeEnvSchema = z
   .object({
     NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
@@ -17,6 +23,7 @@ const runtimeEnvSchema = z
     DATABASE_URL: z.string().url().optional(),
     SESSION_SECRET: z.string().min(32).optional(),
     COMPETITION_SEED_ENCRYPTION_KEY: z.string().min(32).optional(),
+    PREVIEW_OWNER_EMAIL: optionalEmail,
     FEATURE_MONETAIRE_PRIZE: booleanString,
     FEATURE_SOCIAL_CASINO: booleanString,
     FEATURE_REAL_MONEY_CASINO: booleanString,
@@ -58,6 +65,13 @@ const runtimeEnvSchema = z
           "COMPETITION_SEED_ENCRYPTION_KEY is required outside demo mode.",
       });
     }
+    if (!demoMode && !env.PREVIEW_OWNER_EMAIL) {
+      context.addIssue({
+        code: "custom",
+        path: ["PREVIEW_OWNER_EMAIL"],
+        message: "PREVIEW_OWNER_EMAIL is required outside demo mode.",
+      });
+    }
   });
 
 export type RuntimeEnv = ReturnType<typeof getRuntimeEnv>;
@@ -78,4 +92,11 @@ export function getRuntimeEnv() {
     MONETAIRE_PLAY_DEPLOYMENT_JURISDICTION:
       parsed.MONETAIRE_PLAY_DEPLOYMENT_JURISDICTION.trim().toUpperCase(),
   };
+}
+
+export function isPreviewOwnerEmail(
+  env: RuntimeEnv,
+  requestedEmail: string,
+): boolean {
+  return env.DEMO_MODE || requestedEmail === env.PREVIEW_OWNER_EMAIL;
 }

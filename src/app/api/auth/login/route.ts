@@ -8,7 +8,7 @@ import {
 } from "@/lib/auth";
 import { appendRuntimeAuditEvent } from "@/lib/audit";
 import { getDemoStore } from "@/lib/demo-store";
-import { getRuntimeEnv } from "@/lib/env";
+import { getRuntimeEnv, isPreviewOwnerEmail } from "@/lib/env";
 import {
   enforceRateLimit,
   enforceSameOrigin,
@@ -35,6 +35,14 @@ export async function POST(request: NextRequest) {
   const parsed = loginSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
     return jsonError(400, "INVALID_LOGIN", "Check the login fields.", id);
+  }
+  if (!isPreviewOwnerEmail(env, parsed.data.email)) {
+    return jsonError(
+      401,
+      "INVALID_CREDENTIALS",
+      "Email or password is incorrect.",
+      id,
+    );
   }
 
   const store = env.DEMO_MODE ? getDemoStore() : null;

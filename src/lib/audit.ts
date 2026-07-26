@@ -1,6 +1,6 @@
 import { deepFreeze } from "@/domain";
 import { createHash, randomUUID } from "node:crypto";
-import { desc } from "drizzle-orm";
+import { desc, sql } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
 import { auditEvents } from "@/db/schema";
@@ -45,10 +45,16 @@ export async function appendRuntimeAuditEvent(
   }
 
   return getDatabase().transaction(async (transaction) => {
+    // The chain has a single head, including when it is empty. Row locks cannot
+    // serialize that first append, so every configured instance uses the same
+    // transaction-scoped advisory lock before reading and advancing the head.
+    await transaction.execute(
+      sql`select pg_advisory_xact_lock(hashtext('MONETAIRE_AUDIT_CHAIN_V1'))`,
+    );
     const previous = await transaction
       .select({ eventHash: auditEvents.eventHash })
       .from(auditEvents)
-      .orderBy(desc(auditEvents.createdAt))
+      .orderBy(desc(auditEvents.createdAt), desc(auditEvents.id))
       .limit(1);
     const id = randomUUID();
     const createdAt = new Date();

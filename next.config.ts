@@ -44,6 +44,10 @@ const nextConfig: NextConfig = {
             value: "DENY",
           },
           {
+            key: "X-Robots-Tag",
+            value: "noindex, nofollow, noarchive",
+          },
+          {
             key: "Strict-Transport-Security",
             value: "max-age=31536000; includeSubDomains",
           },

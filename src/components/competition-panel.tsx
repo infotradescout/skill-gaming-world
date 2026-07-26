@@ -1,42 +1,16 @@
 "use client";
 
 import { useState } from "react";
+import {
+  competitionView,
+  type CompetitionView,
+  type RuntimeCompetitionSnapshot,
+} from "@/lib/competition-snapshot";
 import { StatusPill } from "./page-elements";
 import {
   SolitaireBoard,
   type ServerGameSession,
 } from "./solitaire-board";
-
-type Standing = {
-  rank: number;
-  tied: boolean;
-  completed: boolean;
-  validMoves: number;
-  verifiedActivePlayMs: number;
-};
-
-export type CompetitionSnapshot = {
-  id: string;
-  name: string;
-  mode: string;
-  status: string;
-  entryCostPlayCoins: number;
-  valuablePrize: boolean;
-  rulesetVersion: string;
-  dealGeneratorVersion: string;
-  dealCommitment: string;
-  validation: {
-    status: string;
-    solver: string;
-    solverVersion: string;
-    evidenceReference: string;
-  };
-  opensAt: string;
-  closesAt: string;
-  seedReveal: string | null;
-  entryCount: number;
-  standings: Standing[];
-};
 
 const COMPETITION_SESSION_KEY = "monetaire.competition.session-id";
 
@@ -45,10 +19,10 @@ export function CompetitionPanel({
   initialCompetition,
 }: {
   allowEntry?: boolean;
-  initialCompetition: CompetitionSnapshot;
+  initialCompetition: RuntimeCompetitionSnapshot;
 }) {
-  const [competition, setCompetition] = useState<CompetitionSnapshot | null>(
-    initialCompetition,
+  const [competition, setCompetition] = useState<CompetitionView | null>(
+    competitionView(initialCompetition),
   );
   const [message, setMessage] = useState("");
   const [pending, setPending] = useState(false);
@@ -59,7 +33,10 @@ export function CompetitionPanel({
     try {
       const response = await fetch("/api/competitions", { cache: "no-store" });
       const body = (await response.json().catch(() => null)) as
-        | { competitions?: CompetitionSnapshot[]; error?: { message?: string } | string }
+        | {
+            competitions?: RuntimeCompetitionSnapshot[];
+            error?: { message?: string } | string;
+          }
         | null;
       if (!response.ok) {
         const error =
@@ -67,7 +44,8 @@ export function CompetitionPanel({
         setMessage(error ?? "Competition records could not be loaded.");
         return;
       }
-      setCompetition(body?.competitions?.[0] ?? null);
+      const snapshot = body?.competitions?.[0];
+      setCompetition(snapshot ? competitionView(snapshot) : null);
     } catch {
       setMessage("Competition records are not reachable.");
     }
@@ -178,16 +156,19 @@ export function CompetitionPanel({
       <div className="competition-facts">
         <div><span>Entry cost</span><strong>{competition.entryCostPlayCoins} Play Coins</strong></div>
         <div><span>Valuable prize</span><strong>{competition.valuablePrize ? "Yes" : "None"}</strong></div>
-        <div><span>Actual entries</span><strong>{competition.entryCount}</strong></div>
-        <div><span>Validation</span><strong>{competition.validation.status}</strong></div>
+        <div><span>Actual entries</span><strong>{competition.entryCount ?? "Recorded server-side"}</strong></div>
+        <div><span>Publication</span><strong>{competition.validation?.status ?? "Persisted"}</strong></div>
       </div>
       <details className="competition-proof">
         <summary>Inspect deal evidence</summary>
         <dl>
-          <div><dt>Ruleset</dt><dd>{competition.rulesetVersion}</dd></div>
-          <div><dt>Generator</dt><dd>{competition.dealGeneratorVersion}</dd></div>
-          <div><dt>Commitment</dt><dd className="mono">{competition.dealCommitment}</dd></div>
-          <div><dt>Solver record</dt><dd>{competition.validation.solver} {competition.validation.solverVersion}</dd></div>
+          <div><dt>Environment</dt><dd>{competition.environment === "configured" ? "Configured private preview" : "Safe demo"}</dd></div>
+          <div><dt>Opens</dt><dd>{new Date(competition.opensAt).toLocaleString()}</dd></div>
+          <div><dt>Closes</dt><dd>{new Date(competition.closesAt).toLocaleString()}</dd></div>
+          {competition.rulesetVersion ? <div><dt>Ruleset</dt><dd>{competition.rulesetVersion}</dd></div> : null}
+          {competition.dealGeneratorVersion ? <div><dt>Generator</dt><dd>{competition.dealGeneratorVersion}</dd></div> : null}
+          <div><dt>Commitment</dt><dd className="mono">{competition.dealCommitment ?? "Unavailable"}</dd></div>
+          {competition.validation ? <div><dt>Solver record</dt><dd>{competition.validation.solver} {competition.validation.solverVersion}</dd></div> : null}
           <div><dt>Seed</dt><dd>{competition.seedReveal ?? "Held until competition close"}</dd></div>
         </dl>
       </details>
@@ -210,8 +191,8 @@ export function CompetitionPanel({
         ) : (
           <div className="data-list">
             {competition.standings.map((standing) => (
-              <div className="data-row" key={`${standing.rank}-${standing.validMoves}-${standing.verifiedActivePlayMs}`}>
-                <strong>Rank {standing.rank}{standing.tied ? " · tie" : ""}</strong>
+              <div className="data-row" key={standing.entryId ?? `${standing.rank}-${standing.validMoves}-${standing.verifiedActivePlayMs}-${standing.displayName ?? ""}`}>
+                <strong>{standing.displayName ? `${standing.displayName} · ` : ""}Rank {standing.rank}{standing.tied ? " · tie" : ""}</strong>
                 <span>{standing.completed ? "Completed" : "Incomplete"}</span>
                 <span>{standing.validMoves} valid moves</span>
               </div>

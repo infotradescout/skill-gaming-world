@@ -60,8 +60,7 @@ describe("central demo player restriction policy", () => {
   });
 
   it("allows an expired cooldown but blocks active or malformed cooldowns", () => {
-    expect(
-      evaluateDemoPlayerAccess({
+    const expired = evaluateDemoPlayerAccess({
         user: user({
           status: "COOLDOWN",
           cooldownUntil: new Date(now - 1).toISOString(),
@@ -69,8 +68,9 @@ describe("central demo player restriction policy", () => {
         mode: "MONETAIRE_PLAY",
         exclusions: [],
         serverAtMs: now,
-      }).allowed,
-    ).toBe(true);
+      });
+    expect(expired.allowed).toBe(true);
+    expect(expired.accountStatus).toBe("ACTIVE");
     expect(
       evaluateDemoPlayerAccess({
         user: user({

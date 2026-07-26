@@ -5,7 +5,7 @@ import {
   randomBytes,
   randomUUID,
 } from "node:crypto";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
 import {
@@ -24,6 +24,7 @@ import {
   createServerActivityClock,
   finalizeActivityClock,
   hashKlondikeGameState,
+  hashMoveRequest,
   type KlondikeGameState,
   type MoveIntent,
   type ServerActivityClock,
@@ -157,6 +158,107 @@ function fromRecord(record: typeof gameSessions.$inferSelect): DemoGameSession {
   };
 }
 
+type PersistentMoveInput = {
+  user: DemoUser;
+  sessionId: string;
+  actionId: string;
+  sequence: number;
+  priorStateHash: string;
+  intent: MoveIntent;
+};
+
+class ConcurrentGameCommandError extends Error {}
+
+function rejectedPersistentMove(
+  record: typeof gameSessions.$inferSelect,
+  input: PersistentMoveInput,
+  code: "IDEMPOTENCY_CONFLICT" | "REPLAYED_SEQUENCE",
+  message: string,
+) {
+  const state = record.stateSnapshot as unknown as KlondikeGameState;
+  return {
+    session: fromRecord(record),
+    result: {
+      accepted: false as const,
+      state,
+      code,
+      message,
+      requestHash: hashMoveRequest({
+        gameId: record.id,
+        actionId: input.actionId,
+        sequence: input.sequence,
+        priorStateHash: input.priorStateHash,
+        intent: input.intent,
+      }),
+      stateHashBefore: hashKlondikeGameState(state),
+    },
+  };
+}
+
+async function resolveConcurrentPersistentMove(input: PersistentMoveInput) {
+  const [record] = await getDatabase()
+    .select()
+    .from(gameSessions)
+    .where(eq(gameSessions.id, input.sessionId))
+    .limit(1);
+  if (!record) {
+    throw new GameServiceError("SESSION_NOT_FOUND", "Game session was not found.");
+  }
+  if (record.userId !== input.user.id) {
+    throw new GameServiceError(
+      "SESSION_FORBIDDEN",
+      "Game session belongs to another account.",
+    );
+  }
+  const [winningAction] = await getDatabase()
+    .select()
+    .from(moveEvents)
+    .where(
+      and(
+        eq(moveEvents.gameSessionId, input.sessionId),
+        eq(moveEvents.idempotencyKey, input.actionId),
+      ),
+    )
+    .limit(1);
+  if (winningAction) {
+    const payload = winningAction.movePayload as {
+      command: {
+        sequence: number;
+        priorStateHash: string;
+        intent: MoveIntent;
+      };
+      outcome?: unknown;
+    };
+    const same =
+      JSON.stringify(payload.command.intent) === JSON.stringify(input.intent) &&
+      payload.command.sequence === input.sequence &&
+      payload.command.priorStateHash === input.priorStateHash;
+    if (same) {
+      return {
+        session: fromRecord(record),
+        result: {
+          accepted: true as const,
+          idempotentReplay: true,
+          state: record.stateSnapshot as unknown as KlondikeGameState,
+          outcome: payload.outcome,
+        },
+      };
+    }
+    return rejectedPersistentMove(
+      record,
+      input,
+      "IDEMPOTENCY_CONFLICT",
+      "The action id was already used for a different command.",
+    );
+  }
+  return rejectedPersistentMove(
+    record,
+    input,
+    "REPLAYED_SEQUENCE",
+    "The authoritative session advanced before this command could commit.",
+  );
+}
+
 export async function createPersistentPracticeSession(
   user: DemoUser,
 ): Promise<DemoGameSession> {
@@ -225,160 +327,250 @@ export async function resumePersistentSession(
   return fromRecord(record);
 }
 
-export async function submitPersistentMove(input: {
-  user: DemoUser;
-  sessionId: string;
-  actionId: string;
-  sequence: number;
-  priorStateHash: string;
-  intent: MoveIntent;
-}) {
+export async function submitPersistentMove(input: PersistentMoveInput) {
   await assertPersistentAccess(input.user);
-  return getDatabase().transaction(async (transaction) => {
-    const [record] = await transaction
-      .select()
-      .from(gameSessions)
-      .where(eq(gameSessions.id, input.sessionId))
-      .limit(1);
-    if (!record) {
-      throw new GameServiceError("SESSION_NOT_FOUND", "Game session was not found.");
-    }
-    if (record.userId !== input.user.id) {
-      throw new GameServiceError("SESSION_FORBIDDEN", "Game session belongs to another account.");
-    }
+  try {
+    return await getDatabase().transaction(async (transaction) => {
+      // Serialize commands for one authoritative session across every process.
+      // The unique constraints below remain the final defense, but normal races
+      // now converge before either caller reads the session snapshot.
+      await transaction.execute(
+        sql`select pg_advisory_xact_lock(
+          hashtext('MONETAIRE_GAME_SESSION_V1'),
+          hashtext(${input.sessionId})
+        )`,
+      );
+      const [record] = await transaction
+        .select()
+        .from(gameSessions)
+        .where(eq(gameSessions.id, input.sessionId))
+        .limit(1);
+      if (!record) {
+        throw new GameServiceError(
+          "SESSION_NOT_FOUND",
+          "Game session was not found.",
+        );
+      }
+      if (record.userId !== input.user.id) {
+        throw new GameServiceError(
+          "SESSION_FORBIDDEN",
+          "Game session belongs to another account.",
+        );
+      }
 
-    const existing = await transaction
-      .select()
-      .from(moveEvents)
-      .where(
-        and(
-          eq(moveEvents.gameSessionId, input.sessionId),
-          eq(moveEvents.idempotencyKey, input.actionId),
-        ),
-      )
-      .limit(1);
-    if (existing[0]) {
-      const payload = existing[0].movePayload as {
-        command: typeof input;
-        outcome?: unknown;
-      };
-      const same =
-        JSON.stringify(payload.command.intent) === JSON.stringify(input.intent) &&
-        payload.command.sequence === input.sequence &&
-        payload.command.priorStateHash === input.priorStateHash;
-      if (!same) {
+      const existing = await transaction
+        .select()
+        .from(moveEvents)
+        .where(
+          and(
+            eq(moveEvents.gameSessionId, input.sessionId),
+            eq(moveEvents.idempotencyKey, input.actionId),
+          ),
+        )
+        .limit(1);
+      if (existing[0]) {
+        const payload = existing[0].movePayload as {
+          command: typeof input;
+          outcome?: unknown;
+        };
+        const same =
+          JSON.stringify(payload.command.intent) ===
+            JSON.stringify(input.intent) &&
+          payload.command.sequence === input.sequence &&
+          payload.command.priorStateHash === input.priorStateHash;
+        if (!same) {
+          return rejectedPersistentMove(
+            record,
+            input,
+            "IDEMPOTENCY_CONFLICT",
+            "The action id was already used for a different command.",
+          );
+        }
         return {
           session: fromRecord(record),
           result: {
-            accepted: false as const,
-            code: "IDEMPOTENCY_CONFLICT",
-            message: "The action id was already used for a different command.",
-            stateHashBefore: hashKlondikeGameState(
-              record.stateSnapshot as unknown as KlondikeGameState,
-            ),
-            requestHash: "",
+            accepted: true as const,
+            idempotentReplay: true,
+            state: record.stateSnapshot as unknown as KlondikeGameState,
+            outcome: payload.outcome,
           },
         };
       }
-      return {
-        session: fromRecord(record),
-        result: {
-          accepted: true as const,
-          idempotentReplay: true,
-          state: record.stateSnapshot as unknown as KlondikeGameState,
-          outcome: payload.outcome,
-        },
-      };
-    }
 
-    const state = record.stateSnapshot as unknown as KlondikeGameState;
-    const serverAtMs = Date.now();
-    const result = applyAuthoritativeMove(
-      state,
-      {
-        gameId: record.id,
-        actionId: input.actionId,
-        sequence: input.sequence,
-        priorStateHash: input.priorStateHash,
-        intent: input.intent,
-      },
-      { serverReceivedAtMs: serverAtMs },
-    );
-    const nextState = result.accepted ? result.state : state;
-    let activityClock =
-      record.activityClockSnapshot as unknown as ServerActivityClock;
-    if (
-      result.accepted &&
-      !result.idempotentReplay &&
-      nextState.status !== "ACTIVE" &&
-      activityClock.status !== "FINALIZED"
-    ) {
-      activityClock = finalizeActivityClock(activityClock, serverAtMs);
-    }
-    await transaction.insert(moveEvents).values({
-      gameSessionId: record.id,
-      sequence: input.sequence,
-      idempotencyKey: input.actionId,
-      moveType: input.intent.type,
-      movePayload: {
-        command: {
+      const [existingSequence] = await transaction
+        .select({ id: moveEvents.id })
+        .from(moveEvents)
+        .where(
+          and(
+            eq(moveEvents.gameSessionId, input.sessionId),
+            eq(moveEvents.sequence, input.sequence),
+          ),
+        )
+        .limit(1);
+      if (existingSequence) {
+        return rejectedPersistentMove(
+          record,
+          input,
+          "REPLAYED_SEQUENCE",
+          "The move sequence was already processed by a different action.",
+        );
+      }
+
+      const state = record.stateSnapshot as unknown as KlondikeGameState;
+      const serverAtMs = Date.now();
+      const result = applyAuthoritativeMove(
+        state,
+        {
+          gameId: record.id,
+          actionId: input.actionId,
           sequence: input.sequence,
           priorStateHash: input.priorStateHash,
           intent: input.intent,
         },
-        outcome: result.accepted ? result.outcome : undefined,
-      },
-      stateHashBefore: hashKlondikeGameState(state),
-      stateHashAfter: hashKlondikeGameState(nextState),
-      accepted: result.accepted,
-      rejectionCode: result.accepted ? null : result.code,
-    });
-    if (result.accepted) {
-      const updated = await transaction
-        .update(gameSessions)
-        .set({
-          stateSnapshot: nextState as unknown as Record<string, unknown>,
-          activityClockSnapshot:
-            activityClock as unknown as Record<string, unknown>,
-          nextSequence: nextState.lastSequence + 1,
-          status:
-            nextState.status === "ACTIVE"
-              ? "ACTIVE"
-              : nextState.status === "WON"
-                ? "COMPLETED"
-                : "ABANDONED",
-          lastActiveAt: new Date(serverAtMs),
-          updatedAt: new Date(serverAtMs),
-        })
-        .where(
-          and(
-            eq(gameSessions.id, record.id),
-            eq(gameSessions.nextSequence, input.sequence),
-          ),
-        )
-        .returning({ id: gameSessions.id });
-      if (!updated[0]) throw new Error("CONCURRENT_GAME_COMMAND");
+        { serverReceivedAtMs: serverAtMs },
+      );
+      const nextState = result.accepted ? result.state : state;
+      let activityClock =
+        record.activityClockSnapshot as unknown as ServerActivityClock;
       if (
-        nextState.status === "WON" &&
-        activityClock.status === "FINALIZED"
+        result.accepted &&
+        !result.idempotentReplay &&
+        nextState.status !== "ACTIVE" &&
+        activityClock.status !== "FINALIZED"
       ) {
-        await transaction
-          .insert(scores)
-          .values({
-            gameSessionId: record.id,
-            completed: true,
-            validMoveCount: nextState.validMoveCount,
-            verifiedActiveDurationMs: BigInt(
-              activityClock.accumulatedActiveMs,
-            ),
-            scoringVersion: "MONETAIRE_SCORE_V1",
-          })
-          .onConflictDoNothing();
+        activityClock = finalizeActivityClock(activityClock, serverAtMs);
       }
+      const inserted = await transaction
+        .insert(moveEvents)
+        .values({
+          gameSessionId: record.id,
+          sequence: input.sequence,
+          idempotencyKey: input.actionId,
+          moveType: input.intent.type,
+          movePayload: {
+            command: {
+              sequence: input.sequence,
+              priorStateHash: input.priorStateHash,
+              intent: input.intent,
+            },
+            outcome: result.accepted ? result.outcome : undefined,
+          },
+          stateHashBefore: hashKlondikeGameState(state),
+          stateHashAfter: hashKlondikeGameState(nextState),
+          accepted: result.accepted,
+          rejectionCode: result.accepted ? null : result.code,
+        })
+        .onConflictDoNothing()
+        .returning({ id: moveEvents.id });
+      if (!inserted[0]) {
+        const [currentRecord] = await transaction
+          .select()
+          .from(gameSessions)
+          .where(eq(gameSessions.id, input.sessionId))
+          .limit(1);
+        const resolvedRecord = currentRecord ?? record;
+        const [winningAction] = await transaction
+          .select()
+          .from(moveEvents)
+          .where(
+            and(
+              eq(moveEvents.gameSessionId, input.sessionId),
+              eq(moveEvents.idempotencyKey, input.actionId),
+            ),
+          )
+          .limit(1);
+        if (winningAction) {
+          const payload = winningAction.movePayload as {
+            command: {
+              sequence: number;
+              priorStateHash: string;
+              intent: MoveIntent;
+            };
+            outcome?: unknown;
+          };
+          const same =
+            JSON.stringify(payload.command.intent) ===
+              JSON.stringify(input.intent) &&
+            payload.command.sequence === input.sequence &&
+            payload.command.priorStateHash === input.priorStateHash;
+          if (same) {
+            return {
+              session: fromRecord(resolvedRecord),
+              result: {
+                accepted: true as const,
+                idempotentReplay: true,
+                state:
+                  resolvedRecord.stateSnapshot as unknown as KlondikeGameState,
+                outcome: payload.outcome,
+              },
+            };
+          }
+          return rejectedPersistentMove(
+            resolvedRecord,
+            input,
+            "IDEMPOTENCY_CONFLICT",
+            "The action id was already used for a different command.",
+          );
+        }
+        return rejectedPersistentMove(
+          resolvedRecord,
+          input,
+          "REPLAYED_SEQUENCE",
+          "The move sequence was already processed by a different action.",
+        );
+      }
+      if (result.accepted) {
+        const updated = await transaction
+          .update(gameSessions)
+          .set({
+            stateSnapshot: nextState as unknown as Record<string, unknown>,
+            activityClockSnapshot:
+              activityClock as unknown as Record<string, unknown>,
+            nextSequence: nextState.lastSequence + 1,
+            status:
+              nextState.status === "ACTIVE"
+                ? "ACTIVE"
+                : nextState.status === "WON"
+                  ? "COMPLETED"
+                  : "ABANDONED",
+            lastActiveAt: new Date(serverAtMs),
+            updatedAt: new Date(serverAtMs),
+          })
+          .where(
+            and(
+              eq(gameSessions.id, record.id),
+              eq(gameSessions.nextSequence, input.sequence),
+            ),
+          )
+          .returning({ id: gameSessions.id });
+        if (!updated[0]) throw new ConcurrentGameCommandError();
+        if (
+          nextState.status === "WON" &&
+          activityClock.status === "FINALIZED"
+        ) {
+          await transaction
+            .insert(scores)
+            .values({
+              gameSessionId: record.id,
+              completed: true,
+              validMoveCount: nextState.validMoveCount,
+              verifiedActiveDurationMs: BigInt(
+                activityClock.accumulatedActiveMs,
+              ),
+              scoringVersion: "MONETAIRE_SCORE_V1",
+            })
+            .onConflictDoNothing();
+        }
+      }
+      return {
+        session: { ...fromRecord(record), state: nextState, activityClock },
+        result,
+      };
+    });
+  } catch (error) {
+    if (error instanceof ConcurrentGameCommandError) {
+      return resolveConcurrentPersistentMove(input);
     }
-    return {
-      session: { ...fromRecord(record), state: nextState, activityClock },
-      result,
-    };
-  });
+    throw error;
+  }
 }

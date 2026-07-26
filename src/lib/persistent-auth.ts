@@ -14,6 +14,7 @@ import {
 } from "@/db/schema";
 
 import type { DemoAdminRole, DemoUser, DemoUserStatus } from "./demo-store";
+import { effectivePlayerAccountStatus } from "./player-access";
 
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 7;
 const PLAY_COIN_TERMS_VERSION = "PLAY_COIN_TERMS_V1_2026_07_26";
@@ -151,7 +152,10 @@ export async function persistentUserById(
     .orderBy(desc(responsibleGamingLimits.createdAt))
     .limit(1);
   const user = hydrateUser(rows[0], roles.map(({ role }) => role));
-  if (cooldown) user.cooldownUntil = cooldown.effectiveAt.toISOString();
+  if (cooldown) {
+    user.cooldownUntil = cooldown.effectiveAt.toISOString();
+    user.status = effectivePlayerAccountStatus(user, Date.now());
+  }
   return user;
 }
 
