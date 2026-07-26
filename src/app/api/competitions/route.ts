@@ -1,15 +1,11 @@
 import { NextResponse } from "next/server";
 
-import { publicCompetitionSnapshotIfAvailable } from "@/lib/competition-catalog";
-import { getRuntimeEnv } from "@/lib/env";
-import { persistentCompetitionSnapshot } from "@/lib/persistent-competition";
+import { runtimeCompetitionSnapshot } from "@/lib/runtime-competition";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const competition = getRuntimeEnv().DEMO_MODE
-    ? publicCompetitionSnapshotIfAvailable()
-    : await persistentCompetitionSnapshot();
+  const competition = await runtimeCompetitionSnapshot();
   const rankedEntryAvailable = competition?.status === "ACTIVE";
   return NextResponse.json({
     competitions: competition ? [competition] : [],
