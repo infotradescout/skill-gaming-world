@@ -15,9 +15,11 @@ type WalletEntry = {
 export function WalletSandbox({
   initialBalance,
   initialEntries,
+  sandboxPackagesEnabled,
 }: {
   initialBalance: number;
   initialEntries: WalletEntry[];
+  sandboxPackagesEnabled: boolean;
 }) {
   const [message, setMessage] = useState("");
   const [balance, setBalance] = useState(initialBalance);
@@ -93,36 +95,55 @@ export function WalletSandbox({
         <div><span>Available balance</span><strong>{balance.toLocaleString()}</strong></div>
         <p>Confirmed by the Play Coin ledger.</p>
       </div>
-      <div className="wallet-sandbox surface">
-        <div className="wallet-sandbox-header">
-          <div>
-            <StatusPill tone="hold">Sandbox only</StatusPill>
-            <h2>Play Coin packages</h2>
-            <p>No production payment provider is connected. No card can be charged.</p>
+      {sandboxPackagesEnabled ? (
+        <div className="wallet-sandbox surface">
+          <div className="wallet-sandbox-header">
+            <div>
+              <StatusPill tone="hold">Sandbox only</StatusPill>
+              <h2>Play Coin packages</h2>
+              <p>No production payment provider is connected. No card can be charged.</p>
+            </div>
+            <span className="sandbox-stamp">TEST ADAPTER</span>
           </div>
-          <span className="sandbox-stamp">TEST ADAPTER</span>
+          <div className="package-grid">
+            {packages.map((item) => (
+              <button
+                className="package-card"
+                disabled={Boolean(pending)}
+                key={item.id}
+                type="button"
+                onClick={() => void selectPackage(item.id, item.label)}
+              >
+                <span>{item.units}</span>
+                <strong>{item.label}</strong>
+                <small>{pending === item.id ? "Confirming…" : "Run sandbox adapter"}</small>
+              </button>
+            ))}
+          </div>
+          {message ? <p className="sandbox-message" role="status">{message}</p> : null}
+          <p className="small muted">
+            Play Coins have no cash value and cannot be withdrawn, transferred, sold, or
+            redeemed. They cannot fund prize competitions or casino cash.
+          </p>
         </div>
-        <div className="package-grid">
-          {packages.map((item) => (
-            <button
-              className="package-card"
-              disabled={Boolean(pending)}
-              key={item.id}
-              type="button"
-              onClick={() => void selectPackage(item.id, item.label)}
-            >
-              <span>{item.units}</span>
-              <strong>{item.label}</strong>
-              <small>{pending === item.id ? "Confirming…" : "Run sandbox adapter"}</small>
-            </button>
-          ))}
+      ) : (
+        <div className="wallet-sandbox surface">
+          <div className="wallet-sandbox-header">
+            <div>
+              <StatusPill tone="blocked">Packages unavailable</StatusPill>
+              <h2>Play Coin packages</h2>
+              <p>
+                Package simulation is disabled in this configured preview. No
+                payment or Play Coin purchase control is available.
+              </p>
+            </div>
+          </div>
+          <p className="small muted">
+            Play Coins have no cash value and cannot be withdrawn, transferred, sold,
+            or redeemed. They cannot fund prize competitions or casino cash.
+          </p>
         </div>
-        {message ? <p className="sandbox-message" role="status">{message}</p> : null}
-        <p className="small muted">
-          Play Coins have no cash value and cannot be withdrawn, transferred, sold, or
-          redeemed. They cannot fund prize competitions or casino cash.
-        </p>
-      </div>
+      )}
       <section className="app-section">
         <div className="app-section-header"><div><p className="eyebrow">Ledger</p><h2>Transaction history</h2></div></div>
         {entries.length === 0 ? (
