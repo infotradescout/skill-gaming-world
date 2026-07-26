@@ -35,7 +35,11 @@ export default async function WalletPage() {
       <AppPageHeader eyebrow="Entertainment ledger" title="Play Coins">
         <p>Play Coins are nonredeemable entertainment units—not money, winnings, or stored value.</p>
       </AppPageHeader>
-      <WalletSandbox initialBalance={projection.balanceMinor} initialEntries={entries} />
+      <WalletSandbox
+        initialBalance={projection.balanceMinor}
+        initialEntries={entries}
+        sandboxPackagesEnabled={env.DEMO_MODE}
+      />
     </>
   );
 }
