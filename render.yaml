@@ -3,7 +3,9 @@ services:
     name: skill-gaming-world-web
     runtime: node
     plan: starter
-    buildCommand: npm ci && npm run build
+    region: ohio
+    buildCommand: npm ci --include=dev && npm run build
+    preDeployCommand: npm run db:migrate
     startCommand: npm run start
     healthCheckPath: /api/health
     autoDeployTrigger: "off"
@@ -15,8 +17,10 @@ services:
       - key: DATABASE_URL
         sync: false
       - key: SESSION_SECRET
-        sync: false
+        generateValue: true
       - key: COMPETITION_SEED_ENCRYPTION_KEY
+        generateValue: true
+      - key: PREVIEW_OWNER_EMAIL
         sync: false
       - key: FEATURE_MONETAIRE_PRIZE
         value: "false"
@@ -26,3 +30,7 @@ services:
         value: "false"
       - key: FEATURE_PRODUCTION_PAYMENTS
         value: "false"
+      - key: MONETAIRE_PLAY_JURISDICTIONS
+        value: US
+      - key: MONETAIRE_PLAY_DEPLOYMENT_JURISDICTION
+        value: US
