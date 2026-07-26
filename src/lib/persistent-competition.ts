@@ -115,6 +115,8 @@ export async function ensurePersistentCompetition() {
   const database = getDatabase();
   const ruleset = await ensureConfiguredRuleset();
   return database.transaction(async (transaction) => {
+    // Publication has one configured-mode head. This lock also covers the
+    // empty-table case where SELECT ... FOR UPDATE cannot serialize creators.
     await transaction.execute(
       sql`select pg_advisory_xact_lock(hashtext('MONETAIRE_CONFIGURED_COMPETITION_V1'))`,
     );
@@ -128,6 +130,7 @@ export async function ensurePersistentCompetition() {
           gt(competitions.closesAt, now),
         ),
       )
+      .orderBy(asc(competitions.opensAt), asc(competitions.id))
       .limit(1);
     if (existing) return existing;
 
@@ -222,6 +225,15 @@ export async function enterPersistentCompetition(
 ): Promise<DemoGameSession> {
   await assertPersistentAccess(user);
   return getDatabase().transaction(async (transaction) => {
+    // A single account may enter a competition once. Serialize the read/create
+    // pair across instances, while retaining the database unique constraint as
+    // a final convergence boundary.
+    await transaction.execute(
+      sql`select pg_advisory_xact_lock(
+        hashtext('MONETAIRE_COMPETITION_ENTRY_V1'),
+        hashtext(${`${competitionId}:${user.id}`})
+      )`,
+    );
     const now = new Date();
     const [competition] = await transaction
       .select()
@@ -279,7 +291,14 @@ export async function enterPersistentCompetition(
         userId: user.id,
         dealId: dealRecord.id,
       })
+      .onConflictDoNothing()
       .returning();
+    if (!entry) {
+      throw new GameServiceError(
+        "DUPLICATE_COMPETITION_ENTRY",
+        "This account already entered the competition.",
+      );
+    }
     const id = randomUUID();
     const state = createKlondikeGameState({ gameId: id, deal });
     const activityClock = createServerActivityClock(now.getTime());
