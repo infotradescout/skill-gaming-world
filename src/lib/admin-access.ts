@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import {
-  demoUserFromToken,
+  runtimeUserFromToken,
   SESSION_COOKIE,
 } from "./auth";
 import type { DemoAdminRole } from "./demo-store";
@@ -11,7 +11,7 @@ export async function requireAdminRoles(
   allowedRoles: readonly DemoAdminRole[],
 ) {
   const cookieStore = await cookies();
-  const user = demoUserFromToken(cookieStore.get(SESSION_COOKIE)?.value);
+  const user = await runtimeUserFromToken(cookieStore.get(SESSION_COOKIE)?.value);
   if (!user) {
     redirect("/auth/login");
   }

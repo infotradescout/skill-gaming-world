@@ -1,14 +1,14 @@
-import { createHash } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
-import { appendDemoAuditEvent } from "@/lib/audit";
+import { appendRuntimeAuditEvent } from "@/lib/audit";
 import {
   clearSessionCookie,
-  currentDemoUser,
-  SESSION_COOKIE,
+  currentRuntimeUser,
+  revokeRuntimeSession,
 } from "@/lib/auth";
 import { getDemoStore } from "@/lib/demo-store";
+import { getRuntimeEnv } from "@/lib/env";
 import {
   enforceRateLimit,
   enforceSameOrigin,
@@ -16,6 +16,7 @@ import {
   requestId,
 } from "@/lib/http";
 import { verifyPassword } from "@/lib/password";
+import { closePersistentUser } from "@/lib/persistent-auth";
 
 const closeSchema = z.object({
   password: z.string().min(1).max(128),
@@ -26,9 +27,9 @@ export async function POST(request: NextRequest) {
   const id = requestId(request);
   const originError = enforceSameOrigin(request);
   if (originError) return originError;
-  const rateError = enforceRateLimit(request, "account-close", 3, 60_000);
+  const rateError = await enforceRateLimit(request, "account-close", 3, 60_000);
   if (rateError) return rateError;
-  const user = currentDemoUser(request);
+  const user = await currentRuntimeUser(request);
   if (!user) {
     return jsonError(401, "AUTH_REQUIRED", "Sign in to continue.", id);
   }
@@ -43,14 +44,18 @@ export async function POST(request: NextRequest) {
 
   const before = { status: user.status };
   user.status = "CLOSED";
-  const store = getDemoStore();
-  for (const [tokenHash, session] of store.sessionsByTokenHash) {
-    if (session.userId === user.id) {
-      store.sessionsByTokenHash.delete(tokenHash);
+  if (getRuntimeEnv().DEMO_MODE) {
+    const store = getDemoStore();
+    for (const [tokenHash, session] of store.sessionsByTokenHash) {
+      if (session.userId === user.id) {
+        store.sessionsByTokenHash.delete(tokenHash);
+      }
     }
+  } else {
+    await closePersistentUser(user.id);
   }
 
-  appendDemoAuditEvent({
+  await appendRuntimeAuditEvent({
     eventType: "ACCOUNT_CLOSED",
     actorId: user.id,
     subjectType: "USER",
@@ -61,12 +66,7 @@ export async function POST(request: NextRequest) {
   });
 
   const response = NextResponse.json({ closed: true });
-  const rawToken = request.cookies.get(SESSION_COOKIE)?.value;
-  if (rawToken) {
-    store.sessionsByTokenHash.delete(
-      createHash("sha256").update(rawToken).digest("hex"),
-    );
-  }
+  await revokeRuntimeSession(request);
   clearSessionCookie(response);
   return response;
 }

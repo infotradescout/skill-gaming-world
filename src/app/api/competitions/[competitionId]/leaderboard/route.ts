@@ -5,6 +5,11 @@ import {
   publicCompetitionSnapshotIfAvailable,
 } from "@/lib/competition-catalog";
 import { jsonError, requestId } from "@/lib/http";
+import { getRuntimeEnv } from "@/lib/env";
+import {
+  persistentCompetitionSnapshot,
+  persistentLeaderboard,
+} from "@/lib/persistent-competition";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +18,8 @@ export async function GET(
   context: { params: Promise<{ competitionId: string }> },
 ) {
   const { competitionId } = await context.params;
-  if (competitionId !== CURATED_COMPETITION_ID) {
+  const env = getRuntimeEnv();
+  if (env.DEMO_MODE && competitionId !== CURATED_COMPETITION_ID) {
     return jsonError(
       404,
       "COMPETITION_NOT_FOUND",
@@ -21,7 +27,9 @@ export async function GET(
       requestId(request),
     );
   }
-  const competition = publicCompetitionSnapshotIfAvailable();
+  const competition = env.DEMO_MODE
+    ? publicCompetitionSnapshotIfAvailable()
+    : await persistentCompetitionSnapshot();
   if (!competition) {
     return jsonError(
       503,
@@ -34,6 +42,8 @@ export async function GET(
     competitionId,
     scoring:
       "Completion, then fewest valid moves, then lowest verified active-play duration. Exact ties remain tied.",
-    standings: competition.standings,
+    standings: env.DEMO_MODE
+      ? competition.standings
+      : await persistentLeaderboard(competitionId),
   });
 }

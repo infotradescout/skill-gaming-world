@@ -80,7 +80,7 @@ test("account access, held modes, and Play Coin exact retry remain coherent", as
   await page.getByRole("button", { name: "Log out" }).click();
   await expect(page).toHaveURL(/\/auth\/login$/);
   await page.getByLabel("Email").fill(player.email);
-  await page.getByLabel("Password").fill(player.password);
+  await page.getByLabel("Password", { exact: true }).fill(player.password);
   await page.getByRole("button", { name: "Log in" }).click();
   await expect(page).toHaveURL(/\/app$/);
   await expect(
@@ -277,6 +277,7 @@ test("cooldown and self-exclusion block practice resume and moves", async ({
   await registerPlayer(page);
   await page.goto("/app/monetaire/practice");
   await page.getByRole("button", { name: "Start or resume" }).click();
+  await expect(page.getByText("Authoritative session")).toBeVisible();
   const activeSession = await page.evaluate(async () => {
     const sessionId = window.localStorage.getItem(
       "monetaire.practice.session-id",
@@ -341,7 +342,7 @@ test("casino and privileged admin surfaces remain held", async ({ page }) => {
   await expect(
     page.getByRole("heading", { name: /Casino is\s*not available\./ }),
   ).toBeVisible();
-  await expect(page.getByText("Server-disabled")).toBeVisible();
+  await expect(page.getByText("Server-disabled", { exact: true }).first()).toBeVisible();
   await expect(
     page.getByText(
       "No casino games, deposits, wagers, cash balances, or withdrawals are exposed in the current product.",

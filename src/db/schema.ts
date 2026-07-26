@@ -557,6 +557,16 @@ export const gameSessions = pgTable(
       .notNull()
       .references(() => rulesetVersions.id, { onDelete: "restrict" }),
     status: gameSessionStatusEnum("status").default("ACTIVE").notNull(),
+    sessionMode: varchar("session_mode", { length: 32 })
+      .default("PRACTICE")
+      .notNull(),
+    stateSnapshot: jsonb("state_snapshot")
+      .$type<Record<string, unknown>>()
+      .notNull(),
+    activityClockSnapshot: jsonb("activity_clock_snapshot")
+      .$type<Record<string, unknown>>()
+      .notNull(),
+    seedCiphertext: text("seed_ciphertext").notNull(),
     nextSequence: integer("next_sequence").default(1).notNull(),
     startedAt: timestamp("started_at", { withTimezone: true })
       .defaultNow()
@@ -575,6 +585,10 @@ export const gameSessions = pgTable(
   (table) => [
     index("game_sessions_user_idx").on(table.userId),
     index("game_sessions_competition_entry_idx").on(table.competitionEntryId),
+    check(
+      "game_sessions_mode_allowed",
+      sql`${table.sessionMode} IN ('PRACTICE', 'NONCASH_COMPETITION')`,
+    ),
   ],
 );
 
@@ -1031,6 +1045,20 @@ export const termsVersions = pgTable(
       table.documentKey,
       table.version,
     ),
+  ],
+);
+
+export const rateLimitBuckets = pgTable(
+  "rate_limit_buckets",
+  {
+    bucketKey: varchar("bucket_key", { length: 192 }).primaryKey(),
+    requestCount: integer("request_count").notNull(),
+    resetsAt: timestamp("resets_at", { withTimezone: true }).notNull(),
+    updatedAt,
+  },
+  (table) => [
+    check("rate_limit_buckets_count_positive", sql`${table.requestCount} > 0`),
+    index("rate_limit_buckets_reset_idx").on(table.resetsAt),
   ],
 );
 

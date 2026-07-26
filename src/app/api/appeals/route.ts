@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
-import { appendDemoAuditEvent } from "@/lib/audit";
-import { currentDemoUser } from "@/lib/auth";
+import { appendRuntimeAuditEvent } from "@/lib/audit";
+import { currentRuntimeUser } from "@/lib/auth";
 import { getDemoStore } from "@/lib/demo-store";
+import { getRuntimeEnv } from "@/lib/env";
 import {
   enforceRateLimit,
   enforceSameOrigin,
@@ -11,6 +12,10 @@ import {
   requestId,
 } from "@/lib/http";
 import { createId } from "@/lib/ids";
+import {
+  createPersistentAppeal,
+  listPersistentAppeals,
+} from "@/lib/persistent-support";
 
 const appealSchema = z.object({
   gameSessionId: z.string().trim().min(8).max(128).optional(),
@@ -19,12 +24,14 @@ const appealSchema = z.object({
 });
 
 export async function GET(request: NextRequest) {
-  const user = currentDemoUser(request);
+  const user = await currentRuntimeUser(request);
   if (!user) {
     return jsonError(401, "AUTH_REQUIRED", "Sign in to continue.", requestId(request));
   }
   return NextResponse.json({
-    appeals: getDemoStore().appeals.filter((appeal) => appeal.userId === user.id),
+    appeals: getRuntimeEnv().DEMO_MODE
+      ? getDemoStore().appeals.filter((appeal) => appeal.userId === user.id)
+      : await listPersistentAppeals(user.id),
   });
 }
 
@@ -32,9 +39,9 @@ export async function POST(request: NextRequest) {
   const id = requestId(request);
   const originError = enforceSameOrigin(request);
   if (originError) return originError;
-  const rateError = enforceRateLimit(request, "appeal", 6, 60_000);
+  const rateError = await enforceRateLimit(request, "appeal", 6, 60_000);
   if (rateError) return rateError;
-  const user = currentDemoUser(request);
+  const user = await currentRuntimeUser(request);
   if (!user) {
     return jsonError(401, "AUTH_REQUIRED", "Sign in to continue.", id);
   }
@@ -44,8 +51,8 @@ export async function POST(request: NextRequest) {
     return jsonError(400, "INVALID_APPEAL", "Check the appeal details.", id);
   }
 
-  const store = getDemoStore();
-  if (parsed.data.gameSessionId) {
+  const store = getRuntimeEnv().DEMO_MODE ? getDemoStore() : null;
+  if (parsed.data.gameSessionId && store) {
     const session = store.gameSessionsById.get(
       parsed.data.gameSessionId,
     );
@@ -67,17 +74,37 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  const appeal = {
-    id: createId("appeal"),
-    userId: user.id,
-    gameSessionId: parsed.data.gameSessionId,
-    subject: parsed.data.subject,
-    statement: parsed.data.statement,
-    status: "OPEN" as const,
-    createdAt: new Date().toISOString(),
-  };
-  store.appeals.push(appeal);
-  appendDemoAuditEvent({
+  let appeal;
+  try {
+    if (store) {
+      const demoAppeal = {
+        id: createId("appeal"),
+        userId: user.id,
+        gameSessionId: parsed.data.gameSessionId,
+        subject: parsed.data.subject,
+        statement: parsed.data.statement,
+        status: "OPEN" as const,
+        createdAt: new Date().toISOString(),
+      };
+      store.appeals.push(demoAppeal);
+      appeal = demoAppeal;
+    } else {
+      appeal = await createPersistentAppeal({
+        userId: user.id,
+        ...parsed.data,
+      });
+    }
+  } catch (error) {
+    const code = error instanceof Error ? error.message : "";
+    if (code === "GAME_SESSION_NOT_FOUND") {
+      return jsonError(404, code, "The referenced game session was not found.", id);
+    }
+    if (code === "GAME_SESSION_FORBIDDEN") {
+      return jsonError(403, code, "The referenced game session belongs to another account.", id);
+    }
+    throw error;
+  }
+  await appendRuntimeAuditEvent({
     eventType: "PLAYER_APPEAL_SUBMITTED",
     actorId: user.id,
     subjectType: "APPEAL",

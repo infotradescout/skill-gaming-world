@@ -3,6 +3,9 @@ import { createHash } from "node:crypto";
 
 import { getRuntimeEnv } from "./env";
 import { createId } from "./ids";
+import { getDatabase } from "@/db/client";
+import { rateLimitBuckets } from "@/db/schema";
+import { sql } from "drizzle-orm";
 
 const rateBuckets = new Map<string, { count: number; resetsAt: number }>();
 const MAX_DEMO_RATE_BUCKETS = 2_048;
@@ -31,7 +34,10 @@ export function jsonError(
 
 export function enforceSameOrigin(request: NextRequest): NextResponse | null {
   const origin = request.headers.get("origin");
-  if (origin === request.nextUrl.origin) {
+  if (
+    origin === request.nextUrl.origin ||
+    isEquivalentLocalOrigin(origin, request.nextUrl.origin)
+  ) {
     return null;
   }
 
@@ -47,20 +53,36 @@ export function enforceSameOrigin(request: NextRequest): NextResponse | null {
   );
 }
 
-export function enforceRateLimit(
+function isEquivalentLocalOrigin(
+  suppliedOrigin: string | null,
+  requestOrigin: string,
+): boolean {
+  if (process.env.NODE_ENV === "production" || !suppliedOrigin) {
+    return false;
+  }
+
+  try {
+    const supplied = new URL(suppliedOrigin);
+    const expected = new URL(requestOrigin);
+    const loopbackHosts = new Set(["localhost", "127.0.0.1", "[::1]"]);
+
+    return (
+      supplied.protocol === expected.protocol &&
+      supplied.port === expected.port &&
+      loopbackHosts.has(supplied.hostname) &&
+      loopbackHosts.has(expected.hostname)
+    );
+  } catch {
+    return false;
+  }
+}
+
+export async function enforceRateLimit(
   request: NextRequest,
   bucket: string,
   limit: number,
   intervalMs: number,
-): NextResponse | null {
-  if (!getRuntimeEnv().DEMO_MODE) {
-    return jsonError(
-      503,
-      "RATE_LIMIT_ADAPTER_REQUIRED",
-      "This operation requires the configured shared rate-limit service.",
-      requestId(request),
-    );
-  }
+): Promise<NextResponse | null> {
 
   /*
    * The in-process limiter is deliberately safe-demo-only. It does not trust
@@ -74,6 +96,36 @@ export function enforceRateLimit(
     : "anonymous";
   const key = `${bucket}:${subject}`;
   const now = Date.now();
+  if (!getRuntimeEnv().DEMO_MODE) {
+    const resetsAt = new Date(now + intervalMs);
+    const [record] = await getDatabase()
+      .insert(rateLimitBuckets)
+      .values({ bucketKey: key, requestCount: 1, resetsAt })
+      .onConflictDoUpdate({
+        target: rateLimitBuckets.bucketKey,
+        set: {
+          requestCount: sql<number>`CASE
+            WHEN ${rateLimitBuckets.resetsAt} <= now() THEN 1
+            ELSE ${rateLimitBuckets.requestCount} + 1
+          END`,
+          resetsAt: sql<Date>`CASE
+            WHEN ${rateLimitBuckets.resetsAt} <= now() THEN ${resetsAt}
+            ELSE ${rateLimitBuckets.resetsAt}
+          END`,
+          updatedAt: new Date(),
+        },
+      })
+      .returning({ count: rateLimitBuckets.requestCount });
+    return record.count > limit
+      ? jsonError(
+          429,
+          "RATE_LIMITED",
+          "Too many requests. Try again later.",
+          requestId(request),
+        )
+      : null;
+  }
+
   const current = rateBuckets.get(key);
 
   if (!current || current.resetsAt <= now) {

@@ -4,6 +4,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDemoStore, type DemoUser } from "./demo-store";
 import { getRuntimeEnv } from "./env";
 import { createId } from "./ids";
+import {
+  createPersistentSession,
+  persistentUserFromToken,
+  revokePersistentSession,
+} from "./persistent-auth";
 
 export const SESSION_COOKIE = "sgw_session";
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 7;
@@ -28,6 +33,12 @@ export function createDemoSession(userId: string) {
     expiresAt: new Date(now + SESSION_TTL_MS).toISOString(),
   });
   return { token, expiresAt: new Date(now + SESSION_TTL_MS) };
+}
+
+export async function createRuntimeSession(userId: string) {
+  return getRuntimeEnv().DEMO_MODE
+    ? createDemoSession(userId)
+    : createPersistentSession(userId);
 }
 
 export function setSessionCookie(
@@ -67,6 +78,14 @@ export function revokeDemoSession(request: NextRequest) {
   }
 }
 
+export async function revokeRuntimeSession(request: NextRequest) {
+  if (getRuntimeEnv().DEMO_MODE) {
+    revokeDemoSession(request);
+    return;
+  }
+  await revokePersistentSession(request.cookies.get(SESSION_COOKIE)?.value);
+}
+
 export function currentDemoUser(request: NextRequest): DemoUser | null {
   const env = getRuntimeEnv();
   if (!env.DEMO_MODE) {
@@ -75,6 +94,21 @@ export function currentDemoUser(request: NextRequest): DemoUser | null {
 
   const token = request.cookies.get(SESSION_COOKIE)?.value;
   return demoUserFromToken(token);
+}
+
+export async function currentRuntimeUser(
+  request: NextRequest,
+): Promise<DemoUser | null> {
+  const token = request.cookies.get(SESSION_COOKIE)?.value;
+  return runtimeUserFromToken(token);
+}
+
+export async function runtimeUserFromToken(
+  token?: string,
+): Promise<DemoUser | null> {
+  return getRuntimeEnv().DEMO_MODE
+    ? demoUserFromToken(token)
+    : persistentUserFromToken(token);
 }
 
 export function demoUserFromToken(token?: string): DemoUser | null {

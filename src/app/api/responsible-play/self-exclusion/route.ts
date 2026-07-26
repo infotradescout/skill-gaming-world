@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
-import { appendDemoAuditEvent } from "@/lib/audit";
-import { currentDemoUser, publicUser } from "@/lib/auth";
+import { appendRuntimeAuditEvent } from "@/lib/audit";
+import { currentRuntimeUser, publicUser } from "@/lib/auth";
 import { getDemoStore } from "@/lib/demo-store";
+import { getRuntimeEnv } from "@/lib/env";
 import {
   enforceRateLimit,
   enforceSameOrigin,
@@ -11,6 +12,7 @@ import {
   requestId,
 } from "@/lib/http";
 import { createId } from "@/lib/ids";
+import { persistSelfExclusion } from "@/lib/persistent-auth";
 
 const exclusionSchema = z.object({
   scope: z.enum(["ALL_PRODUCTS", "SKILL_GAMING_WORLD", "CASINO"]),
@@ -29,9 +31,9 @@ export async function POST(request: NextRequest) {
   const id = requestId(request);
   const originError = enforceSameOrigin(request);
   if (originError) return originError;
-  const rateError = enforceRateLimit(request, "self-exclusion", 4, 60_000);
+  const rateError = await enforceRateLimit(request, "self-exclusion", 4, 60_000);
   if (rateError) return rateError;
-  const user = currentDemoUser(request);
+  const user = await currentRuntimeUser(request);
   if (!user) {
     return jsonError(401, "AUTH_REQUIRED", "Sign in to continue.", id);
   }
@@ -43,8 +45,7 @@ export async function POST(request: NextRequest) {
 
   const days = durationDays[parsed.data.duration];
   const startsAt = new Date();
-  const record = {
-    id: createId("exclude"),
+  const draftRecord = {
     userId: user.id,
     scope: parsed.data.scope,
     startsAt: startsAt.toISOString(),
@@ -55,11 +56,25 @@ export async function POST(request: NextRequest) {
     permanent: days === null,
     removalPolicy: "COMPLIANCE_REVIEW_ONLY" as const,
   };
-  const store = getDemoStore();
-  store.selfExclusions = Object.freeze([
-    ...store.selfExclusions,
-    Object.freeze(record),
-  ]);
+  const record = getRuntimeEnv().DEMO_MODE
+    ? { id: createId("exclude"), ...draftRecord }
+    : await persistSelfExclusion({
+        user,
+        scope: parsed.data.scope,
+        startsAt,
+        endsAt: draftRecord.endsAt ? new Date(draftRecord.endsAt) : undefined,
+        permanent: draftRecord.permanent,
+      }).then((created) => ({
+        id: created.id,
+        ...draftRecord,
+      }));
+  if (getRuntimeEnv().DEMO_MODE) {
+    const store = getDemoStore();
+    store.selfExclusions = Object.freeze([
+      ...store.selfExclusions,
+      Object.freeze(record),
+    ]);
+  }
   const before = { status: user.status };
   if (
     parsed.data.scope === "ALL_PRODUCTS" ||
@@ -72,7 +87,7 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  appendDemoAuditEvent({
+  await appendRuntimeAuditEvent({
     eventType: "SELF_EXCLUSION_ACTIVATED",
     actorId: user.id,
     subjectType: "SELF_EXCLUSION",

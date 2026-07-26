@@ -36,6 +36,20 @@
       "when": 1785075587710,
       "tag": "0004_lowly_nightcrawler",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1785081675413,
+      "tag": "0005_strange_night_thrasher",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1785081708178,
+      "tag": "0006_dusty_charles_xavier",
+      "breakpoints": true
     }
   ]
 }

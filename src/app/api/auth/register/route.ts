@@ -2,12 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
 import {
-  createDemoSession,
+  createRuntimeSession,
   createDemoUserId,
   publicUser,
   setSessionCookie,
 } from "@/lib/auth";
-import { appendDemoAuditEvent } from "@/lib/audit";
+import { appendRuntimeAuditEvent } from "@/lib/audit";
 import { getDemoStore } from "@/lib/demo-store";
 import { getRuntimeEnv } from "@/lib/env";
 import {
@@ -17,6 +17,10 @@ import {
   requestId,
 } from "@/lib/http";
 import { hashPassword } from "@/lib/password";
+import {
+  createPersistentUser,
+  persistentUserByEmail,
+} from "@/lib/persistent-auth";
 
 const registrationSchema = z.object({
   displayName: z.string().trim().min(2).max(80),
@@ -30,18 +34,10 @@ export async function POST(request: NextRequest) {
   const id = requestId(request);
   const originError = enforceSameOrigin(request);
   if (originError) return originError;
-  const rateError = enforceRateLimit(request, "register", 8, 60_000);
+  const rateError = await enforceRateLimit(request, "register", 8, 60_000);
   if (rateError) return rateError;
 
   const env = getRuntimeEnv();
-  if (!env.DEMO_MODE) {
-    return jsonError(
-      503,
-      "REGISTRATION_ADAPTER_NOT_CONFIGURED",
-      "Registration is unavailable until the production identity adapter is configured.",
-      id,
-    );
-  }
 
   const parsed = registrationSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
@@ -51,32 +47,60 @@ export async function POST(request: NextRequest) {
   // Hash before the final uniqueness check so two concurrent registrations
   // cannot both pass the check while yielding to the password worker.
   const passwordHash = await hashPassword(parsed.data.password);
-  const store = getDemoStore();
-  if (store.userIdsByEmail.has(parsed.data.email)) {
+  const store = env.DEMO_MODE ? getDemoStore() : null;
+  const existing = env.DEMO_MODE
+    ? store?.userIdsByEmail.has(parsed.data.email)
+    : Boolean(await persistentUserByEmail(parsed.data.email));
+  if (existing) {
     return jsonError(409, "ACCOUNT_EXISTS", "An account already exists for this email.", id);
   }
 
-  const userId = createDemoUserId();
   const acceptedAt = new Date().toISOString();
-  const user = {
-    id: userId,
-    email: parsed.data.email,
-    displayName: parsed.data.displayName,
-    passwordHash,
-    status: "ACTIVE" as const,
-    createdAt: acceptedAt,
-    acceptedPlayCoinTermsVersion: PLAY_COIN_TERMS_VERSION,
-    acceptedPlayCoinTermsAt: acceptedAt,
-    adminRoles: [],
-  };
-  store.usersById.set(userId, user);
-  store.userIdsByEmail.set(user.email, userId);
+  let user;
+  try {
+    user = env.DEMO_MODE
+      ? {
+        id: createDemoUserId(),
+        email: parsed.data.email,
+        displayName: parsed.data.displayName,
+        passwordHash,
+        status: "ACTIVE" as const,
+        createdAt: acceptedAt,
+        acceptedPlayCoinTermsVersion: PLAY_COIN_TERMS_VERSION,
+        acceptedPlayCoinTermsAt: acceptedAt,
+        adminRoles: [],
+        }
+      : await createPersistentUser({
+          email: parsed.data.email,
+          displayName: parsed.data.displayName,
+          passwordHash,
+        });
+  } catch (error) {
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      error.code === "23505"
+    ) {
+      return jsonError(
+        409,
+        "ACCOUNT_EXISTS",
+        "An account already exists for this email.",
+        id,
+      );
+    }
+    throw error;
+  }
+  if (store) {
+    store.usersById.set(user.id, user);
+    store.userIdsByEmail.set(user.email, user.id);
+  }
 
-  appendDemoAuditEvent({
+  await appendRuntimeAuditEvent({
     eventType: "ACCOUNT_REGISTERED",
-    actorId: userId,
+    actorId: user.id,
     subjectType: "USER",
-    subjectId: userId,
+    subjectId: user.id,
     reason: "Player registered in safe demo mode and accepted Play Coin terms.",
     afterState: {
       status: user.status,
@@ -85,11 +109,11 @@ export async function POST(request: NextRequest) {
     },
   });
 
-  const session = createDemoSession(userId);
+  const session = await createRuntimeSession(user.id);
   const response = NextResponse.json(
     {
       user: publicUser(user),
-      environment: "safe-demo",
+      environment: env.DEMO_MODE ? "safe-demo" : "configured",
     },
     { status: 201 },
   );

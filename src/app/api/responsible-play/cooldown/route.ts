@@ -1,14 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
-import { appendDemoAuditEvent } from "@/lib/audit";
-import { currentDemoUser, publicUser } from "@/lib/auth";
+import { appendRuntimeAuditEvent } from "@/lib/audit";
+import { currentRuntimeUser, publicUser } from "@/lib/auth";
+import { getRuntimeEnv } from "@/lib/env";
 import {
   enforceRateLimit,
   enforceSameOrigin,
   jsonError,
   requestId,
 } from "@/lib/http";
+import { persistCooldown } from "@/lib/persistent-auth";
 
 const cooldownSchema = z.object({
   hours: z.union([z.literal(24), z.literal(72), z.literal(168)]),
@@ -19,9 +21,9 @@ export async function POST(request: NextRequest) {
   const id = requestId(request);
   const originError = enforceSameOrigin(request);
   if (originError) return originError;
-  const rateError = enforceRateLimit(request, "cooldown", 4, 60_000);
+  const rateError = await enforceRateLimit(request, "cooldown", 4, 60_000);
   if (rateError) return rateError;
-  const user = currentDemoUser(request);
+  const user = await currentRuntimeUser(request);
   if (!user) {
     return jsonError(401, "AUTH_REQUIRED", "Sign in to continue.", id);
   }
@@ -57,9 +59,14 @@ export async function POST(request: NextRequest) {
   if (user.status !== "SELF_EXCLUDED") {
     user.status = "COOLDOWN";
   }
-  user.cooldownUntil = new Date(Math.max(requestedEnd, existingEnd)).toISOString();
+  const cooldownEnd = new Date(Math.max(requestedEnd, existingEnd));
+  if (getRuntimeEnv().DEMO_MODE) {
+    user.cooldownUntil = cooldownEnd.toISOString();
+  } else {
+    await persistCooldown(user, cooldownEnd);
+  }
 
-  appendDemoAuditEvent({
+  await appendRuntimeAuditEvent({
     eventType: "ACCOUNT_COOLDOWN_ACTIVATED",
     actorId: user.id,
     subjectType: "USER",

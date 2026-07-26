@@ -2,12 +2,13 @@ import { NextRequest } from "next/server";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { getRuntimeEnv } from "./env";
-import { enforceRateLimit, enforceSameOrigin } from "./http";
+import { enforceSameOrigin } from "./http";
 
 const originalNodeEnv = process.env.NODE_ENV;
 const originalDemoMode = process.env.DEMO_MODE;
 const originalDatabaseUrl = process.env.DATABASE_URL;
 const originalSessionSecret = process.env.SESSION_SECRET;
+const originalCompetitionKey = process.env.COMPETITION_SEED_ENCRYPTION_KEY;
 const mutableEnv = process.env as Record<string, string | undefined>;
 
 afterEach(() => {
@@ -19,6 +20,11 @@ afterEach(() => {
   else process.env.DATABASE_URL = originalDatabaseUrl;
   if (originalSessionSecret === undefined) delete process.env.SESSION_SECRET;
   else process.env.SESSION_SECRET = originalSessionSecret;
+  if (originalCompetitionKey === undefined) {
+    delete process.env.COMPETITION_SEED_ENCRYPTION_KEY;
+  } else {
+    process.env.COMPETITION_SEED_ENCRYPTION_KEY = originalCompetitionKey;
+  }
 });
 
 describe("mutation request boundaries", () => {
@@ -60,28 +66,26 @@ describe("mutation request boundaries", () => {
     expect(fetchMetadata).toBeNull();
   });
 
-  it("fails closed when a configured runtime lacks a shared limiter", async () => {
-    mutableEnv.NODE_ENV = "production";
-    process.env.DEMO_MODE = "false";
-    process.env.DATABASE_URL =
-      "postgresql://configured:configured@127.0.0.1:5432/configured";
-    process.env.SESSION_SECRET =
-      "configured-session-secret-at-least-32-characters";
-    const response = enforceRateLimit(
-      new NextRequest("https://product.example/api/example", {
-        method: "POST",
-        headers: { origin: "https://product.example" },
-      }),
-      "example",
-      1,
-      60_000,
-    );
+  it("accepts equivalent loopback hosts outside production only", () => {
+    expect(
+      enforceSameOrigin(
+        new NextRequest("http://localhost:3000/api/example", {
+          method: "POST",
+          headers: { origin: "http://127.0.0.1:3000" },
+        }),
+      ),
+    ).toBeNull();
 
-    expect(response?.status).toBe(503);
-    await expect(response?.json()).resolves.toMatchObject({
-      error: { code: "RATE_LIMIT_ADAPTER_REQUIRED" },
-    });
+    expect(
+      enforceSameOrigin(
+        new NextRequest("http://localhost:3000/api/example", {
+          method: "POST",
+          headers: { origin: "http://127.0.0.1:3001" },
+        }),
+      )?.status,
+    ).toBe(403);
   });
+
 });
 
 describe("runtime configuration", () => {
@@ -92,6 +96,8 @@ describe("runtime configuration", () => {
       "postgresql://configured:configured@127.0.0.1:5432/configured";
     process.env.SESSION_SECRET =
       "configured-session-secret-at-least-32-characters";
+    process.env.COMPETITION_SEED_ENCRYPTION_KEY =
+      "configured-ranked-seed-key-at-least-32-characters";
 
     expect(() => getRuntimeEnv()).toThrow(
       "DEMO_MODE cannot be enabled in a production runtime",

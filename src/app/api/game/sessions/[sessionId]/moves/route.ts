@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
-import { appendDemoAuditEvent } from "@/lib/audit";
-import { currentDemoUser } from "@/lib/auth";
+import { appendRuntimeAuditEvent } from "@/lib/audit";
+import { currentRuntimeUser } from "@/lib/auth";
 import {
   GameServiceError,
   publicGameSession,
@@ -14,6 +14,8 @@ import {
   jsonError,
   requestId,
 } from "@/lib/http";
+import { getRuntimeEnv } from "@/lib/env";
+import { submitPersistentMove } from "@/lib/persistent-game";
 
 const moveIntentSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("DRAW_STOCK") }),
@@ -59,9 +61,9 @@ export async function POST(
   const id = requestId(request);
   const originError = enforceSameOrigin(request);
   if (originError) return originError;
-  const rateError = enforceRateLimit(request, "game-move", 240, 60_000);
+  const rateError = await enforceRateLimit(request, "game-move", 240, 60_000);
   if (rateError) return rateError;
-  const user = currentDemoUser(request);
+  const user = await currentRuntimeUser(request);
   if (!user) {
     return jsonError(401, "AUTH_REQUIRED", "Sign in to continue.", id);
   }
@@ -72,11 +74,17 @@ export async function POST(
   const { sessionId } = await context.params;
 
   try {
-    const { session, result } = submitGameMove({
-      user,
-      sessionId,
-      ...parsed.data,
-    });
+    const { session, result } = getRuntimeEnv().DEMO_MODE
+      ? submitGameMove({
+          user,
+          sessionId,
+          ...parsed.data,
+        })
+      : await submitPersistentMove({
+          user,
+          sessionId,
+          ...parsed.data,
+        });
     if (!result.accepted) {
       return NextResponse.json(
         {
@@ -95,7 +103,7 @@ export async function POST(
       !result.idempotentReplay &&
       session.state.status !== "ACTIVE"
     ) {
-      appendDemoAuditEvent({
+      await appendRuntimeAuditEvent({
         eventType:
           session.state.status === "WON"
             ? "GAME_SESSION_COMPLETED"
