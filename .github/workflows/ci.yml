@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      DEMO_MODE: "true"
+      SESSION_SECRET: ci-only-session-secret-at-least-32-characters
+      COMPETITION_SEED_ENCRYPTION_KEY: ci-only-ranked-seed-key-at-least-32-characters
+      FEATURE_MONETAIRE_PRIZE: "false"
+      FEATURE_SOCIAL_CASINO: "false"
+      FEATURE_REAL_MONEY_CASINO: "false"
+      FEATURE_PRODUCTION_PAYMENTS: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm audit --audit-level=high
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+        env:
+          DEMO_MODE: "false"
+          DATABASE_URL: postgresql://build:build@127.0.0.1:5432/build
+
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      DEMO_MODE: "true"
+      SESSION_SECRET: ci-only-session-secret-at-least-32-characters
+      COMPETITION_SEED_ENCRYPTION_KEY: ci-only-ranked-seed-key-at-least-32-characters
+      FEATURE_MONETAIRE_PRIZE: "false"
+      FEATURE_SOCIAL_CASINO: "false"
+      FEATURE_REAL_MONEY_CASINO: "false"
+      FEATURE_PRODUCTION_PAYMENTS: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e

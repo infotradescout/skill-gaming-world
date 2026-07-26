@@ -1,0 +1,996 @@
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(280px, 0.55fr);
+  gap: 1rem;
+}
+
+.dashboard-primary {
+  display: flex;
+  gap: 2rem;
+  align-items: flex-end;
+  justify-content: space-between;
+  min-height: 250px;
+  overflow: hidden;
+  padding: clamp(1.2rem, 4vw, 2rem);
+  background:
+    radial-gradient(circle at 85% 20%, rgba(94, 194, 149, 0.17), transparent 17rem),
+    linear-gradient(135deg, rgba(21, 41, 35, 0.95), rgba(7, 17, 15, 0.9));
+}
+
+.dashboard-primary h2 {
+  margin: 1rem 0 0.55rem;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 500;
+  letter-spacing: -0.04em;
+}
+
+.dashboard-primary p {
+  max-width: 570px;
+  color: var(--muted);
+  font-size: 0.85rem;
+  line-height: 1.55;
+}
+
+.dashboard-primary .button {
+  flex: 0 0 auto;
+}
+
+.app-stat-grid {
+  margin-top: 1rem;
+}
+
+.app-section {
+  margin-top: 2.5rem;
+}
+
+.app-section-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 0.85rem;
+}
+
+.app-section-header h2 {
+  margin-top: 0.35rem;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.5rem;
+  font-weight: 500;
+}
+
+.lobby-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.6fr);
+  gap: 1rem;
+}
+
+.lobby-feature {
+  display: grid;
+  grid-template-columns: 0.72fr 1fr;
+  gap: clamp(1rem, 4vw, 3rem);
+  align-items: center;
+  min-height: 470px;
+  overflow: hidden;
+  padding: clamp(1.2rem, 4vw, 2.2rem);
+}
+
+.lobby-feature h2 {
+  margin: 1rem 0 0.6rem;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(2rem, 4vw, 3.2rem);
+  font-weight: 500;
+  letter-spacing: -0.045em;
+}
+
+.lobby-feature p {
+  margin-bottom: 1.2rem;
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.6;
+}
+
+.lobby-card-stack {
+  position: relative;
+  min-height: 300px;
+}
+
+.lobby-card-stack span {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 135px;
+  height: 194px;
+  border: 1px solid rgba(227, 201, 138, 0.35);
+  border-radius: 1rem;
+  background:
+    repeating-linear-gradient(45deg, rgba(227, 201, 138, 0.06) 0 7px, transparent 7px 14px),
+    var(--ink-800);
+  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.25);
+}
+
+.lobby-card-stack span:nth-child(1) { transform: translate(-75%, -55%) rotate(-12deg); }
+.lobby-card-stack span:nth-child(2) { transform: translate(-50%, -50%) rotate(0deg); }
+.lobby-card-stack span:nth-child(3) { transform: translate(-25%, -43%) rotate(12deg); }
+
+.lobby-side {
+  display: grid;
+  gap: 1rem;
+  align-content: start;
+}
+
+.lobby-competition {
+  display: grid;
+  gap: 0.8rem;
+  min-height: 240px;
+  align-content: center;
+  padding: 1.2rem;
+}
+
+.lobby-competition h2 {
+  margin-top: 0.25rem;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.55rem;
+  font-weight: 500;
+}
+
+.lobby-competition p {
+  color: var(--muted);
+  font-size: 0.75rem;
+  line-height: 1.55;
+}
+
+.game-start {
+  display: grid;
+  min-height: 480px;
+  place-items: center;
+  align-content: center;
+  gap: 1rem;
+  padding: 2rem;
+  text-align: center;
+}
+
+.game-start h2 {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  font-weight: 500;
+  letter-spacing: -0.045em;
+}
+
+.game-start p {
+  max-width: 620px;
+  color: var(--muted);
+  font-size: 0.88rem;
+  line-height: 1.65;
+}
+
+.game-start small {
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+
+.solitaire {
+  position: relative;
+  overflow: hidden;
+}
+
+.solitaire-toolbar {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 1rem;
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+  padding: 0.85rem 1rem;
+}
+
+.solitaire-toolbar > div:first-child {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.solitaire-toolbar > div:first-child strong {
+  margin-top: 0.3rem;
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 500;
+}
+
+.solitaire-toolbar > div:first-child small {
+  color: var(--muted);
+  font-size: 0.61rem;
+}
+
+.game-metrics {
+  display: flex;
+  gap: 1.4rem;
+}
+
+.game-metrics > span {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.game-metrics small {
+  color: var(--muted);
+  font-size: 0.58rem;
+  text-transform: uppercase;
+}
+
+.game-metrics strong {
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 0.86rem;
+}
+
+.solitaire-actions {
+  display: flex;
+  gap: 0.45rem;
+}
+
+.solitaire-notice {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+  border-bottom: 1px solid var(--line);
+  background: rgba(227, 201, 138, 0.045);
+  color: #aebcb5;
+  padding: 0.65rem 1rem;
+  font-size: 0.67rem;
+  line-height: 1.5;
+}
+
+.solitaire-notice span {
+  display: grid;
+  width: 1rem;
+  height: 1rem;
+  place-items: center;
+  flex: 0 0 auto;
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+  color: var(--brass-300);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 0.62rem;
+}
+
+.solitaire-table {
+  min-height: 610px;
+  background:
+    linear-gradient(rgba(227, 201, 138, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(227, 201, 138, 0.025) 1px, transparent 1px),
+    radial-gradient(circle at 50% 30%, rgba(47, 156, 114, 0.13), transparent 32rem),
+    #0b211a;
+  background-size: 38px 38px, 38px 38px, auto, auto;
+  padding: 1.25rem;
+}
+
+.solitaire-top-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 2rem;
+}
+
+.stock-area,
+.foundation-area {
+  display: flex;
+  gap: 0.55rem;
+}
+
+.playing-card {
+  position: relative;
+  display: block;
+  width: 78px;
+  height: 110px;
+  flex: 0 0 auto;
+  overflow: hidden;
+  border: 1px solid rgba(7, 17, 15, 0.3);
+  border-radius: 0.6rem;
+  padding: 0;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+  cursor: pointer;
+  transition:
+    transform 120ms ease,
+    box-shadow 120ms ease,
+    border-color 120ms ease;
+}
+
+.playing-card:hover {
+  transform: translateY(-2px);
+}
+
+.card-face {
+  background: #f3efe5;
+  color: #16221e;
+}
+
+.card-back {
+  border-color: rgba(227, 201, 138, 0.36);
+  background:
+    linear-gradient(45deg, transparent 45%, rgba(227, 201, 138, 0.09) 45% 55%, transparent 55%),
+    linear-gradient(-45deg, transparent 45%, rgba(227, 201, 138, 0.09) 45% 55%, transparent 55%),
+    #14372c;
+  background-size: 16px 16px;
+}
+
+.card-back::after {
+  position: absolute;
+  inset: 5px;
+  border: 1px solid rgba(227, 201, 138, 0.28);
+  border-radius: 0.38rem;
+  content: "";
+}
+
+.card-back-mark {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  left: 50%;
+  display: grid;
+  width: 1.8rem;
+  height: 1.8rem;
+  place-items: center;
+  border: 1px solid rgba(227, 201, 138, 0.38);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--brass-300);
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+.card-slot {
+  display: grid;
+  place-items: center;
+  border: 1px dashed rgba(227, 201, 138, 0.2);
+  background: rgba(3, 12, 9, 0.17);
+  box-shadow: none;
+  color: rgba(227, 201, 138, 0.27);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.5rem;
+}
+
+.card-selected {
+  border-color: var(--brass-300);
+  box-shadow: 0 0 0 3px rgba(227, 201, 138, 0.22), 0 12px 25px rgba(0, 0, 0, 0.25);
+  transform: translateY(-5px);
+}
+
+.card-content {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  padding: 0.48rem;
+}
+
+.card-content > span {
+  display: grid;
+  justify-items: start;
+  line-height: 0.82;
+}
+
+.card-content b {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 0.95rem;
+}
+
+.card-content i {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 0.72rem;
+  font-style: normal;
+}
+
+.card-content > em {
+  display: grid;
+  place-items: center;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 2.1rem;
+  font-style: normal;
+}
+
+.card-red {
+  color: #a53f3c;
+}
+
+.tableau {
+  display: grid;
+  grid-template-columns: repeat(7, 78px);
+  gap: clamp(0.4rem, 2vw, 1.4rem);
+  justify-content: space-between;
+  margin-top: 1.5rem;
+}
+
+.tableau-pile {
+  position: relative;
+  min-width: 0;
+  min-height: 390px;
+}
+
+.tableau-card {
+  position: absolute;
+  left: 0;
+}
+
+.solitaire-footer {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid var(--line);
+  padding: 0.85rem 1rem;
+}
+
+.game-feedback {
+  color: #c9d2cd;
+  font-size: 0.75rem;
+}
+
+.game-shortcuts {
+  color: var(--muted);
+  font-size: 0.62rem;
+}
+
+kbd {
+  border: 1px solid var(--line);
+  border-bottom-width: 2px;
+  border-radius: 0.3rem;
+  background: var(--ink-850);
+  padding: 0.12rem 0.3rem;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 0.6rem;
+}
+
+.game-complete {
+  position: absolute;
+  z-index: 10;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(4, 13, 10, 0.88);
+  padding: 1rem;
+  backdrop-filter: blur(10px);
+}
+
+.game-complete > div {
+  max-width: 480px;
+  text-align: center;
+}
+
+.game-complete h2 {
+  margin: 0.75rem 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 2.5rem;
+  font-weight: 500;
+}
+
+.game-complete p {
+  margin-bottom: 1.2rem;
+  color: var(--muted);
+}
+
+.wallet-balance {
+  display: flex;
+  gap: 2rem;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  padding: 1.3rem;
+}
+
+.wallet-balance > div {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.wallet-balance span,
+.wallet-balance p {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.wallet-balance strong {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 2.6rem;
+  font-weight: 500;
+}
+
+.wallet-sandbox {
+  padding: 1.25rem;
+}
+
+.wallet-sandbox-header {
+  display: flex;
+  gap: 2rem;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.wallet-sandbox-header h2 {
+  margin: 0.7rem 0 0.35rem;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.7rem;
+  font-weight: 500;
+}
+
+.wallet-sandbox-header p {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.sandbox-stamp {
+  transform: rotate(3deg);
+  border: 2px solid rgba(227, 201, 138, 0.32);
+  color: rgba(227, 201, 138, 0.65);
+  padding: 0.45rem;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 0.63rem;
+  letter-spacing: 0.09em;
+}
+
+.package-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.7rem;
+  margin: 1.2rem 0;
+}
+
+.package-card {
+  display: grid;
+  gap: 0.4rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.025);
+  cursor: pointer;
+  padding: 1rem;
+  text-align: left;
+}
+
+.package-card:hover {
+  border-color: var(--line-strong);
+  background: rgba(227, 201, 138, 0.045);
+}
+
+.package-card span,
+.package-card small {
+  color: var(--muted);
+  font-size: 0.65rem;
+}
+
+.package-card strong {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.25rem;
+  font-weight: 500;
+}
+
+.sandbox-message,
+.control-message {
+  margin-bottom: 1rem;
+  border: 1px solid rgba(94, 194, 149, 0.28);
+  border-radius: 0.6rem;
+  background: rgba(94, 194, 149, 0.06);
+  color: var(--jade-300);
+  padding: 0.7rem 0.8rem;
+  font-size: 0.72rem;
+  line-height: 1.5;
+}
+
+.wallet-entry > div:first-child {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.wallet-entry small {
+  color: var(--muted);
+  font-size: 0.65rem;
+}
+
+.achievement-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+.achievement-card {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.7rem 1rem;
+  align-items: start;
+  min-height: 210px;
+  padding: 1.2rem;
+}
+
+.achievement-seal {
+  display: grid;
+  width: 4rem;
+  height: 4rem;
+  grid-row: span 3;
+  place-items: center;
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+  color: var(--brass-300);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.25rem;
+}
+
+.achievement-card h2 {
+  margin-top: auto;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.35rem;
+  font-weight: 500;
+}
+
+.achievement-card p {
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.55;
+}
+
+.eligibility-list {
+  overflow: hidden;
+}
+
+.eligibility-row {
+  display: flex;
+  gap: 2rem;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--line);
+  padding: 1.2rem;
+}
+
+.eligibility-row:last-child {
+  border-bottom: 0;
+}
+
+.eligibility-row h2 {
+  margin-bottom: 0.3rem;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.3rem;
+  font-weight: 500;
+}
+
+.eligibility-row p {
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.55;
+}
+
+.responsible-controls {
+  display: grid;
+  gap: 1rem;
+}
+
+.control-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(190px, 0.35fr);
+  gap: 2rem;
+  align-items: center;
+  padding: 1.2rem;
+}
+
+.control-card > div:first-child {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.2rem 1rem;
+  align-items: start;
+}
+
+.control-card .icon-box {
+  grid-row: span 2;
+}
+
+.control-card h2 {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.3rem;
+  font-weight: 500;
+}
+
+.control-card p {
+  color: var(--muted);
+  font-size: 0.75rem;
+  line-height: 1.55;
+}
+
+.control-card-danger {
+  border-color: rgba(219, 141, 134, 0.25);
+}
+
+.control-action-stack {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.confirmation-backdrop {
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(3, 9, 7, 0.82);
+  padding: 1rem;
+  backdrop-filter: blur(8px);
+}
+
+.confirmation-dialog {
+  display: grid;
+  gap: 1rem;
+  width: min(100%, 520px);
+  padding: 1.4rem;
+}
+
+.confirmation-dialog h2 {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.7rem;
+  font-weight: 500;
+}
+
+.confirmation-dialog p {
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.6;
+}
+
+.competition-panel {
+  overflow: hidden;
+}
+
+.competition-panel > header {
+  display: flex;
+  gap: 2rem;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding: clamp(1.2rem, 4vw, 2rem);
+}
+
+.competition-panel h2 {
+  margin: 0.8rem 0 0.4rem;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.8rem, 4vw, 2.8rem);
+  font-weight: 500;
+  letter-spacing: -0.04em;
+}
+
+.competition-panel header p {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.competition-facts {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.competition-facts > div {
+  display: grid;
+  gap: 0.45rem;
+  border-right: 1px solid var(--line);
+  padding: 1rem;
+}
+
+.competition-facts > div:last-child {
+  border-right: 0;
+}
+
+.competition-facts span {
+  color: var(--muted);
+  font-size: 0.62rem;
+  text-transform: uppercase;
+}
+
+.competition-facts strong {
+  font-size: 0.82rem;
+}
+
+.competition-proof {
+  border-bottom: 1px solid var(--line);
+  padding: 0.9rem 1.2rem;
+}
+
+.competition-proof summary {
+  cursor: pointer;
+  color: var(--brass-300);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.competition-proof dl {
+  display: grid;
+  gap: 0.65rem;
+  margin-top: 1rem;
+}
+
+.competition-proof dl > div {
+  display: grid;
+  grid-template-columns: 130px minmax(0, 1fr);
+  gap: 1rem;
+}
+
+.competition-proof dt {
+  color: var(--muted);
+  font-size: 0.65rem;
+}
+
+.competition-proof dd {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 0.72rem;
+}
+
+.competition-message {
+  margin: 1rem 1.2rem 0;
+  border: 1px solid rgba(94, 194, 149, 0.28);
+  border-radius: 0.6rem;
+  background: rgba(94, 194, 149, 0.06);
+  color: var(--jade-300);
+  padding: 0.7rem 0.8rem;
+  font-size: 0.72rem;
+  line-height: 1.5;
+}
+
+.competition-standings {
+  padding: 1.2rem;
+}
+
+.competition-standings h3 {
+  margin-top: 0.35rem;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.4rem;
+  font-weight: 500;
+}
+
+@media (max-width: 1040px) {
+  .solitaire-toolbar {
+    grid-template-columns: 1fr auto;
+  }
+
+  .solitaire-actions {
+    display: none;
+  }
+
+  .playing-card,
+  .tableau {
+    --card-width: 66px;
+  }
+
+  .playing-card {
+    width: var(--card-width);
+    height: 94px;
+  }
+
+  .tableau {
+    grid-template-columns: repeat(7, var(--card-width));
+  }
+}
+
+@media (max-width: 900px) {
+  .dashboard-grid,
+  .lobby-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 680px) {
+  .dashboard-primary {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .lobby-feature {
+    grid-template-columns: 1fr;
+  }
+
+  .lobby-card-stack {
+    min-height: 240px;
+  }
+
+  .solitaire-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .game-metrics {
+    order: 2;
+  }
+
+  .solitaire-table {
+    min-height: 500px;
+    padding: 0.65rem;
+  }
+
+  .solitaire-top-row {
+    gap: 0.45rem;
+  }
+
+  .stock-area,
+  .foundation-area {
+    gap: 0.25rem;
+  }
+
+  .playing-card,
+  .tableau {
+    --card-width: clamp(40px, 11.5vw, 54px);
+  }
+
+  .playing-card {
+    width: var(--card-width);
+    height: calc(var(--card-width) * 1.4);
+    border-radius: 0.38rem;
+  }
+
+  .tableau {
+    grid-template-columns: repeat(7, var(--card-width));
+    gap: 0.2rem;
+    margin-top: 1rem;
+  }
+
+  .tableau-pile {
+    min-height: 320px;
+  }
+
+  .tableau-card {
+    top: calc(var(--card-index, 0) * 18px);
+  }
+
+  .card-content {
+    padding: 0.28rem;
+  }
+
+  .card-content b {
+    font-size: 0.73rem;
+  }
+
+  .card-content i {
+    font-size: 0.55rem;
+  }
+
+  .card-content > em {
+    font-size: 1.4rem;
+  }
+
+  .solitaire-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .game-shortcuts {
+    display: none;
+  }
+
+  .package-grid,
+  .achievement-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .wallet-sandbox-header,
+  .wallet-balance,
+  .eligibility-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .control-card {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .competition-panel > header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .competition-facts {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .competition-facts > div:nth-child(2) {
+    border-right: 0;
+  }
+
+  .competition-facts > div:nth-child(-n + 2) {
+    border-bottom: 1px solid var(--line);
+  }
+
+  .competition-proof dl > div {
+    grid-template-columns: 1fr;
+    gap: 0.2rem;
+  }
+
+  .control-card > .button {
+    width: 100%;
+  }
+}
