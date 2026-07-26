@@ -14,6 +14,8 @@ function environment(
     DEMO_MODE: true,
     DATABASE_URL: undefined,
     SESSION_SECRET: "test-session-secret-at-least-32-characters",
+    COMPETITION_SEED_ENCRYPTION_KEY: undefined,
+    PREVIEW_OWNER_EMAIL: undefined,
     FEATURE_MONETAIRE_PRIZE: false,
     FEATURE_SOCIAL_CASINO: false,
     FEATURE_REAL_MONEY_CASINO: false,
