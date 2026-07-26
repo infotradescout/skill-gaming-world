@@ -18,17 +18,27 @@ export async function GET() {
     }
   }
   const ready = database !== "unavailable";
+  const configuredJurisdiction =
+    env.MONETAIRE_PLAY_DEPLOYMENT_JURISDICTION;
+  const jurisdictionReady =
+    env.DEMO_MODE ||
+    (Boolean(configuredJurisdiction) &&
+      env.MONETAIRE_PLAY_JURISDICTIONS.includes(configuredJurisdiction));
+  const monetairePlayReady = ready && jurisdictionReady;
   return NextResponse.json({
-    status: ready ? "ok" : "not-ready",
+    status: ready && jurisdictionReady ? "ok" : "not-ready",
     service: "skill-gaming-world",
     mode: env.DEMO_MODE ? "safe-demo" : "configured",
-    dependencies: { database },
+    dependencies: {
+      database,
+      jurisdiction: jurisdictionReady ? "ready" : "unavailable",
+    },
     operations: {
-      monetairePlay: env.DEMO_MODE,
+      monetairePlay: monetairePlayReady,
       monetairePrize: false,
       socialCasino: false,
       realMoneyCasino: false,
       productionPayments: false,
     },
-  }, { status: ready ? 200 : 503 });
+  }, { status: ready && jurisdictionReady ? 200 : 503 });
 }

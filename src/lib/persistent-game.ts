@@ -14,6 +14,7 @@ import {
   gameSessions,
   moveEvents,
   rulesetVersions,
+  scores,
   selfExclusions,
 } from "@/db/schema";
 import {
@@ -74,7 +75,7 @@ function decryptSeed(value: string): string {
   ]).toString("utf8");
 }
 
-async function assertPersistentAccess(user: DemoUser): Promise<void> {
+export async function assertPersistentAccess(user: DemoUser): Promise<void> {
   const exclusions = await getDatabase()
     .select()
     .from(selfExclusions)
@@ -357,6 +358,23 @@ export async function submitPersistentMove(input: {
         )
         .returning({ id: gameSessions.id });
       if (!updated[0]) throw new Error("CONCURRENT_GAME_COMMAND");
+      if (
+        nextState.status === "WON" &&
+        activityClock.status === "FINALIZED"
+      ) {
+        await transaction
+          .insert(scores)
+          .values({
+            gameSessionId: record.id,
+            completed: true,
+            validMoveCount: nextState.validMoveCount,
+            verifiedActiveDurationMs: BigInt(
+              activityClock.accumulatedActiveMs,
+            ),
+            scoringVersion: "MONETAIRE_SCORE_V1",
+          })
+          .onConflictDoNothing();
+      }
     }
     return {
       session: { ...fromRecord(record), state: nextState, activityClock },

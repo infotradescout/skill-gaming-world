@@ -19,6 +19,10 @@ import {
 import { evaluateInitialOperationGate } from "@/lib/operation-gates";
 import { authorizeConfiguredMonetairePlay } from "@/lib/configured-jurisdiction";
 import { createPersistentPracticeSession } from "@/lib/persistent-game";
+import {
+  enterPersistentCompetition,
+  persistentCompetitionSnapshot,
+} from "@/lib/persistent-competition";
 
 const startSchema = z.object({
   mode: z.enum(["PRACTICE", "NONCASH_COMPETITION"]),
@@ -55,19 +59,15 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    if (!env.DEMO_MODE && parsed.data.mode === "NONCASH_COMPETITION") {
-      return jsonError(
-        503,
-        "CONFIGURED_COMPETITION_ADAPTER_REQUIRED",
-        "Configured ranked play remains held until immutable competition publication is persisted.",
-        id,
-      );
-    }
     const session = env.DEMO_MODE
       ? parsed.data.mode === "PRACTICE"
         ? createPracticeSession(user)
         : createCompetitionSession(user)
-      : await createPersistentPracticeSession(user);
+      : parsed.data.mode === "PRACTICE"
+        ? await createPersistentPracticeSession(user)
+        : await persistentCompetitionSnapshot().then((competition) =>
+            enterPersistentCompetition(user, competition.competitionId),
+          );
     await appendRuntimeAuditEvent({
       eventType: "GAME_SESSION_CREATED",
       actorId: user.id,

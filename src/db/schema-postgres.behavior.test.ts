@@ -9,6 +9,8 @@ const migrationFiles = [
   "0002_volatile_hammerhead.sql",
   "0003_wealthy_speed.sql",
   "0004_lowly_nightcrawler.sql",
+  "0005_strange_night_thrasher.sql",
+  "0006_dusty_charles_xavier.sql",
 ] as const;
 
 const playLedger = "00000000-0000-0000-0000-000000000001";
@@ -252,8 +254,8 @@ describe("PostgreSQL database invariants", () => {
           ("id", "ruleset_version_id", "seed_ciphertext", "seed_commitment", "canonical_deal_hash")
         VALUES ('${deal}', '${ruleset}', 'ciphertext', '${hashA}', '${hashB}');
         INSERT INTO public."game_sessions"
-          ("id", "user_id", "deal_id", "ruleset_version_id")
-        VALUES ('${session}', '${user}', '${deal}', '${ruleset}');
+          ("id", "user_id", "deal_id", "ruleset_version_id", "state_snapshot", "activity_clock_snapshot", "seed_ciphertext")
+        VALUES ('${session}', '${user}', '${deal}', '${ruleset}', '{}', '{}', 'test-ciphertext');
         INSERT INTO public."move_events"
           ("id", "game_session_id", "sequence", "idempotency_key", "move_type", "move_payload", "state_hash_before", "state_hash_after", "accepted")
         VALUES ('${move}', '${session}', 1, 'move-1', 'DRAW', '{}', '${hashA}', '${hashB}', true);

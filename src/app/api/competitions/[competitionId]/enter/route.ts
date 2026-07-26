@@ -11,6 +11,11 @@ import {
   GameServiceError,
   publicGameSession,
 } from "@/lib/game-service";
+import { getRuntimeEnv } from "@/lib/env";
+import {
+  enterPersistentCompetition,
+  persistentCompetitionSnapshot,
+} from "@/lib/persistent-competition";
 import {
   enforceRateLimit,
   enforceSameOrigin,
@@ -32,12 +37,23 @@ export async function POST(
     return jsonError(401, "AUTH_REQUIRED", "Sign in to continue.", id);
   }
   const { competitionId } = await context.params;
-  if (competitionId !== CURATED_COMPETITION_ID) {
+  const env = getRuntimeEnv();
+  if (env.DEMO_MODE && competitionId !== CURATED_COMPETITION_ID) {
     return jsonError(404, "COMPETITION_NOT_FOUND", "Competition was not found.", id);
   }
 
   try {
-    const session = createCompetitionSession(user);
+    const competition = env.DEMO_MODE
+      ? publicCompetitionSnapshot()
+      : await persistentCompetitionSnapshot();
+    const resolvedCompetitionId =
+      "competitionId" in competition ? competition.competitionId : competition.id;
+    if (resolvedCompetitionId !== competitionId) {
+      return jsonError(404, "COMPETITION_NOT_FOUND", "Competition was not found.", id);
+    }
+    const session = env.DEMO_MODE
+      ? createCompetitionSession(user)
+      : await enterPersistentCompetition(user, competitionId);
     await appendRuntimeAuditEvent({
       eventType: "NONCASH_COMPETITION_ENTERED",
       actorId: user.id,
@@ -52,7 +68,7 @@ export async function POST(
     });
     return NextResponse.json(
       {
-        competition: publicCompetitionSnapshot(),
+        competition,
         session: publicGameSession(session),
       },
       { status: 201 },

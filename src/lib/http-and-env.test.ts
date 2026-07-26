@@ -8,6 +8,7 @@ const originalNodeEnv = process.env.NODE_ENV;
 const originalDemoMode = process.env.DEMO_MODE;
 const originalDatabaseUrl = process.env.DATABASE_URL;
 const originalSessionSecret = process.env.SESSION_SECRET;
+const originalCompetitionKey = process.env.COMPETITION_SEED_ENCRYPTION_KEY;
 const mutableEnv = process.env as Record<string, string | undefined>;
 
 afterEach(() => {
@@ -19,6 +20,11 @@ afterEach(() => {
   else process.env.DATABASE_URL = originalDatabaseUrl;
   if (originalSessionSecret === undefined) delete process.env.SESSION_SECRET;
   else process.env.SESSION_SECRET = originalSessionSecret;
+  if (originalCompetitionKey === undefined) {
+    delete process.env.COMPETITION_SEED_ENCRYPTION_KEY;
+  } else {
+    process.env.COMPETITION_SEED_ENCRYPTION_KEY = originalCompetitionKey;
+  }
 });
 
 describe("mutation request boundaries", () => {
@@ -90,6 +96,8 @@ describe("runtime configuration", () => {
       "postgresql://configured:configured@127.0.0.1:5432/configured";
     process.env.SESSION_SECRET =
       "configured-session-secret-at-least-32-characters";
+    process.env.COMPETITION_SEED_ENCRYPTION_KEY =
+      "configured-ranked-seed-key-at-least-32-characters";
 
     expect(() => getRuntimeEnv()).toThrow(
       "DEMO_MODE cannot be enabled in a production runtime",

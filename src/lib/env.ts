@@ -50,6 +50,14 @@ const runtimeEnvSchema = z
         message: "SESSION_SECRET is required outside demo mode.",
       });
     }
+    if (!demoMode && !env.COMPETITION_SEED_ENCRYPTION_KEY) {
+      context.addIssue({
+        code: "custom",
+        path: ["COMPETITION_SEED_ENCRYPTION_KEY"],
+        message:
+          "COMPETITION_SEED_ENCRYPTION_KEY is required outside demo mode.",
+      });
+    }
   });
 
 export type RuntimeEnv = ReturnType<typeof getRuntimeEnv>;
