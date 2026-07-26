@@ -3,12 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "engines": {
-    "node": ">=22.0.0"
+    "node": "22.x"
   },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "build:verify": "DEMO_MODE=false DATABASE_URL=postgresql://build:build@127.0.0.1:5432/build SESSION_SECRET=build-verification-only-session-secret-32 COMPETITION_SEED_ENCRYPTION_KEY=build-verification-only-ranked-seed-key-32 next build",
+    "build:verify": "DEMO_MODE=false DATABASE_URL=postgresql://build:build@127.0.0.1:5432/build SESSION_SECRET=build-verification-only-session-secret-32 COMPETITION_SEED_ENCRYPTION_KEY=build-verification-only-ranked-seed-key-32 PREVIEW_OWNER_EMAIL=owner@example.com next build",
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
@@ -16,6 +16,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
+    "test:e2e:configured-preview": "playwright test --config=playwright.configured-preview.ts",
     "check": "npm run audit && npm run lint && npm run typecheck && npm run test && npm run build:verify",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
