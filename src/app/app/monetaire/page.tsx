@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { AppPageHeader } from "@/components/app-shell";
 import { StatusPill } from "@/components/page-elements";
-import { publicCompetitionSnapshotIfAvailable } from "@/lib/competition-catalog";
+import { competitionView } from "@/lib/competition-snapshot";
+import { runtimeCompetitionSnapshot } from "@/lib/runtime-competition";
 
-export default function MonetaireLobbyPage() {
-  const competition = publicCompetitionSnapshotIfAvailable();
+export default async function MonetaireLobbyPage() {
+  const snapshot = await runtimeCompetitionSnapshot().catch(() => null);
+  const competition = snapshot ? competitionView(snapshot) : null;
   return (
     <>
       <AppPageHeader
@@ -35,8 +37,12 @@ export default function MonetaireLobbyPage() {
                 <h2>{competition.name}</h2>
                 <p>
                   {competition.entryCostPlayCoins} Play Coin entry · no valuable
-                  prize · {competition.entryCount} actual{" "}
-                  {competition.entryCount === 1 ? "entry" : "entries"}
+                  prize
+                  {competition.entryCount === null
+                    ? " · entries recorded server-side"
+                    : ` · ${competition.entryCount} actual ${
+                        competition.entryCount === 1 ? "entry" : "entries"
+                      }`}
                 </p>
                 <Link className="button button-secondary" href="/app/monetaire/competitions">
                   Inspect competition
@@ -47,8 +53,8 @@ export default function MonetaireLobbyPage() {
                 <StatusPill tone="blocked">Unavailable</StatusPill>
                 <h2>No ranked publication loaded</h2>
                 <p>
-                  Ranked entry fails closed when the encrypted safe-demo
-                  publication adapter is not configured.
+                  Ranked entry fails closed when the active publication source
+                  is unavailable.
                 </p>
               </>
             )}
