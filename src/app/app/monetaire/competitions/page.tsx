@@ -1,10 +1,10 @@
 import { AppPageHeader } from "@/components/app-shell";
 import { CompetitionPanel } from "@/components/competition-panel";
 import { LockedNotice } from "@/components/page-elements";
-import { publicCompetitionSnapshotIfAvailable } from "@/lib/competition-catalog";
+import { runtimeCompetitionSnapshot } from "@/lib/runtime-competition";
 
-export default function AppCompetitionsPage() {
-  const competition = publicCompetitionSnapshotIfAvailable();
+export default async function AppCompetitionsPage() {
+  const competition = await runtimeCompetitionSnapshot().catch(() => null);
   return (
     <>
       <AppPageHeader eyebrow="Ranked Play" title="Competitions">
@@ -13,10 +13,10 @@ export default function AppCompetitionsPage() {
       {competition ? (
         <CompetitionPanel allowEntry initialCompetition={competition} />
       ) : (
-        <LockedNotice title="Ranked demo publication is unavailable.">
+        <LockedNotice title="Ranked publication is unavailable.">
           <p>
-            Entry fails closed until a dedicated encrypted publication key and
-            safe-demo catalog are configured.
+            Entry fails closed until the active server publication source is
+            configured and reachable.
           </p>
         </LockedNotice>
       )}
