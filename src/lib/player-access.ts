@@ -25,6 +25,19 @@ export interface DemoPlayerAccessDecision {
   readonly decidedAtServerMs: number;
 }
 
+export function effectivePlayerAccountStatus(
+  user: Readonly<DemoUser>,
+  serverAtMs: number,
+): DemoUserStatus {
+  if (user.status !== "COOLDOWN" || user.cooldownUntil === undefined) {
+    return user.status;
+  }
+  const cooldownUntilMs = Date.parse(user.cooldownUntil);
+  return Number.isFinite(cooldownUntilMs) && cooldownUntilMs <= serverAtMs
+    ? "ACTIVE"
+    : user.status;
+}
+
 function exclusionBlocksMode(
   exclusion: DemoSelfExclusion,
   mode: DemoProductMode,
@@ -82,13 +95,17 @@ export function evaluateDemoPlayerAccess(input: {
   }
 
   const reasons: PlayerAccessReasonCode[] = [];
-  if (input.user.status === "CLOSED") {
+  const accountStatus = effectivePlayerAccountStatus(
+    input.user,
+    input.serverAtMs,
+  );
+  if (accountStatus === "CLOSED") {
     reasons.push("ACCOUNT_CLOSED");
   }
-  if (input.user.status === "SUSPENDED") {
+  if (accountStatus === "SUSPENDED") {
     reasons.push("ACCOUNT_SUSPENDED");
   }
-  if (input.user.status === "COOLDOWN") {
+  if (accountStatus === "COOLDOWN") {
     const cooldownUntilMs =
       input.user.cooldownUntil === undefined
         ? Number.NaN
@@ -121,7 +138,7 @@ export function evaluateDemoPlayerAccess(input: {
   return Object.freeze({
     allowed: reasons.length === 0,
     mode: input.mode,
-    accountStatus: input.user.status,
+    accountStatus,
     reasonCodes: Object.freeze(reasons),
     decidedAtServerMs: input.serverAtMs,
   });
