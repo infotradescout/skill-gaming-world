@@ -22,6 +22,7 @@ const runtimeEnvSchema = z
     FEATURE_REAL_MONEY_CASINO: booleanString,
     FEATURE_PRODUCTION_PAYMENTS: booleanString,
     MONETAIRE_PLAY_JURISDICTIONS: z.string().default("US"),
+    MONETAIRE_PLAY_DEPLOYMENT_JURISDICTION: z.string().default(""),
   })
   .superRefine((env, context) => {
     const demoMode = env.DEMO_MODE ?? env.NODE_ENV !== "production";
@@ -66,5 +67,7 @@ export function getRuntimeEnv() {
     MONETAIRE_PLAY_JURISDICTIONS: parsed.MONETAIRE_PLAY_JURISDICTIONS.split(",")
       .map((value) => value.trim().toUpperCase())
       .filter(Boolean),
+    MONETAIRE_PLAY_DEPLOYMENT_JURISDICTION:
+      parsed.MONETAIRE_PLAY_DEPLOYMENT_JURISDICTION.trim().toUpperCase(),
   };
 }

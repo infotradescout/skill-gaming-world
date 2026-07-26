@@ -341,7 +341,7 @@ test("casino and privileged admin surfaces remain held", async ({ page }) => {
   await expect(
     page.getByRole("heading", { name: /Casino is\s*not available\./ }),
   ).toBeVisible();
-  await expect(page.getByText("Server-disabled")).toBeVisible();
+  await expect(page.getByText("Server-disabled", { exact: true })).toBeVisible();
   await expect(
     page.getByText(
       "No casino games, deposits, wagers, cash balances, or withdrawals are exposed in the current product.",

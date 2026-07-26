@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
-import { appendDemoAuditEvent } from "@/lib/audit";
-import { currentDemoUser } from "@/lib/auth";
+import { appendRuntimeAuditEvent } from "@/lib/audit";
+import { currentRuntimeUser } from "@/lib/auth";
 import { getRuntimeEnv } from "@/lib/env";
 import {
   createCompetitionSession,
@@ -17,6 +17,8 @@ import {
   requestId,
 } from "@/lib/http";
 import { evaluateInitialOperationGate } from "@/lib/operation-gates";
+import { authorizeConfiguredMonetairePlay } from "@/lib/configured-jurisdiction";
+import { createPersistentPracticeSession } from "@/lib/persistent-game";
 
 const startSchema = z.object({
   mode: z.enum(["PRACTICE", "NONCASH_COMPETITION"]),
@@ -26,19 +28,19 @@ export async function POST(request: NextRequest) {
   const id = requestId(request);
   const originError = enforceSameOrigin(request);
   if (originError) return originError;
-  const rateError = enforceRateLimit(request, "start-game", 30, 60_000);
+  const rateError = await enforceRateLimit(request, "start-game", 30, 60_000);
   if (rateError) return rateError;
-  const user = currentDemoUser(request);
+  const user = await currentRuntimeUser(request);
   if (!user) {
     return jsonError(401, "AUTH_REQUIRED", "Sign in to continue.", id);
   }
 
   const env = getRuntimeEnv();
-  if (
-    !env.DEMO_MODE ||
-    evaluateInitialOperationGate("mode.monetaire_play", env).decision !==
+  const jurisdictionAllowed = env.DEMO_MODE
+    ? evaluateInitialOperationGate("mode.monetaire_play", env).decision ===
       "ALLOW"
-  ) {
+    : await authorizeConfiguredMonetairePlay(user, id);
+  if (!jurisdictionAllowed) {
     return jsonError(
       503,
       "JURISDICTION_ADAPTER_REQUIRED",
@@ -53,11 +55,20 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const session =
-      parsed.data.mode === "PRACTICE"
+    if (!env.DEMO_MODE && parsed.data.mode === "NONCASH_COMPETITION") {
+      return jsonError(
+        503,
+        "CONFIGURED_COMPETITION_ADAPTER_REQUIRED",
+        "Configured ranked play remains held until immutable competition publication is persisted.",
+        id,
+      );
+    }
+    const session = env.DEMO_MODE
+      ? parsed.data.mode === "PRACTICE"
         ? createPracticeSession(user)
-        : createCompetitionSession(user);
-    appendDemoAuditEvent({
+        : createCompetitionSession(user)
+      : await createPersistentPracticeSession(user);
+    await appendRuntimeAuditEvent({
       eventType: "GAME_SESSION_CREATED",
       actorId: user.id,
       subjectType: "GAME_SESSION",

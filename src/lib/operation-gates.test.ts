@@ -19,6 +19,7 @@ function environment(
     FEATURE_REAL_MONEY_CASINO: false,
     FEATURE_PRODUCTION_PAYMENTS: false,
     MONETAIRE_PLAY_JURISDICTIONS: ["US"],
+    MONETAIRE_PLAY_DEPLOYMENT_JURISDICTION: "",
     ...overrides,
   };
 }

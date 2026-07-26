@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { appendDemoAuditEvent } from "@/lib/audit";
-import { currentDemoUser } from "@/lib/auth";
+import { appendRuntimeAuditEvent } from "@/lib/audit";
+import { currentRuntimeUser } from "@/lib/auth";
 import {
   CURATED_COMPETITION_ID,
   publicCompetitionSnapshot,
@@ -25,9 +25,9 @@ export async function POST(
   const id = requestId(request);
   const originError = enforceSameOrigin(request);
   if (originError) return originError;
-  const rateError = enforceRateLimit(request, "competition-entry", 10, 60_000);
+  const rateError = await enforceRateLimit(request, "competition-entry", 10, 60_000);
   if (rateError) return rateError;
-  const user = currentDemoUser(request);
+  const user = await currentRuntimeUser(request);
   if (!user) {
     return jsonError(401, "AUTH_REQUIRED", "Sign in to continue.", id);
   }
@@ -38,7 +38,7 @@ export async function POST(
 
   try {
     const session = createCompetitionSession(user);
-    appendDemoAuditEvent({
+    await appendRuntimeAuditEvent({
       eventType: "NONCASH_COMPETITION_ENTERED",
       actorId: user.id,
       subjectType: "COMPETITION_ENTRY",

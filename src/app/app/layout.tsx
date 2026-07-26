@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
-import { demoUserFromToken, SESSION_COOKIE } from "@/lib/auth";
+import { runtimeUserFromToken, SESSION_COOKIE } from "@/lib/auth";
 import { playCoinBalance } from "@/lib/demo-store";
 import "@/components/player-app.css";
 
@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 
 export default async function PlayerAppLayout({ children }: { children: React.ReactNode }) {
   const cookieStore = await cookies();
-  const user = demoUserFromToken(cookieStore.get(SESSION_COOKIE)?.value);
+  const user = await runtimeUserFromToken(cookieStore.get(SESSION_COOKIE)?.value);
   if (!user) {
     redirect("/auth/login");
   }

@@ -7,8 +7,8 @@ import {
   creditSandboxPackagePlayCoins,
   sha256Hex,
 } from "@/domain";
-import { appendDemoAuditEvent } from "@/lib/audit";
-import { currentDemoUser } from "@/lib/auth";
+import { appendRuntimeAuditEvent } from "@/lib/audit";
+import { currentRuntimeUser } from "@/lib/auth";
 import {
   getDemoStore,
   playCoinBalance,
@@ -41,10 +41,10 @@ export async function POST(request: NextRequest) {
   const id = requestId(request);
   const originError = enforceSameOrigin(request);
   if (originError) return originError;
-  const rateError = enforceRateLimit(request, "sandbox-purchase", 12, 60_000);
+  const rateError = await enforceRateLimit(request, "sandbox-purchase", 12, 60_000);
   if (rateError) return rateError;
 
-  const user = currentDemoUser(request);
+  const user = await currentRuntimeUser(request);
   if (!user) {
     return jsonError(401, "AUTH_REQUIRED", "Sign in to continue.", id);
   }
@@ -157,7 +157,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  appendDemoAuditEvent({
+  await appendRuntimeAuditEvent({
     eventType: "SANDBOX_PLAY_COIN_CREDIT",
     actorId: user.id,
     subjectType: "PLAY_COIN_LEDGER_ACCOUNT",

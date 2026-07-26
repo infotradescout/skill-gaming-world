@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { currentDemoUser } from "@/lib/auth";
+import { currentRuntimeUser } from "@/lib/auth";
 import {
   GameServiceError,
   publicGameSession,
   resumeOwnedGameSession,
 } from "@/lib/game-service";
 import { jsonError, requestId } from "@/lib/http";
+import { getRuntimeEnv } from "@/lib/env";
+import { resumePersistentSession } from "@/lib/persistent-game";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +17,7 @@ export async function GET(
   context: { params: Promise<{ sessionId: string }> },
 ) {
   const id = requestId(request);
-  const user = currentDemoUser(request);
+  const user = await currentRuntimeUser(request);
   if (!user) {
     return jsonError(401, "AUTH_REQUIRED", "Sign in to continue.", id);
   }
@@ -23,7 +25,11 @@ export async function GET(
 
   try {
     return NextResponse.json({
-      session: publicGameSession(resumeOwnedGameSession(user, sessionId)),
+      session: publicGameSession(
+        getRuntimeEnv().DEMO_MODE
+          ? resumeOwnedGameSession(user, sessionId)
+          : await resumePersistentSession(user, sessionId),
+      ),
     });
   } catch (error) {
     if (error instanceof GameServiceError) {
