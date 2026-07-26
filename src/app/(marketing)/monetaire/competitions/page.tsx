@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { CompetitionPanel } from "@/components/competition-panel";
-import { publicCompetitionSnapshotIfAvailable } from "@/lib/competition-catalog";
+import { runtimeCompetitionSnapshot } from "@/lib/runtime-competition";
 import {
   LockedNotice,
   PageHero,
@@ -12,8 +12,8 @@ import {
 export const metadata: Metadata = { title: "Monetaire Competitions" };
 export const dynamic = "force-dynamic";
 
-export default function CompetitionsPage() {
-  const competition = publicCompetitionSnapshotIfAvailable();
+export default async function CompetitionsPage() {
+  const competition = await runtimeCompetitionSnapshot().catch(() => null);
   return (
     <>
       <PageHero
@@ -52,10 +52,10 @@ export default function CompetitionsPage() {
         {competition ? (
           <CompetitionPanel initialCompetition={competition} />
         ) : (
-          <LockedNotice title="Ranked demo publication is unavailable.">
+          <LockedNotice title="Ranked publication is unavailable.">
             <p>
-              No competition is shown without an explicit encrypted publication
-              key and safe-demo adapter. No entrant or leaderboard is fabricated.
+              No competition is shown without a reachable server publication
+              source. No entrant or leaderboard is fabricated.
             </p>
           </LockedNotice>
         )}
