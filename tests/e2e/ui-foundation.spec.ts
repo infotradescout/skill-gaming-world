@@ -90,7 +90,14 @@ test("account access, held modes, and Play Coin exact retry remain coherent", as
   await page.goto("/admin/feature-gates");
   await expect(page).toHaveURL(/\/app$/);
   await page.goto("/app/eligibility");
-  await expect(page.getByText("Safe demo only")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Eligibility" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Monetaire Play" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Skill Prize verification" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Casino verification" }),
+  ).toBeVisible();
   await expect(page.getByText("Disabled", { exact: true })).toHaveCount(2);
 
   const requestBody = {
