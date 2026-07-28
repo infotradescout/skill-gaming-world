@@ -6,10 +6,11 @@ import { useState } from "react";
 import { BrandMark } from "./brand";
 
 const publicLinks = [
+  { href: "/", label: "Lobby" },
   { href: "/monetaire", label: "Monetaire" },
-  { href: "/monetaire/how-it-works", label: "How it works" },
+  { href: "/casino", label: "Casino" },
+  { href: "/monetaire/competitions", label: "Challenges" },
   { href: "/fairness", label: "Fairness" },
-  { href: "/responsible-play", label: "Player protection" },
 ];
 
 export function SiteHeader() {
@@ -36,9 +37,9 @@ export function SiteHeader() {
           ))}
         </nav>
         <div className="site-header-actions">
-          <Link className="product-switch" href="/casino">
-            <span>Casino</span>
-            <small>Unavailable</small>
+          <Link className="product-switch" href="/app">
+            <span>Player hub</span>
+            <small>Open dashboard</small>
           </Link>
           <Link className="button button-secondary header-login" href="/auth/login">
             Log in
