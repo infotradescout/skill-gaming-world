@@ -931,6 +931,49 @@ export const sandboxPurchases = pgTable(
   ],
 );
 
+export const fortuneDiceRounds = pgTable(
+  "fortune_dice_rounds",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    status: varchar("status", { length: 24 }).default("COMMITTED").notNull(),
+    serverSeedCiphertext: text("server_seed_ciphertext").notNull(),
+    seedCommitment: varchar("seed_commitment", { length: 64 }).notNull(),
+    clientSeed: varchar("client_seed", { length: 128 }),
+    nonce: bigint("nonce", { mode: "bigint" }).notNull(),
+    choice: varchar("choice", { length: 16 }),
+    wagerMinor: bigint("wager_minor", { mode: "bigint" }),
+    dieOne: integer("die_one"),
+    dieTwo: integer("die_two"),
+    payoutMinor: bigint("payout_minor", { mode: "bigint" }),
+    ledgerTransactionId: uuid("ledger_transaction_id").references(
+      () => ledgerTransactions.id,
+      { onDelete: "restrict" },
+    ),
+    settledAt: timestamp("settled_at", { withTimezone: true }),
+    createdAt,
+  },
+  (table) => [
+    uniqueIndex("fortune_dice_commitment_unique").on(table.seedCommitment),
+    uniqueIndex("fortune_dice_user_nonce_unique").on(table.userId, table.nonce),
+    index("fortune_dice_user_created_idx").on(table.userId, table.createdAt),
+    check(
+      "fortune_dice_status_allowed",
+      sql`${table.status} IN ('COMMITTED', 'SETTLED', 'VOID')`,
+    ),
+    check(
+      "fortune_dice_choice_allowed",
+      sql`${table.choice} IS NULL OR ${table.choice} IN ('under', 'seven', 'over')`,
+    ),
+    check(
+      "fortune_dice_values_allowed",
+      sql`(${table.dieOne} IS NULL AND ${table.dieTwo} IS NULL) OR (${table.dieOne} BETWEEN 1 AND 6 AND ${table.dieTwo} BETWEEN 1 AND 6)`,
+    ),
+  ],
+);
+
 export const achievements = pgTable("achievements", {
   id: uuid("id").defaultRandom().primaryKey(),
   key: varchar("key", { length: 96 }).notNull().unique(),
