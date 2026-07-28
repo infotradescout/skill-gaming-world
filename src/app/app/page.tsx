@@ -8,7 +8,12 @@ import { getDemoStore, playCoinBalance } from "@/lib/demo-store";
 import { getRuntimeEnv } from "@/lib/env";
 import { persistentPlayerProjection } from "@/lib/persistent-projections";
 
-export default async function PlayerDashboardPage() {
+export default async function PlayerDashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ welcome?: string }>;
+}) {
+  const { welcome } = await searchParams;
   const cookieStore = await cookies();
   const user = await runtimeUserFromToken(cookieStore.get(SESSION_COOKIE)?.value);
   if (!user) redirect("/auth/login");
@@ -33,6 +38,19 @@ export default async function PlayerDashboardPage() {
     : await persistentPlayerProjection(user.id);
   return (
     <>
+      {welcome === "1" ? (
+        <section className="surface-soft" role="status">
+          <p className="eyebrow">Welcome to Skill Gaming World</p>
+          <h2>You can judge our games before money ever enters the picture.</h2>
+          <p>
+            Every game is built to use the same rules, odds, scoring, and fairness
+            system in free play that it would use if real-money play is later enabled
+            where legally permitted. Today&apos;s Play Coins are free, valueless, and
+            cannot be cashed out. Real-money play is not available and will remain
+            prohibited anywhere it is not legally authorized.
+          </p>
+        </section>
+      ) : null}
       <AppPageHeader eyebrow="Player dashboard" title="Your next deliberate move.">
         <p>No sample activity is inserted. Account-backed sessions and balances appear only when loaded.</p>
       </AppPageHeader>
