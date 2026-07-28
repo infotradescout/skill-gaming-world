@@ -10,11 +10,11 @@ const games = [
     art: "cards",
   },
   {
-    badge: "Instant play",
+    badge: "On hold",
     title: "Fortune Dice",
-    copy: "Call the result, roll the dice, and verify every round.",
+    copy: "Casino-style game execution is not available in the current product.",
     href: "/casino",
-    action: "Open table",
+    action: "View status",
     art: "dice",
   },
   {
@@ -46,8 +46,8 @@ export default function HomePage() {
             <h1>Play where <em>fair means provable.</em></h1>
             <p className="world-lead">
               Original games. Transparent rules. No bought advantage. Build your
-              record in Monetaire, climb ranked challenges, or take a seat at the
-              casino tables with valueless Play Coins.
+              record in Monetaire and climb ranked challenges. Casino modes remain
+              unavailable unless their separate legal and operating gates are approved.
             </p>
             <div className="button-row">
               <Link className="button button-primary button-large" href="/auth/register">

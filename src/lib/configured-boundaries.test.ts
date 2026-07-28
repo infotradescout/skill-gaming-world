@@ -39,7 +39,6 @@ describe("held-operation route inventory", () => {
         "auth/logout",
         "auth/register",
         "competitions/[competitionId]/enter",
-        "fortune-dice",
         "game/sessions",
         "game/sessions/[sessionId]/moves",
         "play-coins/sandbox-purchase",
@@ -67,5 +66,7 @@ describe("held-operation route inventory", () => {
         route,
       ).toBe(false);
     }
+
+    expect(writableRoutes).not.toContain("fortune-dice");
   });
 });

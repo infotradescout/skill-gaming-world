@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
-import { FortuneDice } from "@/components/fortune-dice";
 
 export const metadata: Metadata = {
   title: "Casino | Skill Gaming World",
-  description: "Original, transparent casino-style games played with valueless Play Coins.",
+  description: "Casino product status for Skill Gaming World.",
 };
 
 export default function CasinoPage() {
@@ -11,28 +10,27 @@ export default function CasinoPage() {
     <div className="casino-floor">
       <section className="casino-intro shell">
         <div>
-          <p className="eyebrow">Skill Gaming World Casino</p>
-          <h1>Original games.<br /><em>Honest outcomes.</em></h1>
+          <p className="eyebrow">Future product</p>
+          <h1>Casino is<br /><em>not available.</em></h1>
           <p>
-            Play the complete casino experience with valueless Play Coins. No
-            deposits, cash-out, purchases, or transferable value.
+            No casino games, deposits, wagers, cash balances, or withdrawals are
+            exposed in the current product.
           </p>
         </div>
         <div className="casino-balance">
-          <small>Practice balance</small>
-          <strong>10,000 <span>PC</span></strong>
-          <p>Resets locally when you refresh this preview.</p>
+          <small>Current status</small>
+          <strong>HARD <span>HOLD</span></strong>
+          <p>Separate legal, consumer, payment, and distribution review required.</p>
         </div>
       </section>
-      <FortuneDice />
       <section className="casino-coming shell">
-        <p className="eyebrow">In development</p>
-        <h2>The floor is growing.</h2>
-        <div className="game-grid casino-preview-grid">
-          <div className="game-tile preview-blackjack"><div className="preview-symbol">A♠ K♥</div><h3>Blackjack</h3><p>Classic table rules with a visible shoe and round log.</p></div>
-          <div className="game-tile preview-wheel"><div className="preview-symbol">◆</div><h3>Meridian Wheel</h3><p>A transparent number wheel with published probabilities.</p></div>
-          <div className="game-tile preview-poker"><div className="preview-symbol">♠ ♥ ♣ ♦</div><h3>Video Poker</h3><p>Player-choice poker with the full paytable always in view.</p></div>
-        </div>
+        <p className="eyebrow">Boundary</p>
+        <h2>Skill play remains separate.</h2>
+        <p>
+          Monetaire free play is available under its own rules. Skill Prize,
+          social-casino, and real-money casino modes each require independent
+          authorization and cannot be unlocked by this page.
+        </p>
       </section>
     </div>
   );
