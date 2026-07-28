@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { AppPageHeader } from "@/components/app-shell";
 import { EmptyState, StatusPill, TrustDisclosure } from "@/components/page-elements";
 import { runtimeUserFromToken, SESSION_COOKIE } from "@/lib/auth";
+import { demoAchievementProjection } from "@/lib/achievements";
 import { getDemoStore, playCoinBalance } from "@/lib/demo-store";
 import { getRuntimeEnv } from "@/lib/env";
 import { persistentPlayerProjection } from "@/lib/persistent-projections";
@@ -25,7 +26,7 @@ export default async function PlayerDashboardPage({
           (session) => session.userId === user.id && session.state.status === "WON",
         ).length,
         currentRank: null,
-        achievements: [],
+        achievements: demoAchievementProjection(user.id),
         recentSessions: [...getDemoStore().gameSessionsById.values()]
           .filter((session) => session.userId === user.id)
           .map((session) => ({

@@ -13,6 +13,7 @@ import {
   scores,
   userAchievements,
 } from "@/db/schema";
+import { ACHIEVEMENT_DEFINITIONS } from "./achievements";
 
 export type PlayCoinHistoryEntry = {
   id: string;
@@ -74,30 +75,9 @@ export async function persistentPlayCoinProjection(
   return { balanceMinor: Number(balance), entries };
 }
 
-const achievementDefinitions = [
-  {
-    key: "FIRST_FOUNDATION",
-    title: "First Foundation",
-    description: "Complete a practice game.",
-    criteria: { completedPracticeGames: 1 },
-  },
-  {
-    key: "MEASURED_FINISH",
-    title: "Measured Finish",
-    description: "Complete a ranked noncash game under the published rules.",
-    criteria: { completedRankedGames: 1 },
-  },
-  {
-    key: "CLEAN_SEQUENCE",
-    title: "Clean Sequence",
-    description: "Finish a verified game without a rejected move.",
-    criteria: { completedGamesWithoutRejectedMoves: 1 },
-  },
-] as const;
-
 export async function refreshPersistentAchievements(userId: string) {
   const database = getDatabase();
-  for (const definition of achievementDefinitions) {
+  for (const definition of ACHIEVEMENT_DEFINITIONS) {
     await database.insert(achievements).values(definition).onConflictDoNothing();
   }
   const completed = await database

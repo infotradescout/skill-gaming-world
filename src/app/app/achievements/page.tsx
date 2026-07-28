@@ -3,26 +3,16 @@ import { redirect } from "next/navigation";
 import { AppPageHeader } from "@/components/app-shell";
 import { StatusPill } from "@/components/page-elements";
 import { runtimeUserFromToken, SESSION_COOKIE } from "@/lib/auth";
+import { demoAchievementProjection } from "@/lib/achievements";
 import { getRuntimeEnv } from "@/lib/env";
 import { refreshPersistentAchievements } from "@/lib/persistent-projections";
-
-const achievements = [
-  ["First Foundation", "Complete a practice game."],
-  ["Measured Finish", "Complete a ranked noncash game under the published rules."],
-  ["Clean Sequence", "Finish a verified game without a rejected move."],
-  ["Consistency", "Complete eligible sessions across separate days."],
-];
 
 export default async function AchievementsPage() {
   const cookieStore = await cookies();
   const user = await runtimeUserFromToken(cookieStore.get(SESSION_COOKIE)?.value);
   if (!user) redirect("/auth/login");
   const projected = getRuntimeEnv().DEMO_MODE
-    ? achievements.map(([title, description]) => ({
-        title,
-        description,
-        awardedAt: null,
-      }))
+    ? demoAchievementProjection(user.id)
     : await refreshPersistentAchievements(user.id);
   return (
     <>

@@ -19,6 +19,7 @@ import {
   getCuratedCompetitionBundle,
   resetCompetitionCatalogForTests,
 } from "./competition-catalog";
+import { demoAchievementProjection } from "./achievements";
 import { getDemoStore, resetDemoStoreForTests } from "./demo-store";
 import { resetDemoRateLimitsForTests } from "./http";
 
@@ -614,5 +615,15 @@ describe("server-authoritative game APIs", () => {
       serverAuthoritative: true,
     });
     expect(getDemoStore().officialScores).toHaveLength(0);
+    expect(
+      demoAchievementProjection(
+        getDemoStore().gameSessionsById.get(sessionId)!.userId,
+      ).filter((achievement) => achievement.awardedAt),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ key: "FIRST_FOUNDATION" }),
+        expect.objectContaining({ key: "CLEAN_SEQUENCE" }),
+      ]),
+    );
   });
 });
