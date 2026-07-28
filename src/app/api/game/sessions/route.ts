@@ -8,6 +8,7 @@ import {
   createCompetitionSession,
   createPracticeSession,
   GameServiceError,
+  listActiveOwnedGameSessions,
   publicGameSession,
 } from "@/lib/game-service";
 import {
@@ -18,7 +19,10 @@ import {
 } from "@/lib/http";
 import { evaluateInitialOperationGate } from "@/lib/operation-gates";
 import { authorizeConfiguredMonetairePlay } from "@/lib/configured-jurisdiction";
-import { createPersistentPracticeSession } from "@/lib/persistent-game";
+import {
+  createPersistentPracticeSession,
+  listActivePersistentSessions,
+} from "@/lib/persistent-game";
 import {
   enterPersistentCompetition,
   persistentCompetitionSnapshot,
@@ -27,6 +31,34 @@ import {
 const startSchema = z.object({
   mode: z.enum(["PRACTICE", "NONCASH_COMPETITION"]),
 });
+
+export async function GET(request: NextRequest) {
+  const id = requestId(request);
+  const rateError = await enforceRateLimit(request, "list-game-sessions", 60, 60_000);
+  if (rateError) return rateError;
+  const user = await currentRuntimeUser(request);
+  if (!user) {
+    return jsonError(401, "AUTH_REQUIRED", "Sign in to continue.", id);
+  }
+  try {
+    const sessions = getRuntimeEnv().DEMO_MODE
+      ? listActiveOwnedGameSessions(user)
+      : await listActivePersistentSessions(user);
+    return NextResponse.json({
+      sessions: sessions.map(publicGameSession),
+    });
+  } catch (error) {
+    if (error instanceof GameServiceError) {
+      return jsonError(403, error.code, error.message, id);
+    }
+    return jsonError(
+      500,
+      "GAME_SESSIONS_FAILED",
+      "Active sessions could not be loaded.",
+      id,
+    );
+  }
+}
 
 export async function POST(request: NextRequest) {
   const id = requestId(request);

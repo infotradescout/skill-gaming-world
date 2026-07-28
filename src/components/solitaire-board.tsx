@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type DragEvent } from "react";
 
 type Suit = "CLUBS" | "DIAMONDS" | "HEARTS" | "SPADES";
 type Rank =
@@ -93,6 +93,86 @@ const RANK_LABEL: Record<Rank, string> = {
   KING: "K",
 };
 
+const RANK_VALUE: Record<Rank, number> = {
+  ACE: 1,
+  TWO: 2,
+  THREE: 3,
+  FOUR: 4,
+  FIVE: 5,
+  SIX: 6,
+  SEVEN: 7,
+  EIGHT: 8,
+  NINE: 9,
+  TEN: 10,
+  JACK: 11,
+  QUEEN: 12,
+  KING: 13,
+};
+
+function isRed(card: ServerCard) {
+  return card.suit === "HEARTS" || card.suit === "DIAMONDS";
+}
+
+function canMoveToFoundation(
+  card: ServerCard,
+  foundations: ServerGameSession["foundations"],
+) {
+  return RANK_VALUE[card.rank] === foundations[card.suit].count + 1;
+}
+
+function canMoveToTableau(card: ServerCard, pile: PositionedCard[]) {
+  if (pile.length === 0) return card.rank === "KING";
+  const destination = pile[pile.length - 1];
+  return (
+    destination.faceUp &&
+    isRed(card) !== isRed(destination) &&
+    RANK_VALUE[destination.rank] === RANK_VALUE[card.rank] + 1
+  );
+}
+
+function sessionHint(session: ServerGameSession) {
+  for (let column = 0; column < session.tableau.length; column += 1) {
+    const pile = session.tableau[column];
+    const top = pile[pile.length - 1];
+    if (top && !top.faceUp) {
+      return `Flip the exposed card in tableau column ${column + 1}.`;
+    }
+  }
+
+  if (
+    session.waste.top &&
+    canMoveToFoundation(session.waste.top, session.foundations)
+  ) {
+    return `Move ${RANK_LABEL[session.waste.top.rank]}${
+      SUIT_GLYPH[session.waste.top.suit]
+    } from the waste to its foundation.`;
+  }
+
+  for (let column = 0; column < session.tableau.length; column += 1) {
+    const pile = session.tableau[column];
+    const top = pile[pile.length - 1];
+    if (top?.faceUp && canMoveToFoundation(top, session.foundations)) {
+      return `Move ${RANK_LABEL[top.rank]}${SUIT_GLYPH[top.suit]} from column ${
+        column + 1
+      } to its foundation.`;
+    }
+  }
+
+  if (session.waste.top) {
+    for (let column = 0; column < session.tableau.length; column += 1) {
+      if (canMoveToTableau(session.waste.top, session.tableau[column])) {
+        return `Move ${RANK_LABEL[session.waste.top.rank]}${
+          SUIT_GLYPH[session.waste.top.suit]
+        } from the waste to tableau column ${column + 1}.`;
+      }
+    }
+  }
+
+  if (session.stock.remaining > 0) return "Draw the next card from the stock.";
+  if (session.waste.count > 0) return "Recycle the waste pile back into the stock.";
+  return "No simple move is visible. Try moving a face-up tableau run.";
+}
+
 function formattedTime(milliseconds: number) {
   const totalSeconds = Math.floor(milliseconds / 1000);
   const minutes = Math.floor(totalSeconds / 60);
@@ -118,10 +198,12 @@ export function SolitaireBoard({
   initialSession = null,
   mode = "PRACTICE",
   storageKey = PRACTICE_STORAGE_KEY,
+  resumeSessionId,
 }: {
   initialSession?: ServerGameSession | null;
   mode?: ServerGameSession["mode"];
   storageKey?: string;
+  resumeSessionId?: string;
 }) {
   const [session, setSession] = useState<ServerGameSession | null>(initialSession);
   const [selection, setSelection] = useState<Selection | null>(null);
@@ -152,7 +234,8 @@ export function SolitaireBoard({
     setPending(true);
     setFeedback("Checking for a server session…");
     try {
-      const savedId = window.localStorage.getItem(storageKey);
+      const savedId =
+        resumeSessionId ?? window.localStorage.getItem(storageKey);
       if (savedId) {
         const response = await fetch(`/api/game/sessions/${savedId}`, {
           cache: "no-store",
@@ -162,6 +245,7 @@ export function SolitaireBoard({
           | null;
         if (response.ok && body?.session && body.session.mode === mode) {
           setSession(body.session);
+          window.localStorage.setItem(storageKey, body.session.id);
           setSelection(null);
           setFeedback("Server session resumed from its authoritative state.");
           return;
@@ -304,25 +388,7 @@ export function SolitaireBoard({
     }
 
     if (selection) {
-      let intent: MoveIntent;
-      if (selection.source === "waste") {
-        intent = { type: "WASTE_TO_TABLEAU", toColumn: column };
-      } else if (selection.source === "foundation") {
-        intent = {
-          type: "FOUNDATION_TO_TABLEAU",
-          suit: selection.suit,
-          toColumn: column,
-        };
-      } else {
-        intent = {
-          type: "TABLEAU_TO_TABLEAU",
-          fromColumn: selection.column,
-          startIndex: selection.index,
-          toColumn: column,
-        };
-      }
-      setSelection(null);
-      void sendMove(intent);
+      moveSelectionToTableau(column);
       return;
     }
 
@@ -337,6 +403,11 @@ export function SolitaireBoard({
       setFeedback("Select a card or face-up run first.");
       return;
     }
+    moveSelectionToTableau(column);
+  }
+
+  function moveSelectionToTableau(column: number) {
+    if (!selection) return;
     let intent: MoveIntent;
     if (selection.source === "waste") {
       intent = { type: "WASTE_TO_TABLEAU", toColumn: column };
@@ -356,6 +427,46 @@ export function SolitaireBoard({
     }
     setSelection(null);
     void sendMove(intent);
+  }
+
+  function moveWasteToFoundation() {
+    if (!session?.waste.top) return;
+    setSelection(null);
+    void sendMove({ type: "WASTE_TO_FOUNDATION" });
+  }
+
+  function moveTableauToFoundation(column: number, index: number) {
+    if (!session) return;
+    const pile = session.tableau[column];
+    const card = pile[index];
+    if (!card?.faceUp || index !== pile.length - 1) {
+      setFeedback("Only the exposed top tableau card can move to a foundation.");
+      return;
+    }
+    setSelection(null);
+    void sendMove({ type: "TABLEAU_TO_FOUNDATION", fromColumn: column });
+  }
+
+  function beginDrag(event: DragEvent, nextSelection: Selection) {
+    setSelection(nextSelection);
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", "monetaire-card");
+  }
+
+  function allowDrop(event: DragEvent) {
+    if (!selection || pending || terminal) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+  }
+
+  function dropOnTableau(event: DragEvent, column: number) {
+    event.preventDefault();
+    moveSelectionToTableau(column);
+  }
+
+  function dropOnFoundation(event: DragEvent, suit: Suit) {
+    event.preventDefault();
+    selectFoundation(suit);
   }
 
   function selectFoundation(suit: Suit) {
@@ -457,14 +568,24 @@ export function SolitaireBoard({
         </div>
         <div className="solitaire-actions">
           {session.status === "ACTIVE" ? (
-            <button
-              className="button button-quiet"
-              disabled={pending}
-              type="button"
-              onClick={() => void sendMove({ type: "ABANDON" })}
-            >
-              Abandon
-            </button>
+            <>
+              <button
+                className="button button-secondary"
+                disabled={pending}
+                type="button"
+                onClick={() => setFeedback(sessionHint(session))}
+              >
+                Hint
+              </button>
+              <button
+                className="button button-quiet"
+                disabled={pending}
+                type="button"
+                onClick={() => void sendMove({ type: "ABANDON" })}
+              >
+                Abandon
+              </button>
+            </>
           ) : isPractice ? (
             <button
               className="button button-primary"
@@ -524,7 +645,12 @@ export function SolitaireBoard({
                   ? `Waste ${RANK_LABEL[session.waste.top.rank]}${SUIT_GLYPH[session.waste.top.suit]}`
                   : "Waste empty"
               }
-              onClick={selectWaste}
+              draggable={Boolean(session.waste.top) && !pending && !terminal}
+              onDoubleClick={moveWasteToFoundation}
+              onDragStart={(event) => beginDrag(event, { source: "waste" })}
+              onClick={(event) => {
+                if (event.detail === 1) selectWaste();
+              }}
             >
               {session.waste.top ? <CardFace card={session.waste.top} /> : null}
             </button>
@@ -547,6 +673,8 @@ export function SolitaireBoard({
                       ? `${SUIT_GLYPH[suit]} foundation, ${RANK_LABEL[card.rank]}`
                       : `Empty ${SUIT_GLYPH[suit]} foundation`
                   }
+                  onDragOver={allowDrop}
+                  onDrop={(event) => dropOnFoundation(event, suit)}
                   onClick={() => selectFoundation(suit)}
                 >
                   {card ? <CardFace card={card} /> : <span>{SUIT_GLYPH[suit]}</span>}
@@ -565,6 +693,8 @@ export function SolitaireBoard({
                   disabled={pending || terminal}
                   type="button"
                   aria-label={`Empty tableau pile ${column + 1}`}
+                  onDragOver={allowDrop}
+                  onDrop={(event) => dropOnTableau(event, column)}
                   onClick={() => selectEmptyTableau(column)}
                 >
                   <span>K</span>
@@ -589,7 +719,20 @@ export function SolitaireBoard({
                         ? `${RANK_LABEL[card.rank]}${SUIT_GLYPH[card.suit]}, tableau pile ${column + 1}`
                         : `Face-down card, tableau pile ${column + 1}`
                     }
-                    onClick={() => selectTableau(column, index)}
+                    draggable={card.faceUp && !pending && !terminal}
+                    onDoubleClick={() => moveTableauToFoundation(column, index)}
+                    onDragStart={(event) =>
+                      beginDrag(event, {
+                        source: "tableau",
+                        column,
+                        index,
+                      })
+                    }
+                    onDragOver={allowDrop}
+                    onDrop={(event) => dropOnTableau(event, column)}
+                    onClick={(event) => {
+                      if (event.detail === 1) selectTableau(column, index);
+                    }}
                   >
                     {card.faceUp ? (
                       <CardFace card={card} />
@@ -609,7 +752,8 @@ export function SolitaireBoard({
           {pending ? "Waiting for server confirmation…" : feedback}
         </p>
         <p className="game-shortcuts">
-          Keyboard: <kbd>D</kbd> draw · <kbd>Esc</kbd> clear
+          Tap or drag cards · double-click to foundation · <kbd>D</kbd> draw ·{" "}
+          <kbd>Esc</kbd> clear
         </p>
       </footer>
 

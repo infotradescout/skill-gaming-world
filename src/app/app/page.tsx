@@ -36,6 +36,9 @@ export default async function PlayerDashboardPage({
           })),
       }
     : await persistentPlayerProjection(user.id);
+  const activePractice = projection.recentSessions.find(
+    (session) => session.mode === "PRACTICE" && session.status === "ACTIVE",
+  );
   return (
     <>
       {welcome === "1" ? (
@@ -64,8 +67,15 @@ export default async function PlayerDashboardPage({
               this device.
             </p>
           </div>
-          <Link className="button button-primary" href="/app/monetaire/practice">
-            Continue to practice
+          <Link
+            className="button button-primary"
+            href={
+              activePractice
+                ? `/app/monetaire/practice?session=${encodeURIComponent(activePractice.id)}`
+                : "/app/monetaire/practice"
+            }
+          >
+            {activePractice ? "Resume practice" : "Start practice"}
           </Link>
         </section>
         <TrustDisclosure compact />
@@ -86,6 +96,18 @@ export default async function PlayerDashboardPage({
               <div className="data-row" key={session.id}>
                 <div><strong>{session.mode === "PRACTICE" ? "Practice" : "Noncash competition"}</strong><small>{new Date(session.startedAt).toLocaleString()}</small></div>
                 <span>{session.status}</span>
+                {session.status === "ACTIVE" ? (
+                  <Link
+                    className="button button-quiet"
+                    href={
+                      session.mode === "PRACTICE"
+                        ? `/app/monetaire/practice?session=${encodeURIComponent(session.id)}`
+                        : "/app/monetaire/competitions"
+                    }
+                  >
+                    Resume
+                  </Link>
+                ) : null}
               </div>
             ))}
           </div>

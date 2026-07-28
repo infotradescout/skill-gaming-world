@@ -5,7 +5,12 @@ import { SolitaireBoard } from "@/components/solitaire-board";
 import { runtimeUserFromToken, SESSION_COOKIE } from "@/lib/auth";
 import { runtimeEligibilitySnapshot } from "@/lib/runtime-eligibility";
 
-export default async function PracticePage() {
+export default async function PracticePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ session?: string }>;
+}) {
+  const { session } = await searchParams;
   const cookieStore = await cookies();
   const user = await runtimeUserFromToken(cookieStore.get(SESSION_COOKIE)?.value);
   if (!user) {
@@ -20,7 +25,7 @@ export default async function PracticePage() {
       <AppPageHeader eyebrow="Monetaire Play" title="Practice board">
         <p>Learn the board without an entry fee, prize, or effect on ranked results.</p>
       </AppPageHeader>
-      <SolitaireBoard />
+      <SolitaireBoard resumeSessionId={session} />
     </>
   );
 }

@@ -376,6 +376,15 @@
   transform: translateY(-2px);
 }
 
+.playing-card[draggable="true"] {
+  cursor: grab;
+  touch-action: manipulation;
+}
+
+.playing-card[draggable="true"]:active {
+  cursor: grabbing;
+}
+
 .card-face {
   background: #f3efe5;
   color: #16221e;
@@ -504,6 +513,7 @@
 .game-shortcuts {
   color: var(--muted);
   font-size: 0.62rem;
+  text-align: right;
 }
 
 kbd {

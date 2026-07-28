@@ -53,20 +53,34 @@ export function CompetitionPanel({
 
   async function resumeSavedSession() {
     const savedId = window.localStorage.getItem(COMPETITION_SESSION_KEY);
-    if (!savedId) return false;
-    const response = await fetch(`/api/game/sessions/${savedId}`, {
+    const sessionsResponse = await fetch("/api/game/sessions", {
       cache: "no-store",
     });
-    const body = (await response.json().catch(() => null)) as
-      | { session?: ServerGameSession }
+    const sessionsBody = (await sessionsResponse.json().catch(() => null)) as
+      | { sessions?: ServerGameSession[] }
       | null;
-    if (
-      response.ok &&
-      body?.session?.mode === "NONCASH_COMPETITION"
-    ) {
+    const accountSession = sessionsBody?.sessions?.find(
+      (session) =>
+        session.mode === "NONCASH_COMPETITION" &&
+        session.status === "ACTIVE",
+    );
+    const candidateId = accountSession?.id ?? savedId;
+    if (!candidateId) return false;
+    const response = accountSession
+      ? null
+      : await fetch(`/api/game/sessions/${candidateId}`, {
+          cache: "no-store",
+        });
+    const body = response
+      ? ((await response.json().catch(() => null)) as
+          | { session?: ServerGameSession }
+          | null)
+      : { session: accountSession };
+    if ((!response || response.ok) && body?.session?.mode === "NONCASH_COMPETITION") {
+      window.localStorage.setItem(COMPETITION_SESSION_KEY, body.session.id);
       setEnteredSession(body.session);
       setMessage(
-        "Competition session resumed from its server-authoritative state. No Play Coins were charged and no valuable prize is offered.",
+        "Competition session resumed from your account-backed authoritative state. No Play Coins were charged and no valuable prize is offered.",
       );
       return true;
     }

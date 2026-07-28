@@ -8,7 +8,10 @@ import { GET as getCompetitionLeaderboard } from "@/app/api/competitions/[compet
 import { POST as enterCompetition } from "@/app/api/competitions/[competitionId]/enter/route";
 import { POST as submitMove } from "@/app/api/game/sessions/[sessionId]/moves/route";
 import { GET as getSession } from "@/app/api/game/sessions/[sessionId]/route";
-import { POST as startSession } from "@/app/api/game/sessions/route";
+import {
+  GET as listSessions,
+  POST as startSession,
+} from "@/app/api/game/sessions/route";
 import { POST as selfExclude } from "@/app/api/responsible-play/self-exclusion/route";
 
 import {
@@ -127,6 +130,19 @@ describe("server-authoritative game APIs", () => {
     expect(resumed.status).toBe(200);
     expect(resumedBody.session.id).toBe(sessionId);
     expect(resumedBody.session.sequence).toBe(1);
+
+    const active = await listSessions(
+      request("/api/game/sessions", "GET", undefined, cookie),
+    );
+    const activeBody = await active.json();
+    expect(active.status).toBe(200);
+    expect(activeBody.sessions).toHaveLength(1);
+    expect(activeBody.sessions[0]).toMatchObject({
+      id: sessionId,
+      mode: "PRACTICE",
+      status: "ACTIVE",
+      sequence: 1,
+    });
   });
 
   it("returns exact retries and records changed, stale, and out-of-order attempts", async () => {

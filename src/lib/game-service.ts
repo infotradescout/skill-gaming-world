@@ -152,6 +152,18 @@ export function resumeOwnedGameSession(
   return requireOwnedGameSession(user, sessionId);
 }
 
+export function listActiveOwnedGameSessions(
+  user: DemoUser,
+): DemoGameSession[] {
+  assertPlayerMayStart(user);
+  return [...getDemoStore().gameSessionsById.values()]
+    .filter(
+      (session) =>
+        session.userId === user.id && session.state.status === "ACTIVE",
+    )
+    .sort((left, right) => right.createdAt.localeCompare(left.createdAt));
+}
+
 export function submitGameMove(input: {
   user: DemoUser;
   sessionId: string;

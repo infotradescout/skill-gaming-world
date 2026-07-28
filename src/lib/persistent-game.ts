@@ -5,7 +5,7 @@ import {
   randomBytes,
   randomUUID,
 } from "node:crypto";
-import { and, eq, sql } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
 import {
@@ -325,6 +325,24 @@ export async function resumePersistentSession(
     );
   }
   return fromRecord(record);
+}
+
+export async function listActivePersistentSessions(
+  user: DemoUser,
+): Promise<DemoGameSession[]> {
+  await assertPersistentAccess(user);
+  const records = await getDatabase()
+    .select()
+    .from(gameSessions)
+    .where(
+      and(
+        eq(gameSessions.userId, user.id),
+        eq(gameSessions.status, "ACTIVE"),
+      ),
+    )
+    .orderBy(desc(gameSessions.startedAt))
+    .limit(20);
+  return records.map(fromRecord);
 }
 
 export async function submitPersistentMove(input: PersistentMoveInput) {

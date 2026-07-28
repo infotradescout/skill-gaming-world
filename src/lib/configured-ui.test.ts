@@ -40,4 +40,23 @@ describe("configured player UI boundaries", () => {
     expect(practice).toContain("runtimeEligibilitySnapshot");
     expect(practice).not.toContain('user.status !== "ACTIVE"');
   });
+
+  it("keeps the usable Monetaire control and resume paths wired", () => {
+    const board = readFileSync(
+      resolve(process.cwd(), "src/components/solitaire-board.tsx"),
+      "utf8",
+    );
+    expect(board).toContain("sessionHint(session)");
+    expect(board).toContain("onDoubleClick={moveWasteToFoundation}");
+    expect(board).toContain("onDragStart");
+    expect(board).toContain("resumeSessionId");
+
+    const dashboard = readFileSync(
+      resolve(process.cwd(), "src/app/app/page.tsx"),
+      "utf8",
+    );
+    expect(dashboard).toContain(
+      "/app/monetaire/practice?session=${encodeURIComponent(session.id)}",
+    );
+  });
 });
