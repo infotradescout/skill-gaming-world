@@ -30,6 +30,7 @@ nonexecutable until the listed authority releases it.
 | D-022 | Hold | `SOCIAL_CASINO` game execution. | Only unavailable shell exists pending legal/consumer/payment/distribution approval. |
 | D-023 | Hold | `REAL_MONEY_CASINO`, cash ledger, games, deposit, wager, and withdrawal. | Requires licenses/market access and full regulated operating environment. |
 | D-024 | Hold | Production Play Coin sales. | Requires counsel, provider, tax, consumer, app-store, security, and operational approval. |
+| D-025 | Accepted | Free play is the production gameplay contract, not a simplified demo. | A future legally enabled real-money mode must use the same game rules, odds, scoring, fairness verification, and difficulty. Only the regulated value-transfer layer and jurisdiction access may differ. |
 | D-025 | Unresolved | Base age/minor policy. | Unknown/ineligible age follows fail-closed policy until counsel/privacy/distribution approval. |
 | D-026 | Unresolved | Final entity/corporate separation. | Counsel and accounting must approve HoldCo/operator/casino structure. |
 | D-027 | Unresolved | Monetaire trademark/domain/app-store clearance. | Treat name as working until professional clearance. |
