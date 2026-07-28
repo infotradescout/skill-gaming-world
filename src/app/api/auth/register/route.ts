@@ -9,7 +9,7 @@ import {
 } from "@/lib/auth";
 import { appendRuntimeAuditEvent } from "@/lib/audit";
 import { getDemoStore } from "@/lib/demo-store";
-import { getRuntimeEnv, isPreviewOwnerEmail } from "@/lib/env";
+import { getRuntimeEnv } from "@/lib/env";
 import {
   enforceRateLimit,
   enforceSameOrigin,
@@ -41,15 +41,6 @@ export async function POST(request: NextRequest) {
   if (!parsed.success) {
     return jsonError(400, "INVALID_REGISTRATION", "Check the registration fields.", id);
   }
-  if (!isPreviewOwnerEmail(env, parsed.data.email)) {
-    return jsonError(
-      403,
-      "PREVIEW_OWNER_ONLY",
-      "Registration is unavailable for this private preview.",
-      id,
-    );
-  }
-
   const rateError = await enforceRateLimit(request, "register", 8, 60_000);
   if (rateError) return rateError;
 

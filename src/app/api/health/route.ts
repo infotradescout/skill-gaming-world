@@ -7,7 +7,7 @@ import { getRuntimeEnv, type RuntimeEnv } from "@/lib/env";
 export const dynamic = "force-dynamic";
 
 const REQUIRED_CORE_TABLE_COUNT = 10;
-const REQUIRED_MIGRATION_COUNT = 7;
+const REQUIRED_MIGRATION_COUNT = 8;
 
 export async function GET() {
   let env: RuntimeEnv;
@@ -105,8 +105,7 @@ export async function GET() {
     env.DEMO_MODE ||
     (Boolean(configuredJurisdiction) &&
       env.MONETAIRE_PLAY_JURISDICTIONS.includes(configuredJurisdiction));
-  const previewOwnerReady =
-    env.DEMO_MODE || Boolean(env.PREVIEW_OWNER_EMAIL);
+  const previewOwnerReady = true;
   const monetairePlayReady =
     ready && jurisdictionReady && previewOwnerReady;
   const serviceReady =

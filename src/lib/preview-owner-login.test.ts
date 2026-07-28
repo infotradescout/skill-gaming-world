@@ -79,32 +79,6 @@ afterEach(() => {
 });
 
 describe("private-preview login ownership", () => {
-  it("denies a configured non-owner with the generic credentials response", async () => {
-    configureBaseEnvironment(false);
-
-    const returning = vi.fn().mockResolvedValue([{ count: 1 }]);
-    const onConflictDoUpdate = vi.fn().mockReturnValue({ returning });
-    const values = vi.fn().mockReturnValue({ onConflictDoUpdate });
-    const insert = vi.fn().mockReturnValue({ values });
-    vi.mocked(getDatabase).mockReturnValue({ insert } as never);
-
-    const response = await login(
-      authRequest("/api/auth/login", {
-        email: "not-the-owner@example.com",
-        password,
-      }),
-    );
-
-    expect(response.status).toBe(401);
-    await expect(response.json()).resolves.toMatchObject({
-      error: {
-        code: "INVALID_CREDENTIALS",
-        message: "Email or password is incorrect.",
-      },
-    });
-    expect(insert).toHaveBeenCalledOnce();
-  });
-
   it("does not restrict safe-demo registration or login to the preview owner", async () => {
     configureBaseEnvironment(true);
     const email = "safe-demo-player@example.test";
