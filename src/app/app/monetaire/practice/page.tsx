@@ -18,7 +18,7 @@ export default async function PracticePage() {
   return (
     <>
       <AppPageHeader eyebrow="Monetaire Play" title="Practice board">
-        <p>Tap or click a face-up card, then choose its destination. Keyboard shortcuts are shown below the board.</p>
+        <p>Learn the board without an entry fee, prize, or effect on ranked results.</p>
       </AppPageHeader>
       <SolitaireBoard />
     </>

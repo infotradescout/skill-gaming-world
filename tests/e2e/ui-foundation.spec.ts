@@ -131,6 +131,10 @@ test("practice and competition use authoritative state and exact retries", async
   }
   await registerPlayer(page);
   await page.goto("/app/monetaire/practice");
+  await expect(
+    page.getByText("Build each suit from Ace to King.", { exact: false }),
+  ).toBeVisible();
+  await expect(page.getByText("Complete all four foundations")).toBeVisible();
 
   await page.getByRole("button", { name: "Start or resume" }).click();
   await expect(page.getByText("Authoritative session")).toBeVisible();

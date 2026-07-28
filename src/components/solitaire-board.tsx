@@ -403,9 +403,15 @@ export function SolitaireBoard({
         </span>
         <h2>Open a Monetaire deal.</h2>
         <p>
-          The server creates the deal, validates every sequenced move, and measures
-          official active-play time. This device stores only the session identifier.
+          Build each suit from Ace to King. Move cards in descending order with
+          alternating colors, reveal every hidden card, and finish all four
+          foundations.
         </p>
+        <div className="game-start-guide" aria-label="How to play Monetaire">
+          <span><b>1</b> Draw or select a face-up card</span>
+          <span><b>2</b> Choose a legal destination</span>
+          <span><b>3</b> Complete all four foundations</span>
+        </div>
         <button
           className="button button-primary"
           disabled={pending}
@@ -418,7 +424,7 @@ export function SolitaireBoard({
               ? "Start or resume"
               : "Resume competition"}
         </button>
-        <small>{feedback}</small>
+        <small>{feedback} Your deal and every accepted move are verified by the server.</small>
       </section>
     );
   }
@@ -473,9 +479,20 @@ export function SolitaireBoard({
       </header>
 
       <div className="solitaire-notice">
-        <span aria-hidden="true">i</span>
-        The board is a projection of server state. The client never decides whether a
-        move is legal or what time counts toward the official result.
+        <span aria-hidden="true">✓</span>
+        <div>
+          <strong>Goal: move every card to the four suit foundations.</strong>
+          <small>
+            Build tableau columns downward in alternating colors. Only Kings can
+            enter empty columns. Select a card, then its destination.
+          </small>
+        </div>
+      </div>
+
+      <div className="ranking-strip" aria-label="Monetaire ranking rules">
+        <span><b>Win first</b><small>Incomplete deals rank below completed deals.</small></span>
+        <span><b>Then fewer moves</b><small>Only server-accepted moves count.</small></span>
+        <span><b>Then less time</b><small>Verified active play breaks the tie.</small></span>
       </div>
 
       <div className="solitaire-table">

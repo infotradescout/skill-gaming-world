@@ -168,6 +168,41 @@
   font-size: 0.7rem;
 }
 
+.game-start-guide {
+  display: grid;
+  width: min(100%, 680px);
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.65rem;
+}
+
+.game-start-guide span {
+  display: flex;
+  min-height: 62px;
+  gap: 0.6rem;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  background: rgba(227, 201, 138, 0.04);
+  padding: 0.75rem;
+  color: #d5ddd8;
+  font-size: 0.72rem;
+  line-height: 1.4;
+  text-align: left;
+}
+
+.game-start-guide b {
+  display: grid;
+  width: 1.5rem;
+  height: 1.5rem;
+  place-items: center;
+  flex: 0 0 auto;
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+  color: var(--brass-300);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 0.65rem;
+}
+
 .solitaire {
   position: relative;
   overflow: hidden;
@@ -236,6 +271,23 @@
   line-height: 1.5;
 }
 
+.solitaire-notice div {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.solitaire-notice strong {
+  color: #dce5df;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.solitaire-notice small {
+  color: #aebcb5;
+  font-size: 0.65rem;
+  line-height: 1.45;
+}
+
 .solitaire-notice span {
   display: grid;
   width: 1rem;
@@ -247,6 +299,36 @@
   color: var(--brass-300);
   font-family: Georgia, "Times New Roman", serif;
   font-size: 0.62rem;
+}
+
+.ranking-strip {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border-bottom: 1px solid var(--line);
+  background: #0d1916;
+}
+
+.ranking-strip > span {
+  display: grid;
+  gap: 0.15rem;
+  border-right: 1px solid var(--line);
+  padding: 0.65rem 1rem;
+}
+
+.ranking-strip > span:last-child {
+  border-right: 0;
+}
+
+.ranking-strip b {
+  color: var(--brass-300);
+  font-size: 0.67rem;
+  text-transform: uppercase;
+}
+
+.ranking-strip small {
+  color: var(--muted);
+  font-size: 0.61rem;
+  line-height: 1.35;
 }
 
 .solitaire-table {
@@ -866,6 +948,25 @@ kbd {
 }
 
 @media (max-width: 680px) {
+  .game-start {
+    min-height: auto;
+    padding: 1.25rem;
+  }
+
+  .game-start-guide,
+  .ranking-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .ranking-strip > span {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .ranking-strip > span:last-child {
+    border-bottom: 0;
+  }
+
   .dashboard-primary {
     align-items: flex-start;
     flex-direction: column;
