@@ -50,7 +50,7 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
         return;
       }
 
-      router.push("/app");
+      router.push(register ? "/app?welcome=1" : "/app");
       router.refresh();
     } catch {
       setMessage("Account services are not reachable. Your form was not submitted.");

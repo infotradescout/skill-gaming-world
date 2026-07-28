@@ -1,21 +1,21 @@
 :root {
   --font-geist-sans: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-geist-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
-  --ink-950: #07110f;
-  --ink-900: #0b1714;
-  --ink-850: #10201c;
-  --ink-800: #152923;
+  --ink-950: #05070b;
+  --ink-900: #090d14;
+  --ink-850: #101722;
+  --ink-800: #172230;
   --ink-700: #244139;
   --paper-50: #f8f6ef;
   --paper-100: #f0ecdf;
   --paper-200: #dfd8c6;
   --paper-500: #a9a28f;
-  --brass-300: #e3c98a;
-  --brass-400: #c9a85e;
-  --brass-500: #aa8540;
-  --jade-300: #8ed7b5;
-  --jade-400: #5ec295;
-  --jade-500: #2f9c72;
+  --brass-300: #f1d27a;
+  --brass-400: #ddb146;
+  --brass-500: #b98622;
+  --jade-300: #72f2c1;
+  --jade-400: #24d69a;
+  --jade-500: #0ca875;
   --rose-400: #db8d86;
   --blue-400: #82a9d4;
   --background: var(--ink-950);
@@ -23,13 +23,13 @@
   --muted: #a8b8b1;
   --line: rgba(240, 236, 223, 0.12);
   --line-strong: rgba(227, 201, 138, 0.32);
-  --panel: rgba(17, 35, 30, 0.76);
-  --panel-solid: #10201c;
+  --panel: rgba(15, 22, 33, 0.82);
+  --panel-solid: #101722;
   --shadow: 0 28px 80px rgba(0, 0, 0, 0.34);
   --radius-sm: 0.7rem;
   --radius-md: 1rem;
   --radius-lg: 1.5rem;
-  --content: 1180px;
+  --content: 1320px;
 }
 
 html {
@@ -51,8 +51,8 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background-image:
-    radial-gradient(circle at 7% 0%, rgba(47, 156, 114, 0.14), transparent 34rem),
-    radial-gradient(circle at 96% 14%, rgba(201, 168, 94, 0.1), transparent 29rem);
+    radial-gradient(circle at 8% 0%, rgba(36, 214, 154, 0.11), transparent 34rem),
+    radial-gradient(circle at 94% 14%, rgba(221, 177, 70, 0.1), transparent 32rem);
 }
 
 * {
@@ -199,12 +199,24 @@ button {
 }
 
 .button-primary {
-  background: var(--paper-50);
-  color: var(--ink-950);
+  background: linear-gradient(135deg, #ffe8a8, var(--brass-400));
+  color: #171004;
+  box-shadow: 0 12px 35px rgba(221, 177, 70, 0.18);
 }
 
 .button-primary:hover {
-  background: var(--brass-300);
+  background: linear-gradient(135deg, #fff0c3, #eec65c);
+}
+
+.button-large {
+  min-height: 3.45rem;
+  padding-inline: 1.45rem;
+}
+
+.button-glass {
+  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.055);
+  backdrop-filter: blur(14px);
 }
 
 .button-secondary {
