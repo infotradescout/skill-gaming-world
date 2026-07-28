@@ -1,40 +1,84 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type Choice = "under" | "seven" | "over";
 
 export function FortuneDice() {
-  const [balance, setBalance] = useState(10000);
+  const [balance, setBalance] = useState(0);
   const [bet, setBet] = useState(100);
   const [choice, setChoice] = useState<Choice>("seven");
   const [dice, setDice] = useState<[number, number]>([3, 4]);
   const [message, setMessage] = useState("Choose an outcome and roll.");
   const [rolling, setRolling] = useState(false);
   const [round, setRound] = useState(1);
+  const [roundId, setRoundId] = useState("");
+  const [commitment, setCommitment] = useState("");
+  const [proof, setProof] = useState<{ serverSeed: string; clientSeed: string; nonce: number } | null>(null);
 
-  const payout = choice === "seven" ? 4 : 2;
+  async function prepareRound() {
+    const response = await fetch("/api/fortune-dice", { cache: "no-store" });
+    if (response.status === 401) {
+      setMessage("Sign in to receive free Play Coins and play.");
+      return;
+    }
+    if (!response.ok) {
+      setMessage("The server could not prepare a fair round.");
+      return;
+    }
+    const data = await response.json();
+    setRoundId(data.roundId);
+    setCommitment(data.commitment);
+    setRound(data.nonce + 1);
+    setBalance(data.balanceMinor);
+  }
 
-  function roll() {
-    if (rolling || bet < 10 || bet > balance) return;
+  useEffect(() => {
+    void fetch("/api/fortune-dice", { cache: "no-store" }).then(
+      async (response) => {
+        if (response.status === 401) {
+          setMessage("Sign in to receive free Play Coins and play.");
+          return;
+        }
+        if (!response.ok) {
+          setMessage("The server could not prepare a fair round.");
+          return;
+        }
+        const data = await response.json();
+        setRoundId(data.roundId);
+        setCommitment(data.commitment);
+        setRound(data.nonce + 1);
+        setBalance(data.balanceMinor);
+      },
+    );
+  }, []);
+
+  async function roll() {
+    if (rolling || !roundId || bet < 10 || bet > balance) return;
     setRolling(true);
     setMessage("Rolling…");
-    window.setTimeout(() => {
-      const values = new Uint32Array(2);
-      window.crypto.getRandomValues(values);
-      const first = (values[0] % 6) + 1;
-      const second = (values[1] % 6) + 1;
-      const total = first + second;
-      const won =
-        (choice === "under" && total < 7) ||
-        (choice === "seven" && total === 7) ||
-        (choice === "over" && total > 7);
-      setDice([first, second]);
-      setBalance((current) => current + (won ? bet * (payout - 1) : -bet));
-      setMessage(won ? `Winner — ${total}. +${bet * (payout - 1)} PC` : `${total}. Better luck next round.`);
-      setRound((current) => current + 1);
+    const bytes = new Uint8Array(18);
+    window.crypto.getRandomValues(bytes);
+    const clientSeed = Array.from(bytes, (value) => value.toString(16).padStart(2, "0")).join("");
+    try {
+      const response = await fetch("/api/fortune-dice", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ roundId, choice, wagerMinor: bet, clientSeed }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message ?? "Round failed");
+      setDice(data.dice);
+      setBalance(data.balanceMinor);
+      setProof(data.proof);
+      setMessage(data.won ? `Winner — ${data.total}. +${data.netChangeMinor} PC` : `${data.total}. ${data.netChangeMinor} PC`);
+      setRoundId("");
+      await prepareRound();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "The round could not be settled.");
+    } finally {
       setRolling(false);
-    }, 650);
+    }
   }
 
   return (
@@ -64,13 +108,13 @@ export function FortuneDice() {
           <div className="quick-bets">
             {[50, 100, 250, 500].map((value) => <button type="button" onClick={() => setBet(value)} key={value}>{value}</button>)}
           </div>
-          <button className="roll-button" disabled={rolling || bet < 10 || bet > balance} onClick={roll} type="button">
+          <button className="roll-button" disabled={rolling || !roundId || bet < 10 || bet > balance} onClick={roll} type="button">
             {rolling ? "Rolling…" : `Roll for ${bet} PC`}
           </button>
         </div>
         <div className="dice-footer">
           <span>Balance <strong>{balance.toLocaleString()} PC</strong></span>
-          <span>Fairness <strong>Independent round</strong></span>
+          <span>Fairness <strong>{commitment ? "Seed committed" : "Preparing…"}</strong></span>
           <span>Value <strong>Entertainment only</strong></span>
         </div>
       </div>
@@ -87,7 +131,16 @@ export function FortuneDice() {
           <p><span>Under / Over</span><strong>41.67%</strong></p>
           <p><span>Exact 7</span><strong>16.67%</strong></p>
         </div>
-        <p className="rules-note">This preview uses the browser&apos;s cryptographic random-number generator. Server-recorded, independently verifiable rounds are required before public competitive operation.</p>
+        <p className="rules-note">
+          The server commits to a hidden seed before every wager, then reveals it
+          after settlement. Commitment: <code>{commitment ? `${commitment.slice(0, 16)}…` : "preparing"}</code>
+        </p>
+        {proof ? (
+          <details className="rules-note">
+            <summary>Verify the last round</summary>
+            <code>HMAC-SHA256({proof.serverSeed}, {proof.clientSeed}:{proof.nonce})</code>
+          </details>
+        ) : null}
       </aside>
     </section>
   );
