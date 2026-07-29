@@ -13,7 +13,7 @@ async function registerPlayer(page: Page) {
   await page.getByLabel("Confirm password").fill(password);
   await page.locator('input[name="termsAccepted"]').check();
   await page.getByRole("button", { name: "Create account" }).click();
-  await expect(page).toHaveURL(/\/app$/);
+  await expect(page).toHaveURL(/\/app\?welcome=1$/);
   return { email, password };
 }
 
@@ -54,16 +54,16 @@ test("public landing page states the noncash product boundary", async ({ page })
   await page.goto("/");
 
   await expect(
-    page.getByRole("heading", { name: /Your decisions\.\s*The same deal\./ }),
-  ).toBeVisible();
-  await expect(page.getByText("Play Coins have no cash value.", { exact: true })).toBeVisible();
-  await expect(
-    page.getByText("Monetaire Play does not award cash or valuable prizes.", {
-      exact: true,
-    }),
+    page.getByRole("heading", { name: /Play where\s*fair means provable\./ }),
   ).toBeVisible();
   await expect(
-    page.getByText("Casino cash wagering is not currently available.").first(),
+    page.getByText(/Play Coins have no cash value and cannot be withdrawn/),
+  ).toBeVisible();
+  await expect(
+    page.getByText(/Monetaire Play does not award cash or valuable prizes/),
+  ).toBeVisible();
+  await expect(
+    page.getByText(/Casino cash wagering is not currently available/).first(),
   ).toBeVisible();
 });
 
@@ -90,7 +90,7 @@ test("account access, held modes, and Play Coin exact retry remain coherent", as
   await page.goto("/admin/feature-gates");
   await expect(page).toHaveURL(/\/app$/);
   await page.goto("/app/eligibility");
-  await expect(page.getByText("Safe demo only")).toBeVisible();
+  await expect(page.getByText(/Safe demo · noncash entertainment/)).toBeVisible();
   await expect(page.getByText("Disabled", { exact: true })).toHaveCount(2);
 
   const requestBody = {
@@ -346,7 +346,9 @@ test("casino and privileged admin surfaces remain held", async ({ page }) => {
   await expect(
     page.getByRole("heading", { name: /Casino is\s*not available\./ }),
   ).toBeVisible();
-  await expect(page.getByText("Server-disabled", { exact: true }).first()).toBeVisible();
+  await expect(page.locator(".casino-balance strong")).toHaveText(
+    /HARD\s+HOLD/,
+  );
   await expect(
     page.getByText(
       "No casino games, deposits, wagers, cash balances, or withdrawals are exposed in the current product.",

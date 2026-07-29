@@ -17,6 +17,7 @@ export default defineConfig({
   webServer: {
     command: "npm run dev -- --hostname 127.0.0.1",
     url: "http://127.0.0.1:3000",
+    timeout: 120_000,
     reuseExistingServer: !process.env.CI,
     env: {
       DEMO_MODE: "true",
