@@ -6,6 +6,7 @@ export * from "./curated-deal-proof";
 export * from "./deal";
 export * from "./eligibility";
 export * from "./game-engine";
+export * from "./game-titles";
 export * from "./ledger";
 export * from "./product-modes";
 export * from "./responsible-play";

@@ -23,6 +23,10 @@
 # production
 /build
 
+# generated robot combat assets (Blender output)
+/generated/robot-combat/
+/.tmp-sgw-robot-foundation/
+
 # misc
 .DS_Store
 *.pem

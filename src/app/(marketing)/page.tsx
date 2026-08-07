@@ -10,6 +10,14 @@ const games = [
     art: "cards",
   },
   {
+    badge: "In development",
+    title: "SGW Robot Combat",
+    copy: "Original robot construction and combat foundation. Match play is not available yet.",
+    href: "/robot-combat",
+    action: "View status",
+    art: "crown",
+  },
+  {
     badge: "On hold",
     title: "Fortune Dice",
     copy: "Casino-style game execution is not available in the current product.",

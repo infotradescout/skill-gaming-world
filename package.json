@@ -17,6 +17,8 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "test:e2e:configured-preview": "playwright test --config=playwright.configured-preview.ts",
+    "robot-combat:generate": "tools\\blender\\robot-combat\\run_generator_windows.bat",
+    "robot-combat:inspect-scene": "tools\\blender\\robot-combat\\run_scene_inspection_windows.bat",
     "check": "npm run audit && npm run lint && npm run typecheck && npm run test && npm run build:verify",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
