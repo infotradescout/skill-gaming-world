@@ -51,6 +51,16 @@ reference and safe classification instead.
 - Retention and legal holds are set by approved policy, not ad hoc cleanup.
 - Exported evidence is signed/hashed with chain-of-custody metadata.
 
+Configured audit events written by the Stage 2 application use
+`AUDIT_CANONICAL_JSON_V2`. The hash covers the normalized persisted envelope,
+including actor type, request id, nullable before/after state, canonical-version
+metadata, the previous hash, and a database-derived millisecond timestamp.
+Canonical JSON sorts object keys recursively, so an event can be reloaded from
+PostgreSQL `jsonb` and independently rehashed. Earlier events remain linked as
+legacy V1 history; because V1 used ordinary `JSON.stringify` before `jsonb`
+persistence, their nested object key order may not be reconstructable and they
+must not be represented as independently V2-verifiable.
+
 ## Failure behavior
 
 A privileged, ledger, score-correction, gate, eligibility, or self-exclusion
@@ -63,4 +73,3 @@ remain auditable.
 Test mutation/deletion denial, sequence gaps, hash mismatch, transaction
 rollback, redaction, unauthorized access, clock anomaly handling, export
 integrity, and reconstruction of every manual balance/score change.
-

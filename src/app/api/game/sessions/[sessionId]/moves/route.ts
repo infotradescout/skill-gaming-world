@@ -48,8 +48,13 @@ const moveIntentSchema = z.discriminatedUnion("type", [
 ]);
 
 const moveSchema = z.object({
-  actionId: z.string().trim().min(12).max(128),
-  sequence: z.number().int().positive(),
+  actionId: z
+    .string()
+    .trim()
+    .min(12)
+    .max(128)
+    .refine((value) => !value.includes("\u0000")),
+  sequence: z.number().int().positive().max(2_147_483_647),
   priorStateHash: z.string().regex(/^[a-f0-9]{64}$/),
   intent: moveIntentSchema,
 });
@@ -67,14 +72,17 @@ export async function POST(
   if (!user) {
     return jsonError(401, "AUTH_REQUIRED", "Sign in to continue.", id);
   }
+  const { sessionId } = await context.params;
+  const env = getRuntimeEnv();
+  if (!env.DEMO_MODE && !z.string().uuid().safeParse(sessionId).success) {
+    return jsonError(404, "SESSION_NOT_FOUND", "Game session was not found.", id);
+  }
   const parsed = moveSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
     return jsonError(400, "INVALID_MOVE_COMMAND", "Check the move command.", id);
   }
-  const { sessionId } = await context.params;
-
   try {
-    const { session, result } = getRuntimeEnv().DEMO_MODE
+    const { session, result } = env.DEMO_MODE
       ? submitGameMove({
           user,
           sessionId,
@@ -84,6 +92,7 @@ export async function POST(
           user,
           sessionId,
           ...parsed.data,
+          auditRequestId: id,
         });
     if (!result.accepted) {
       return NextResponse.json(
@@ -100,6 +109,7 @@ export async function POST(
     }
 
     if (
+      env.DEMO_MODE &&
       !result.idempotentReplay &&
       session.state.status !== "ACTIVE"
     ) {

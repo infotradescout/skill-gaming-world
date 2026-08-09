@@ -22,6 +22,11 @@ function configuredPreviewBaseUrl(): string {
       "PREVIEW_BASE_URL must use HTTPS unless it targets a loopback host.",
     );
   }
+  if (parsed.origin === "https://skill-gaming-world.onrender.com") {
+    throw new Error(
+      "Configured-preview verification refuses to run against the production origin.",
+    );
+  }
 
   return parsed.origin;
 }

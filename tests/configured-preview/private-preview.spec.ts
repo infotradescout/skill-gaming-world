@@ -11,6 +11,10 @@ function requiredEnvironment(name: string): string {
 
 const ownerEmail = requiredEnvironment("PREVIEW_OWNER_EMAIL").toLowerCase();
 const ownerPassword = requiredEnvironment("PREVIEW_OWNER_PASSWORD");
+const expectedTargetId = requiredEnvironment("PREVIEW_E2E_TARGET_ID");
+const expectedDatabaseFingerprint = requiredEnvironment(
+  "PREVIEW_DATABASE_FINGERPRINT",
+);
 if (ownerPassword.length < 12) {
   throw new Error(
     "PREVIEW_OWNER_PASSWORD must contain at least 12 characters.",
@@ -34,6 +38,10 @@ async function assertConfiguredHealth(page: Page) {
   await expect(response.json()).resolves.toMatchObject({
     status: "ok",
     mode: "configured",
+    verificationTarget: {
+      id: expectedTargetId,
+      databaseFingerprint: expectedDatabaseFingerprint,
+    },
     dependencies: {
       configuration: "ready",
       database: "ready",
@@ -223,7 +231,7 @@ async function assertAdminDenied(page: Page) {
   await expect(page).toHaveURL(/\/app$/);
 }
 
-test("configured private preview is owner-only, persistent, and held", async ({
+test("configured private preview is persistent, isolated, and held", async ({
   page,
 }) => {
   await assertConfiguredHealth(page);

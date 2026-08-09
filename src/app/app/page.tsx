@@ -4,10 +4,7 @@ import { redirect } from "next/navigation";
 import { AppPageHeader } from "@/components/app-shell";
 import { EmptyState, StatusPill, TrustDisclosure } from "@/components/page-elements";
 import { runtimeUserFromToken, SESSION_COOKIE } from "@/lib/auth";
-import { demoAchievementProjection } from "@/lib/achievements";
-import { getDemoStore, playCoinBalance } from "@/lib/demo-store";
-import { getRuntimeEnv } from "@/lib/env";
-import { persistentPlayerProjection } from "@/lib/persistent-projections";
+import { runtimePlayerProjection } from "@/lib/runtime-player-projection";
 
 export default async function PlayerDashboardPage({
   searchParams,
@@ -18,25 +15,7 @@ export default async function PlayerDashboardPage({
   const cookieStore = await cookies();
   const user = await runtimeUserFromToken(cookieStore.get(SESSION_COOKIE)?.value);
   if (!user) redirect("/auth/login");
-  const env = getRuntimeEnv();
-  const projection = env.DEMO_MODE
-    ? {
-        playCoinBalanceMinor: playCoinBalance(user.id),
-        completedGames: [...getDemoStore().gameSessionsById.values()].filter(
-          (session) => session.userId === user.id && session.state.status === "WON",
-        ).length,
-        currentRank: null,
-        achievements: demoAchievementProjection(user.id),
-        recentSessions: [...getDemoStore().gameSessionsById.values()]
-          .filter((session) => session.userId === user.id)
-          .map((session) => ({
-            id: session.id,
-            mode: session.mode,
-            status: session.state.status,
-            startedAt: session.createdAt,
-          })),
-      }
-    : await persistentPlayerProjection(user.id);
+  const projection = await runtimePlayerProjection(user.id);
   const activePractice = projection.recentSessions.find(
     (session) => session.mode === "PRACTICE" && session.status === "ACTIVE",
   );
@@ -84,7 +63,14 @@ export default async function PlayerDashboardPage({
       <div className="grid-4 app-stat-grid">
         <div className="stat surface-soft"><span>Play Coin balance</span><strong>{projection.playCoinBalanceMinor.toLocaleString()}</strong></div>
         <div className="stat surface-soft"><span>Completed games</span><strong>{projection.completedGames}</strong></div>
-        <div className="stat surface-soft"><span>Current rank</span><strong>{projection.currentRank ?? "—"}</strong></div>
+        <div className="stat surface-soft">
+          <span>Current rank</span>
+          <strong>
+            {projection.currentRank
+              ? `#${projection.currentRank.rank}${projection.currentRank.tied ? " · tied" : ""}`
+              : "—"}
+          </strong>
+        </div>
         <div className="stat surface-soft"><span>Achievements</span><strong>{projection.achievements.filter((item) => item.awardedAt).length}</strong></div>
       </div>
       <section className="app-section">

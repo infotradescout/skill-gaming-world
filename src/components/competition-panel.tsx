@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   competitionView,
   type CompetitionView,
@@ -26,10 +26,18 @@ export function CompetitionPanel({
   );
   const [message, setMessage] = useState("");
   const [pending, setPending] = useState(false);
+  const [refreshingLeaderboard, setRefreshingLeaderboard] = useState(false);
+  const [leaderboardUpdatedAt, setLeaderboardUpdatedAt] = useState<string | null>(
+    null,
+  );
   const [enteredSession, setEnteredSession] =
     useState<ServerGameSession | null>(null);
+  const [enteredCompetitionId, setEnteredCompetitionId] = useState<
+    string | null
+  >(null);
 
-  async function loadCompetition() {
+  const loadCompetition = useCallback(async (announce = false) => {
+    setRefreshingLeaderboard(true);
     try {
       const response = await fetch("/api/competitions", { cache: "no-store" });
       const body = (await response.json().catch(() => null)) as
@@ -41,21 +49,46 @@ export function CompetitionPanel({
       if (!response.ok) {
         const error =
           typeof body?.error === "object" ? body.error.message : body?.error;
-        setMessage(error ?? "Competition records could not be loaded.");
+        if (announce) {
+          setMessage(error ?? "Competition records could not be loaded.");
+        }
         return;
       }
       const snapshot = body?.competitions?.[0];
-      setCompetition(snapshot ? competitionView(snapshot) : null);
+      const nextCompetition = snapshot ? competitionView(snapshot) : null;
+      if (
+        nextCompetition &&
+        enteredCompetitionId &&
+        nextCompetition.id !== enteredCompetitionId
+      ) {
+        window.localStorage.removeItem(COMPETITION_SESSION_KEY);
+        setEnteredSession(null);
+        setEnteredCompetitionId(null);
+      }
+      setCompetition(nextCompetition);
+      setLeaderboardUpdatedAt(new Date().toISOString());
+      if (announce) setMessage("Leaderboard refreshed from server records.");
     } catch {
-      setMessage("Competition records are not reachable.");
+      if (announce) setMessage("Competition records are not reachable.");
+    } finally {
+      setRefreshingLeaderboard(false);
     }
-  }
+  }, [enteredCompetitionId]);
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      if (document.visibilityState === "visible") void loadCompetition(false);
+    }, 15_000);
+    return () => window.clearInterval(interval);
+  }, [loadCompetition]);
 
   async function resumeSavedSession() {
-    const savedId = window.localStorage.getItem(COMPETITION_SESSION_KEY);
     const sessionsResponse = await fetch("/api/game/sessions", {
       cache: "no-store",
     });
+    if (!sessionsResponse.ok) {
+      throw new Error("Account sessions could not be checked.");
+    }
     const sessionsBody = (await sessionsResponse.json().catch(() => null)) as
       | { sessions?: ServerGameSession[] }
       | null;
@@ -64,21 +97,10 @@ export function CompetitionPanel({
         session.mode === "NONCASH_COMPETITION" &&
         session.status === "ACTIVE",
     );
-    const candidateId = accountSession?.id ?? savedId;
-    if (!candidateId) return false;
-    const response = accountSession
-      ? null
-      : await fetch(`/api/game/sessions/${candidateId}`, {
-          cache: "no-store",
-        });
-    const body = response
-      ? ((await response.json().catch(() => null)) as
-          | { session?: ServerGameSession }
-          | null)
-      : { session: accountSession };
-    if ((!response || response.ok) && body?.session?.mode === "NONCASH_COMPETITION") {
-      window.localStorage.setItem(COMPETITION_SESSION_KEY, body.session.id);
-      setEnteredSession(body.session);
+    if (accountSession) {
+      window.localStorage.setItem(COMPETITION_SESSION_KEY, accountSession.id);
+      setEnteredSession(accountSession);
+      setEnteredCompetitionId(competition?.id ?? null);
       setMessage(
         "Competition session resumed from your account-backed authoritative state. No Play Coins were charged and no valuable prize is offered.",
       );
@@ -119,6 +141,7 @@ export function CompetitionPanel({
       }
       window.localStorage.setItem(COMPETITION_SESSION_KEY, body.session.id);
       setEnteredSession(body.session);
+      setEnteredCompetitionId(competition.id);
       setMessage(
         "Entry and playable server-created session confirmed. No Play Coins were charged and no valuable prize is offered.",
       );
@@ -181,7 +204,7 @@ export function CompetitionPanel({
           <div><dt>Closes</dt><dd>{new Date(competition.closesAt).toLocaleString()}</dd></div>
           {competition.rulesetVersion ? <div><dt>Ruleset</dt><dd>{competition.rulesetVersion}</dd></div> : null}
           {competition.dealGeneratorVersion ? <div><dt>Generator</dt><dd>{competition.dealGeneratorVersion}</dd></div> : null}
-          <div><dt>Commitment</dt><dd className="mono">{competition.dealCommitment ?? "Unavailable"}</dd></div>
+          <div><dt>Deal commitment</dt><dd className="mono">{competition.dealCommitment ?? "Unavailable"}</dd></div>
           {competition.validation ? <div><dt>Solver record</dt><dd>{competition.validation.solver} {competition.validation.solverVersion}</dd></div> : null}
           <div><dt>Seed</dt><dd>{competition.seedReveal ?? "Held until competition close"}</dd></div>
         </dl>
@@ -193,12 +216,29 @@ export function CompetitionPanel({
             initialSession={enteredSession}
             mode="NONCASH_COMPETITION"
             storageKey={COMPETITION_SESSION_KEY}
+            onSessionTerminal={() => void loadCompetition(false)}
           />
         </div>
       ) : null}
       <div className="competition-standings">
         <div className="app-section-header">
-          <div><p className="eyebrow">Server-calculated</p><h3>Leaderboard</h3></div>
+          <div>
+            <p className="eyebrow">Server-calculated</p>
+            <h3>Leaderboard</h3>
+            {leaderboardUpdatedAt ? (
+              <small>
+                Updated {new Date(leaderboardUpdatedAt).toLocaleTimeString()}
+              </small>
+            ) : null}
+          </div>
+          <button
+            className="button button-quiet"
+            disabled={refreshingLeaderboard}
+            type="button"
+            onClick={() => void loadCompetition(true)}
+          >
+            {refreshingLeaderboard ? "Refreshing…" : "Refresh leaderboard"}
+          </button>
         </div>
         {competition.standings.length === 0 ? (
           <p className="muted small">No completed official scores are recorded.</p>

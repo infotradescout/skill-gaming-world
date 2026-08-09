@@ -17,8 +17,7 @@ import {
   jsonError,
   requestId,
 } from "@/lib/http";
-import { evaluateInitialOperationGate } from "@/lib/operation-gates";
-import { authorizeConfiguredMonetairePlay } from "@/lib/configured-jurisdiction";
+import { authorizeMonetairePlay } from "@/lib/configured-jurisdiction";
 import {
   createPersistentPracticeSession,
   listActivePersistentSessions,
@@ -72,15 +71,20 @@ export async function POST(request: NextRequest) {
   }
 
   const env = getRuntimeEnv();
-  const jurisdictionAllowed = env.DEMO_MODE
-    ? evaluateInitialOperationGate("mode.monetaire_play", env).decision ===
-      "ALLOW"
-    : await authorizeConfiguredMonetairePlay(user, id);
-  if (!jurisdictionAllowed) {
+  const authorization = await authorizeMonetairePlay(user, id);
+  if (!authorization.allowed) {
     return jsonError(
       503,
       "JURISDICTION_ADAPTER_REQUIRED",
       "Game sessions require a configured server jurisdiction decision.",
+      id,
+    );
+  }
+  if (!env.DEMO_MODE && !authorization.jurisdictionDecisionId) {
+    return jsonError(
+      500,
+      "JURISDICTION_DECISION_NOT_RECORDED",
+      "Session authorization evidence was not recorded.",
       id,
     );
   }
@@ -96,25 +100,33 @@ export async function POST(request: NextRequest) {
         ? createPracticeSession(user)
         : createCompetitionSession(user)
       : parsed.data.mode === "PRACTICE"
-        ? await createPersistentPracticeSession(user)
+        ? await createPersistentPracticeSession(user, id)
         : await persistentCompetitionSnapshot().then((competition) =>
-            enterPersistentCompetition(user, competition.competitionId),
+            enterPersistentCompetition(
+              user,
+              competition.competitionId,
+              authorization.jurisdictionDecisionId!,
+              { requestId: id, eventType: "GAME_SESSION_CREATED" },
+            ),
           );
-    await appendRuntimeAuditEvent({
-      eventType: "GAME_SESSION_CREATED",
-      actorId: user.id,
-      subjectType: "GAME_SESSION",
-      subjectId: session.id,
-      reason:
-        session.mode === "PRACTICE"
-          ? "Player started a noncash practice session."
-          : "Player entered the zero-cost, noncash ranked competition.",
-      afterState: {
-        mode: session.mode,
-        dealCommitment: session.state.dealCommitment,
-        valuablePrize: false,
-      },
-    });
+    if (env.DEMO_MODE) {
+      await appendRuntimeAuditEvent({
+        eventType: "GAME_SESSION_CREATED",
+        actorId: user.id,
+        subjectType: "GAME_SESSION",
+        subjectId: session.id,
+        reason:
+          session.mode === "PRACTICE"
+            ? "Player started a noncash practice session."
+            : "Player entered the zero-cost, noncash ranked competition.",
+        afterState: {
+          mode: session.mode,
+          dealCommitment: session.state.dealCommitment,
+          valuablePrize: false,
+          environment: "safe-demo",
+        },
+      });
+    }
     return NextResponse.json(
       { session: publicGameSession(session) },
       { status: 201 },

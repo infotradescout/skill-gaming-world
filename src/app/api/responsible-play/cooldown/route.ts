@@ -10,7 +10,10 @@ import {
   jsonError,
   requestId,
 } from "@/lib/http";
-import { persistCooldown } from "@/lib/persistent-auth";
+import {
+  persistCooldown,
+  PersistentRestrictionError,
+} from "@/lib/persistent-auth";
 
 const cooldownSchema = z.object({
   hours: z.union([z.literal(24), z.literal(72), z.literal(168)]),
@@ -42,39 +45,52 @@ export async function POST(request: NextRequest) {
   }
 
   const before = { status: user.status, cooldownUntil: user.cooldownUntil };
-  const requestedEnd = Date.now() + parsed.data.hours * 60 * 60 * 1000;
-  const existingEnd =
-    user.cooldownUntil === undefined
-      ? 0
-      : new Date(user.cooldownUntil).getTime();
-  if (!Number.isFinite(existingEnd)) {
-    return jsonError(
-      409,
-      "RESTRICTION_STATE_INVALID",
-      "The existing restriction state requires review.",
-      id,
-    );
-  }
-  // A cooldown may extend, but never replace, a stronger self-exclusion.
-  if (user.status !== "SELF_EXCLUDED") {
-    user.status = "COOLDOWN";
-  }
-  const cooldownEnd = new Date(Math.max(requestedEnd, existingEnd));
   if (getRuntimeEnv().DEMO_MODE) {
+    const requestedEnd = Date.now() + parsed.data.hours * 60 * 60 * 1000;
+    const existingEnd =
+      user.cooldownUntil === undefined
+        ? 0
+        : new Date(user.cooldownUntil).getTime();
+    if (!Number.isFinite(existingEnd)) {
+      return jsonError(
+        409,
+        "RESTRICTION_STATE_INVALID",
+        "The existing restriction state requires review.",
+        id,
+      );
+    }
+    // A cooldown may extend, but never replace, a stronger self-exclusion.
+    if (user.status !== "SELF_EXCLUDED") {
+      user.status = "COOLDOWN";
+    }
+    const cooldownEnd = new Date(Math.max(requestedEnd, existingEnd));
     user.cooldownUntil = cooldownEnd.toISOString();
   } else {
-    await persistCooldown(user, cooldownEnd);
+    try {
+      await persistCooldown(user, parsed.data.hours, id);
+    } catch (error) {
+      if (error instanceof PersistentRestrictionError) {
+        return jsonError(403, error.code, error.message, id);
+      }
+      throw error;
+    }
   }
 
-  await appendRuntimeAuditEvent({
-    eventType: "ACCOUNT_COOLDOWN_ACTIVATED",
-    actorId: user.id,
-    subjectType: "USER",
-    subjectId: user.id,
-    reason: `Player selected a ${parsed.data.hours}-hour cooldown.`,
-    beforeState: before,
-    afterState: { status: user.status, cooldownUntil: user.cooldownUntil },
-  });
+  if (getRuntimeEnv().DEMO_MODE) {
+    await appendRuntimeAuditEvent({
+      eventType: "ACCOUNT_COOLDOWN_ACTIVATED",
+      actorId: user.id,
+      subjectType: "USER",
+      subjectId: user.id,
+      reason: `Player selected a ${parsed.data.hours}-hour cooldown.`,
+      beforeState: before,
+      afterState: {
+        status: user.status,
+        cooldownUntil: user.cooldownUntil,
+        environment: "safe-demo",
+      },
+    });
+  }
 
   return NextResponse.json({ user: publicUser(user), cooldownCannotBeShortened: true });
 }

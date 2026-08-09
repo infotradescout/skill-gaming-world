@@ -44,7 +44,8 @@ export async function POST(request: NextRequest) {
 
   const before = { status: user.status };
   user.status = "CLOSED";
-  if (getRuntimeEnv().DEMO_MODE) {
+  const demoMode = getRuntimeEnv().DEMO_MODE;
+  if (demoMode) {
     const store = getDemoStore();
     for (const [tokenHash, session] of store.sessionsByTokenHash) {
       if (session.userId === user.id) {
@@ -52,21 +53,23 @@ export async function POST(request: NextRequest) {
       }
     }
   } else {
-    await closePersistentUser(user.id);
+    await closePersistentUser(user.id, id);
   }
 
-  await appendRuntimeAuditEvent({
-    eventType: "ACCOUNT_CLOSED",
-    actorId: user.id,
-    subjectType: "USER",
-    subjectId: user.id,
-    reason: "Player completed the explicit account-closure confirmation.",
-    beforeState: before,
-    afterState: { status: user.status },
-  });
+  if (demoMode) {
+    await appendRuntimeAuditEvent({
+      eventType: "ACCOUNT_CLOSED",
+      actorId: user.id,
+      subjectType: "USER",
+      subjectId: user.id,
+      reason: "Player completed the explicit account-closure confirmation.",
+      beforeState: before,
+      afterState: { status: user.status, environment: "safe-demo" },
+    });
+  }
 
   const response = NextResponse.json({ closed: true });
-  await revokeRuntimeSession(request);
+  if (demoMode) await revokeRuntimeSession(request);
   clearSessionCookie(response);
   return response;
 }

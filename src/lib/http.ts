@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createHash } from "node:crypto";
+import { createHash, createHmac } from "node:crypto";
 
 import { getRuntimeEnv } from "./env";
 import { createId } from "./ids";
@@ -9,6 +9,7 @@ import { sql } from "drizzle-orm";
 
 const rateBuckets = new Map<string, { count: number; resetsAt: number }>();
 const MAX_DEMO_RATE_BUCKETS = 2_048;
+const CONFIGURED_RATE_LIMIT_SHARDS = 256;
 
 export function requestId(request: NextRequest): string {
   return request.headers.get("x-request-id")?.slice(0, 128) ?? createId("req");
@@ -82,40 +83,66 @@ export async function enforceRateLimit(
   bucket: string,
   limit: number,
   intervalMs: number,
+  options?: { anonymousCredential?: string },
 ): Promise<NextResponse | null> {
-
   /*
-   * The in-process limiter is deliberately safe-demo-only. It does not trust
-   * client-supplied forwarding headers. Authenticated buckets are keyed by a
-   * hash of the opaque session cookie; anonymous demo requests share one
-   * conservative bucket per operation.
+   * Neither mode trusts client-supplied forwarding headers. Safe demo uses a
+   * capped in-process map. Configured mode uses bounded server-keyed shards;
+   * a cookie only influences a shard and is never treated as authenticated
+   * identity. Login/register prefer their normalized credential partition.
    */
   const rawSession = request.cookies.get("sgw_session")?.value;
-  const subject = rawSession
-    ? createHash("sha256").update(rawSession).digest("hex")
-    : "anonymous";
-  const key = `${bucket}:${subject}`;
-  const now = Date.now();
-  if (!getRuntimeEnv().DEMO_MODE) {
-    const resetsAt = new Date(now + intervalMs);
-    const [record] = await getDatabase()
-      .insert(rateLimitBuckets)
-      .values({ bucketKey: key, requestCount: 1, resetsAt })
-      .onConflictDoUpdate({
-        target: rateLimitBuckets.bucketKey,
-        set: {
-          requestCount: sql<number>`CASE
-            WHEN ${rateLimitBuckets.resetsAt} <= now() THEN 1
-            ELSE ${rateLimitBuckets.requestCount} + 1
-          END`,
-          resetsAt: sql<Date>`CASE
-            WHEN ${rateLimitBuckets.resetsAt} <= now() THEN ${resetsAt}
-            ELSE ${rateLimitBuckets.resetsAt}
-          END`,
-          updatedAt: new Date(),
-        },
-      })
-      .returning({ count: rateLimitBuckets.requestCount });
+  const env = getRuntimeEnv();
+  if (!env.DEMO_MODE) {
+    if (!env.SESSION_SECRET) throw new Error("SESSION_SECRET_REQUIRED");
+    // Login/register always partition by the submitted credential, even if an
+    // attacker rotates a forged session cookie. Other cookies are unverified
+    // inputs too: keyed sharding bounds their database cardinality and must not
+    // be mistaken for authenticated identity.
+    const source = options?.anonymousCredential
+      ? `credential:${options.anonymousCredential.trim().toLowerCase()}`
+      : rawSession
+        ? `unverified-session:${rawSession}`
+        : "anonymous:shared";
+    const shardNumber = createHmac("sha256", env.SESSION_SECRET)
+      .update(`${bucket}\0${source}`)
+      .digest()[0] % CONFIGURED_RATE_LIMIT_SHARDS;
+    const shard = shardNumber
+      .toString(16)
+      .padStart(2, "0");
+    const sourceKind = options?.anonymousCredential
+      ? "credential"
+      : rawSession
+        ? "unverified-session"
+        : "anonymous";
+    const key = `${bucket}:${sourceKind}-shard-${shard}`;
+    const record = await getDatabase().transaction(async (transaction) => {
+      // The reset index makes this bounded cleanup cheap. It retires legacy
+      // per-cookie rows and ensures configured limiter storage cannot grow
+      // without bound across expired windows.
+      await transaction
+        .delete(rateLimitBuckets)
+        .where(sql`${rateLimitBuckets.resetsAt} <= clock_timestamp()`);
+      const [updated] = await transaction
+        .insert(rateLimitBuckets)
+        .values({
+          bucketKey: key,
+          requestCount: 1,
+          resetsAt: sql`clock_timestamp() + (${intervalMs} * interval '1 millisecond')`,
+          updatedAt: sql`clock_timestamp()`,
+        })
+        .onConflictDoUpdate({
+          target: rateLimitBuckets.bucketKey,
+          set: {
+            requestCount: sql<number>`${rateLimitBuckets.requestCount} + 1`,
+            resetsAt: rateLimitBuckets.resetsAt,
+            updatedAt: sql`clock_timestamp()`,
+          },
+        })
+        .returning({ count: rateLimitBuckets.requestCount });
+      if (!updated) throw new Error("RATE_LIMIT_BUCKET_UPDATE_FAILED");
+      return updated;
+    });
     return record.count > limit
       ? jsonError(
           429,
@@ -125,6 +152,12 @@ export async function enforceRateLimit(
         )
       : null;
   }
+
+  const subject = rawSession
+    ? createHash("sha256").update(rawSession).digest("hex")
+    : "anonymous";
+  const key = `${bucket}:${subject}`;
+  const now = Date.now();
 
   const current = rateBuckets.get(key);
 

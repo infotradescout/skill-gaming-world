@@ -90,7 +90,7 @@ export function AppShell({
             <span>Casino</span>
             <small>Unavailable</small>
           </Link>
-          <Link href="/account">Account</Link>
+          <Link href="/account/history">Account history</Link>
         </div>
       </aside>
       <div className="app-body">
@@ -119,7 +119,11 @@ export function AppShell({
           >
             {signingOut ? "Signing out…" : "Log out"}
           </button>
-          <Link className="app-avatar" href="/account" aria-label="Open account">
+          <Link
+            className="app-avatar"
+            href="/account/history"
+            aria-label="Open account history"
+          >
             <span aria-hidden="true">{user.displayName.trim().charAt(0).toUpperCase() || "P"}</span>
           </Link>
         </header>
