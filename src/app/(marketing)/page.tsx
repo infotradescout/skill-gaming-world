@@ -19,8 +19,8 @@ const games = [
   },
   {
     badge: "On hold",
-    title: "Fortune Dice",
-    copy: "Casino-style game execution is not available in the current product.",
+    title: "Casino",
+    copy: "Casino games remain unnamed and unavailable while their separate approvals are held.",
     href: "/casino",
     action: "View status",
     art: "dice",
@@ -72,10 +72,10 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div className="hero-table" aria-label="Monetaire game preview">
+          <div className="hero-table" aria-label="Illustrated Monetaire rules preview">
             <div className="table-topline">
-              <span>Monetaire · Live table</span>
-              <span className="table-verified">✓ Deal verified</span>
+              <span>Monetaire · Rules preview</span>
+              <span className="table-verified">Illustrated layout</span>
             </div>
             <div className="mini-board">
               <div className="deck-stack"><span>SGW</span></div>
@@ -87,12 +87,12 @@ export default function HomePage() {
               <div className="foundation-slot">A</div>
             </div>
             <div className="table-score">
-              <div><small>Current score</small><strong>4,280</strong></div>
-              <div><small>Moves</small><strong>63</strong></div>
-              <div><small>Rank pace</small><strong>#12</strong></div>
+              <div><small>Stock rule</small><strong>Draw 3</strong></div>
+              <div><small>Ranked deal</small><strong>Same</strong></div>
+              <div><small>Paid edge</small><strong>None</strong></div>
             </div>
             <Link href="/app/monetaire/practice" className="table-play">
-              Take the table <span>→</span>
+              Start practice <span>→</span>
             </Link>
           </div>
         </div>

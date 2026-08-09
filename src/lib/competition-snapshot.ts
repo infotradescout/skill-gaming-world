@@ -47,6 +47,7 @@ export type PersistentCompetitionSnapshot = {
   entryCostPlayCoins: number;
   valuablePrize: boolean;
   dealCommitment: string | null;
+  rulesetVersion: string;
   opensAtServerMs: number;
   closesAtServerMs: number;
   standings: PersistentCompetitionStanding[];
@@ -99,7 +100,7 @@ export function competitionView(
       entryCostPlayCoins: snapshot.entryCostPlayCoins,
       valuablePrize: snapshot.valuablePrize,
       dealCommitment: snapshot.dealCommitment,
-      rulesetVersion: null,
+      rulesetVersion: snapshot.rulesetVersion,
       dealGeneratorVersion: null,
       validation: null,
       opensAt: new Date(snapshot.opensAtServerMs).toISOString(),

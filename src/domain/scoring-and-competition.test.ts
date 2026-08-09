@@ -14,6 +14,7 @@ import { createVerifiedCuratedDealValidation } from "./curated-deal-proof";
 import {
   createCuratedSolvableKlondikeDeal,
   createSeededKlondikeDeal,
+  KLONDIKE_DRAW_THREE_RULESET,
 } from "./deal";
 import { createKlondikeGameState } from "./game-engine";
 import {
@@ -187,7 +188,7 @@ describe("immutable ranked competition contract", () => {
         validationId: "validation-2",
         dealId: "deal-2",
         dealCommitment: deal.commitment,
-        rulesetVersion: "KLONDIKE_DRAW_THREE_V1",
+        rulesetVersion: KLONDIKE_DRAW_THREE_RULESET,
         dealGeneratorVersion: deal.generatorVersion,
         status: "UNVALIDATED",
         solverName: "placeholder",
@@ -212,7 +213,7 @@ describe("immutable ranked competition contract", () => {
         validationId: "validation-claimed",
         dealId: "deal-claimed",
         dealCommitment: deal.commitment,
-        rulesetVersion: "KLONDIKE_DRAW_THREE_V1",
+        rulesetVersion: KLONDIKE_DRAW_THREE_RULESET,
         dealGeneratorVersion: deal.generatorVersion,
         status: "VERIFIED_SOLVABLE",
         solverName: "unsupported-label",

@@ -7,7 +7,7 @@ import { getRuntimeEnv, type RuntimeEnv } from "@/lib/env";
 export const dynamic = "force-dynamic";
 
 const REQUIRED_CORE_TABLE_COUNT = 10;
-const REQUIRED_MIGRATION_COUNT = 8;
+const REQUIRED_MIGRATION_COUNT = 9;
 
 export async function GET() {
   let env: RuntimeEnv;
@@ -84,8 +84,57 @@ export async function GET() {
         const migrationStatus = migrationResult[0] as
           | { migrationCount?: number | string }
           | undefined;
+        const truthResult = await connection.execute(sql`
+          select
+            (
+              select count(*)
+              from public."ruleset_versions" as ruleset
+              join public."game_definitions" as definition
+                on definition."id" = ruleset."game_definition_id"
+              where definition."key" = 'MONETAIRE_SOLITAIRE'
+                and ruleset."version" = 'KLONDIKE_DRAW_THREE_V2'
+                and ruleset."rules" ->> 'draw' = '3'
+                and ruleset."rules" ->> 'redeals' = 'unlimited'
+                and ruleset."rules" ->> 'valuablePrize' = 'false'
+                and ruleset."scoring" ->> 'version' =
+                  'MONETAIRE_COMPLETION_MOVES_ACTIVE_TIME_V1'
+                and ruleset."immutable_at" is not null
+            )::integer as "correctRulesetCount",
+            (
+              select count(*)
+              from public."ruleset_versions" as ruleset
+              join public."game_definitions" as definition
+                on definition."id" = ruleset."game_definition_id"
+              where definition."key" = 'MONETAIRE_SOLITAIRE'
+                and ruleset."version" = 'KLONDIKE_DRAW_THREE_V1'
+                and ruleset."rules" ->> 'draw' = '1'
+                and not exists (
+                  select 1
+                  from public."ruleset_supersessions" as supersession
+                  where supersession."superseded_ruleset_version_id" = ruleset."id"
+                )
+            )::integer as "untrackedMistakeCount",
+            (
+              select count(*)
+              from public."competitions" as competition
+              join public."ruleset_supersessions" as supersession
+                on supersession."superseded_ruleset_version_id" =
+                  competition."ruleset_version_id"
+              where competition."status" in ('PUBLISHED', 'OPEN')
+            )::integer as "activeSupersededCompetitionCount"
+        `);
+        const truthStatus = truthResult[0] as
+          | {
+              correctRulesetCount?: number | string;
+              untrackedMistakeCount?: number | string;
+              activeSupersededCompetitionCount?: number | string;
+            }
+          | undefined;
         schema =
-          Number(migrationStatus?.migrationCount) >= REQUIRED_MIGRATION_COUNT
+          Number(migrationStatus?.migrationCount) >= REQUIRED_MIGRATION_COUNT &&
+          Number(truthStatus?.correctRulesetCount) === 1 &&
+          Number(truthStatus?.untrackedMistakeCount) === 0 &&
+          Number(truthStatus?.activeSupersededCompetitionCount) === 0
             ? "ready"
             : "unavailable";
       } else {

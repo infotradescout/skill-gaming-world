@@ -6,8 +6,10 @@ import {
   createCanonicalDeck,
 } from "./cards";
 import {
+  createDealCommitment,
   createSeededKlondikeDeal,
   dealKlondikeLayout,
+  LEGACY_KLONDIKE_DRAW_THREE_RULESET,
   verifyDealReveal,
 } from "./deal";
 import {
@@ -48,6 +50,29 @@ describe("deterministic Klondike Draw-3 deal", () => {
         commitment: first.commitment,
       }),
     ).toBe(false);
+  });
+
+  it("continues to verify preserved V1 commitments without creating new V1 deals", () => {
+    const seed = "legacy-draw-three-audit-seed";
+    const currentDeal = createSeededKlondikeDeal(seed);
+    const legacyCommitment = createDealCommitment({
+      seed,
+      rulesetVersion: LEGACY_KLONDIKE_DRAW_THREE_RULESET,
+      generatorVersion: currentDeal.generatorVersion,
+      orderedCardIds: currentDeal.orderedDeck.map((card) => card.id),
+    });
+
+    expect(currentDeal.rulesetVersion).not.toBe(
+      LEGACY_KLONDIKE_DRAW_THREE_RULESET,
+    );
+    expect(
+      verifyDealReveal({
+        seed,
+        commitment: legacyCommitment,
+        rulesetVersion: LEGACY_KLONDIKE_DRAW_THREE_RULESET,
+        generatorVersion: currentDeal.generatorVersion,
+      }),
+    ).toBe(true);
   });
 
   it("deals seven standard tableau columns and a 24-card stock", () => {

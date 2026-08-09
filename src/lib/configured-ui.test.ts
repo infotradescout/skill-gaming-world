@@ -59,4 +59,19 @@ describe("configured player UI boundaries", () => {
       "/app/monetaire/practice?session=${encodeURIComponent(session.id)}",
     );
   });
+
+  it("keeps the public game floor factual while held casino modes stay unnamed", () => {
+    const home = readFileSync(
+      resolve(process.cwd(), "src/app/(marketing)/page.tsx"),
+      "utf8",
+    );
+
+    expect(home).toContain("Monetaire · Rules preview");
+    expect(home).toContain("Illustrated layout");
+    expect(home).toContain("Draw 3");
+    expect(home).not.toContain("Monetaire · Live table");
+    expect(home).not.toContain("4,280");
+    expect(home).not.toContain("#12");
+    expect(home).not.toContain("Fortune Dice");
+  });
 });

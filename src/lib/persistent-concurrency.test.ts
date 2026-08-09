@@ -37,6 +37,8 @@ const migrationFiles = [
   "0004_lowly_nightcrawler.sql",
   "0005_strange_night_thrasher.sql",
   "0006_dusty_charles_xavier.sql",
+  "0007_fortune_dice_rounds.sql",
+  "0008_draw_three_truth_repair.sql",
 ] as const;
 
 const userId = "00000000-0000-0000-0000-000000009001";
@@ -226,6 +228,7 @@ describe("configured multi-instance convergence", () => {
     expect(dealRows.rows).toHaveLength(1);
 
     const snapshot = await persistentCompetitionSnapshot();
+    expect(snapshot.rulesetVersion).toBe("KLONDIKE_DRAW_THREE_V2");
     const entries = await Promise.allSettled([
       enterPersistentCompetition(user, snapshot.competitionId),
       enterPersistentCompetition(user, snapshot.competitionId),

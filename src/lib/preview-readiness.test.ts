@@ -69,13 +69,20 @@ describe("configured private preview boundaries", () => {
     expect(getRuntimeEnv().PREVIEW_OWNER_EMAIL).toBeUndefined();
   });
 
-  it("requires all core tables and seven journaled migrations", async () => {
+  it("requires all core tables and nine journaled migrations", async () => {
     const execute = vi
       .fn()
       .mockResolvedValueOnce([
         { coreTableCount: 10, journalTableCount: 1 },
       ])
-      .mockResolvedValueOnce([{ migrationCount: 6 }]);
+      .mockResolvedValueOnce([{ migrationCount: 8 }])
+      .mockResolvedValueOnce([
+        {
+          correctRulesetCount: 1,
+          untrackedMistakeCount: 0,
+          activeSupersededCompetitionCount: 0,
+        },
+      ]);
     vi.mocked(getDatabase).mockReturnValue({ execute } as never);
 
     const response = await health();
@@ -97,7 +104,14 @@ describe("configured private preview boundaries", () => {
       .mockResolvedValueOnce([
         { coreTableCount: 10, journalTableCount: 1 },
       ])
-      .mockResolvedValueOnce([{ migrationCount: 8 }]);
+      .mockResolvedValueOnce([{ migrationCount: 9 }])
+      .mockResolvedValueOnce([
+        {
+          correctRulesetCount: 1,
+          untrackedMistakeCount: 0,
+          activeSupersededCompetitionCount: 0,
+        },
+      ]);
     vi.mocked(getDatabase).mockReturnValue({ execute } as never);
 
     const response = await health();
@@ -119,6 +133,32 @@ describe("configured private preview boundaries", () => {
         realMoneyCasino: false,
         productionPayments: false,
       },
+    });
+  });
+
+  it("fails health when a superseded ruleset is still active", async () => {
+    const execute = vi
+      .fn()
+      .mockResolvedValueOnce([
+        { coreTableCount: 10, journalTableCount: 1 },
+      ])
+      .mockResolvedValueOnce([{ migrationCount: 9 }])
+      .mockResolvedValueOnce([
+        {
+          correctRulesetCount: 1,
+          untrackedMistakeCount: 0,
+          activeSupersededCompetitionCount: 1,
+        },
+      ]);
+    vi.mocked(getDatabase).mockReturnValue({ execute } as never);
+
+    const response = await health();
+
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toMatchObject({
+      status: "not-ready",
+      dependencies: { schema: "unavailable" },
+      operations: { monetairePlay: false },
     });
   });
 });

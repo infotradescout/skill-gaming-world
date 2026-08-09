@@ -218,7 +218,7 @@ test("practice and competition use authoritative state and exact retries", async
     );
     expect(completedPractice).toMatchObject({
       status: "WON",
-      validMoveCount: 97,
+      validMoveCount: 81,
     });
     await page.evaluate((sessionId) => {
       window.localStorage.setItem(
@@ -271,7 +271,7 @@ test("practice and competition use authoritative state and exact retries", async
     await expect(
       page.getByText("No completed official scores are recorded."),
     ).toHaveCount(0);
-    await expect(page.getByText("97 valid moves").first()).toBeVisible();
+    await expect(page.getByText("81 valid moves").first()).toBeVisible();
   }
 });
 

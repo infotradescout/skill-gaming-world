@@ -390,6 +390,29 @@ export const rulesetVersions = pgTable(
   ],
 );
 
+export const rulesetSupersessions = pgTable(
+  "ruleset_supersessions",
+  {
+    supersededRulesetVersionId: uuid("superseded_ruleset_version_id")
+      .primaryKey()
+      .references(() => rulesetVersions.id, { onDelete: "restrict" }),
+    successorRulesetVersionId: uuid("successor_ruleset_version_id")
+      .notNull()
+      .references(() => rulesetVersions.id, { onDelete: "restrict" }),
+    reason: text("reason").notNull(),
+    createdAt,
+  },
+  (table) => [
+    index("ruleset_supersessions_successor_idx").on(
+      table.successorRulesetVersionId,
+    ),
+    check(
+      "ruleset_supersessions_distinct_versions",
+      sql`${table.supersededRulesetVersionId} <> ${table.successorRulesetVersionId}`,
+    ),
+  ],
+);
+
 export const deals = pgTable(
   "deals",
   {
