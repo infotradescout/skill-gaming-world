@@ -9,6 +9,7 @@ import { BrandMark, MonetaireMark } from "./brand";
 const appLinks = [
   { href: "/app", label: "Overview", symbol: "⌂" },
   { href: "/app/monetaire", label: "Monetaire", symbol: "M" },
+  { href: "/app/robot-combat", label: "Bay 13", symbol: "13" },
   { href: "/app/monetaire/competitions", label: "Competitions", symbol: "◇" },
   { href: "/app/wallet", label: "Play Coins", symbol: "○" },
   { href: "/app/achievements", label: "Achievements", symbol: "△" },

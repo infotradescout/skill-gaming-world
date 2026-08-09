@@ -15,16 +15,16 @@ describe("canonical game title catalog", () => {
     expect(new Set(keys).size).toBe(keys.length);
   });
 
-  it("keeps SGW Robot Combat on the Free side with no-value development status", () => {
+  it("keeps Bay 13 on the Free side with no-value playable status", () => {
     const robotCombat = getGameTitleByKey("SGW_ROBOT_COMBAT");
     expect(robotCombat).toMatchObject({
-      workingTitle: "SGW Robot Combat",
+      workingTitle: "Bay 13: The Scrapyard",
       side: "FREE",
       category: "SKILL",
       valueClass: "NO_VALUE",
       legalOfferingClass: "NOT_APPLICABLE",
-      developmentStatus: "IN_DEVELOPMENT",
-      matchPlayAvailable: false,
+      developmentStatus: "ACTIVE",
+      matchPlayAvailable: true,
       routes: {
         marketing: "/robot-combat",
         development: "/app/robot-combat",
@@ -32,10 +32,10 @@ describe("canonical game title catalog", () => {
     });
   });
 
-  it("does not expose match play for the in-development robot combat title", () => {
-    for (const entry of getFreeDevelopmentTitles()) {
-      expect(entry.matchPlayAvailable).toBe(false);
-    }
+  it("does not leave the playable title in the development-only catalog", () => {
+    expect(getFreeDevelopmentTitles().map((entry) => entry.key)).not.toContain(
+      "SGW_ROBOT_COMBAT",
+    );
   });
 
   it("rejects prohibited BattleBots branding in catalog entries", () => {

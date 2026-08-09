@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 960 540">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#081119"/>
+      <stop offset="0.58" stop-color="#17262d"/>
+      <stop offset="1" stop-color="#060b0f"/>
+    </linearGradient>
+    <linearGradient id="steel" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#62727a"/>
+      <stop offset="1" stop-color="#202a2f"/>
+    </linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="16" stdDeviation="18" flood-color="#000" flood-opacity=".65"/>
+    </filter>
+    <pattern id="grid" width="52" height="52" patternUnits="userSpaceOnUse">
+      <path d="M 52 0 L 0 0 0 52" fill="none" stroke="#8eb7bd" stroke-opacity=".065" stroke-width="1"/>
+    </pattern>
+  </defs>
+  <rect width="960" height="540" fill="url(#bg)"/>
+  <rect width="960" height="540" fill="url(#grid)"/>
+  <path d="M0 438h960v102H0z" fill="#05090c"/>
+  <path d="M0 438h960" stroke="#d6a941" stroke-width="3" opacity=".75"/>
+  <g opacity=".26" stroke="#7e949a" stroke-width="10" fill="none">
+    <path d="M70 438V130h90v308M800 438V130h90v308"/>
+    <path d="M25 178h910M90 130l-42 48m822-48 42 48"/>
+  </g>
+  <g transform="translate(480 204)" filter="url(#shadow)">
+    <path d="M-186-74H186L220 0 186 74H-186L-220 0z" fill="url(#steel)" stroke="#d6a941" stroke-width="5"/>
+    <path d="M-161-48H161L182 0 161 48H-161L-182 0z" fill="#101b21" stroke="#8ba0a6" stroke-width="2"/>
+    <text x="0" y="22" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="70" font-weight="900" letter-spacing="12" fill="#f2d277">BAY 13</text>
+    <circle cx="-196" cy="0" r="8" fill="#0b1115" stroke="#d8bc70" stroke-width="3"/>
+    <circle cx="196" cy="0" r="8" fill="#0b1115" stroke="#d8bc70" stroke-width="3"/>
+  </g>
+  <text x="480" y="334" text-anchor="middle" font-family="Georgia,serif" font-size="42" font-weight="700" letter-spacing="8" fill="#edf1ed">THE SCRAPYARD</text>
+  <text x="480" y="380" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="17" font-weight="700" letter-spacing="5" fill="#73c7b1">BUILD IT · BRING IT · PROVE IT</text>
+  <g transform="translate(392 462)" fill="#d4a73d">
+    <path d="M0 20h176v6H0z"/>
+    <path d="M19 0h8v46h-8zM149 0h8v46h-8z"/>
+  </g>
+  <text x="480" y="514" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="13" font-weight="700" letter-spacing="3" fill="#86969c">SKILL GAMING WORLD · FREE · NO VALUE</text>
+</svg>

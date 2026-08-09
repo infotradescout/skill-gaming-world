@@ -3,7 +3,7 @@ import {
   createSeededKlondikeDeal,
   DealGeneratorVersion,
   KlondikeDeal,
-  KLONDIKE_DRAW_ONE_RULESET,
+  KLONDIKE_DRAW_THREE_RULESET,
   verifyDealReveal,
 } from "./deal";
 import {
@@ -32,7 +32,7 @@ export interface DealValidationRecord {
   readonly validationId: string;
   readonly dealId: string;
   readonly dealCommitment: string;
-  readonly rulesetVersion: typeof KLONDIKE_DRAW_ONE_RULESET;
+  readonly rulesetVersion: typeof KLONDIKE_DRAW_THREE_RULESET;
   readonly dealGeneratorVersion: DealGeneratorVersion;
   readonly status: DealValidationStatus;
   readonly solverName: string;
@@ -59,7 +59,7 @@ export interface RankedCompetitionContract {
   readonly name: string;
   readonly mode: "NONCASH_RANKED";
   readonly status: CompetitionStatus;
-  readonly rulesetVersion: typeof KLONDIKE_DRAW_ONE_RULESET;
+  readonly rulesetVersion: typeof KLONDIKE_DRAW_THREE_RULESET;
   readonly dealId: string;
   readonly dealCommitment: string;
   readonly dealGeneratorVersion: DealGeneratorVersion;
@@ -80,7 +80,7 @@ export interface CompetitionEntry {
   readonly dealId: string;
   readonly dealCommitment: string;
   readonly dealGeneratorVersion: DealGeneratorVersion;
-  readonly rulesetVersion: typeof KLONDIKE_DRAW_ONE_RULESET;
+  readonly rulesetVersion: typeof KLONDIKE_DRAW_THREE_RULESET;
   readonly enteredAtServerMs: number;
   readonly entryCost: 0;
   readonly valuablePrize: false;
@@ -153,7 +153,7 @@ export function createDraftCompetition(input: {
     name: input.name,
     mode: "NONCASH_RANKED",
     status: "DRAFT",
-    rulesetVersion: KLONDIKE_DRAW_ONE_RULESET,
+    rulesetVersion: KLONDIKE_DRAW_THREE_RULESET,
     dealGeneratorVersion:
       input.dealGeneratorVersion ?? "SHA256_FISHER_YATES_V1",
     dealId: input.dealId,

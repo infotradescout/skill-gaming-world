@@ -1,0 +1,34 @@
+name: Assemble Bay 13 WebAssembly
+
+on:
+  push:
+    branches:
+      - feature/sgw-robot-combat-playable-20260808
+    paths:
+      - ".release/bay13-wasm/**"
+      - ".github/workflows/assemble-bay13-wasm.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  assemble:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reassemble verified WebAssembly
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .release/bay13-wasm/index.wasm.gz.part-* | gzip -dc > public/games/bay-13/index.wasm
+          printf '%s  %s\n' '35116f68540ac41acf7d71ea457added91b5e960a9cca3e2acc72918eaf01277' 'public/games/bay-13/index.wasm' | sha256sum -c -
+          rm -r .release/bay13-wasm
+          rmdir .release
+          rm .github/workflows/assemble-bay13-wasm.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git diff --cached --quiet && exit 0
+          git commit -m 'build: assemble Bay 13 WebAssembly'
+          git push

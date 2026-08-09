@@ -27,7 +27,7 @@ The working surface is `MONETAIRE_PLAY`:
 1. landing and trust pages;
 2. registration and secure login;
 3. player dashboard and game lobby;
-4. Klondike Draw 1 practice play;
+4. Klondike Draw 3 practice play;
 5. deterministic noncash ranked competition;
 6. nonredeemable Play Coin ledger and history;
 7. sandbox-only package simulation;

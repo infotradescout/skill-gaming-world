@@ -8,7 +8,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "build:verify": "DEMO_MODE=false DATABASE_URL=postgresql://build:build@127.0.0.1:5432/build SESSION_SECRET=build-verification-only-session-secret-32 COMPETITION_SEED_ENCRYPTION_KEY=build-verification-only-ranked-seed-key-32 PREVIEW_OWNER_EMAIL=owner@example.com next build",
+    "build:verify": "NODE_OPTIONS=--import=./tools/node-memory-compat.mjs DEMO_MODE=false DATABASE_URL=postgresql://build:build@127.0.0.1:5432/build SESSION_SECRET=build-verification-only-session-secret-32 COMPETITION_SEED_ENCRYPTION_KEY=build-verification-only-ranked-seed-key-32 PREVIEW_OWNER_EMAIL=owner@example.com next build --webpack",
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
@@ -19,6 +19,8 @@
     "test:e2e:configured-preview": "playwright test --config=playwright.configured-preview.ts",
     "robot-combat:generate": "tools\\blender\\robot-combat\\run_generator_windows.bat",
     "robot-combat:inspect-scene": "tools\\blender\\robot-combat\\run_scene_inspection_windows.bat",
+    "robot-combat:verify-runtime": "bash games/robot-combat/godot/verify_runtime.sh",
+    "robot-combat:export-web": "bash games/robot-combat/godot/export_web.sh",
     "check": "npm run audit && npm run lint && npm run typecheck && npm run test && npm run build:verify",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
@@ -46,9 +48,11 @@
     "vitest": "^4.1.10"
   },
   "overrides": {
-    "brace-expansion": "5.0.8",
+    "brace-expansion": "5.0.9",
     "esbuild": "0.28.1",
+    "js-yaml": "4.3.1",
     "minimatch": "10.2.5",
+    "nanoid": "3.3.17",
     "postcss": "8.5.23",
     "sharp": "0.35.3"
   }

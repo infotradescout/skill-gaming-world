@@ -1,5 +1,11 @@
 # Next Runtime Build — First Playable Vertical Slice
 
+> **Implementation status (2026-08-09):** The local fight-and-build loop is
+> implemented and exported for the browser. See
+> [ROBOT_COMBAT_RUNTIME_COMPLETION.md](ROBOT_COMBAT_RUNTIME_COMPLETION.md) for
+> executable evidence and the two explicit deferrals: importing the previously
+> approved Blender GLB bundle and operating hosted PvP infrastructure.
+
 The next build should not attempt the complete commercial game. It should prove one honest loop from start to finish.
 
 ## Required player loop
@@ -45,3 +51,6 @@ The next build should not attempt the complete commercial game. It should prove 
 - Two local processes can connect to one headless match server.
 - The server decides position, collision, damage, clock, and result.
 - No paid, prize, wager, cash, redemption, or Legal Play operation is added.
+
+The checklist above remains the original target contract. A checked-in status
+report records what was proven instead of silently rewriting unmet items.

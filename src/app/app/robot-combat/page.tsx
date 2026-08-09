@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { AppPageHeader } from "@/components/app-shell";
-import { EmptyState, StatusPill, TrustDisclosure } from "@/components/page-elements";
+import { StatusPill, TrustDisclosure } from "@/components/page-elements";
 import { getGameTitleByKey } from "@/domain/game-titles";
 import { runtimeUserFromToken, SESSION_COOKIE } from "@/lib/auth";
 
@@ -17,12 +17,17 @@ export default async function RobotCombatDevelopmentPage() {
   return (
     <>
       <AppPageHeader
-        eyebrow="Free side · In development"
+        eyebrow="Free side · Playable training"
         title={title.workingTitle}
         actions={
-          <Link className="button button-secondary" href="/robot-combat">
-            Public development page
-          </Link>
+          <>
+            <Link className="button button-primary" href="/games/bay-13/index.html">
+              Play full screen
+            </Link>
+            <Link className="button button-secondary" href="/robot-combat">
+              Public game page
+            </Link>
+          </>
         }
       >
         <p>{title.publicSummary}</p>
@@ -31,14 +36,16 @@ export default async function RobotCombatDevelopmentPage() {
       <div className="dashboard-grid">
         <section className="dashboard-primary surface">
           <div>
-            <StatusPill tone="hold">Foundation only</StatusPill>
-            <h2>Match controls are not available</h2>
+            <StatusPill tone="live">Training available</StatusPill>
+            <h2>Bring one approved machine through the gate.</h2>
             <p>
-              The Blender asset generator can produce the arena, starter bots, part
-              library, GLB exports, and manifest. Driving, weapons, damage, garage
-              construction, blueprint validation, and online matches remain blocked
-              until the Godot runtime vertical slice is implemented and tested.
+              Choose Yard Mule, Keelcutter, or Pilebreaker. Drive, fire the weapon,
+              fight the local training machine, reset the match, then rebuild in the
+              garage with live mass and power checks.
             </p>
+            <Link className="button button-primary" href="/games/bay-13/index.html">
+              Enter Bay 13
+            </Link>
           </div>
         </section>
         <TrustDisclosure compact />
@@ -48,14 +55,14 @@ export default async function RobotCombatDevelopmentPage() {
         <div className="app-section-header">
           <div>
             <p className="eyebrow">Offering tuple</p>
-            <h2>Free-side development information only</h2>
+            <h2>Free-side gameplay with no value path</h2>
           </div>
         </div>
         <div className="data-list surface-soft">
           <div className="data-row">
             <div>
               <strong>Side</strong>
-              <small>Initial public offering</small>
+              <small>Current playable offering</small>
             </div>
             <span>{title.side}</span>
           </div>
@@ -76,20 +83,23 @@ export default async function RobotCombatDevelopmentPage() {
           <div className="data-row">
             <div>
               <strong>Legal offering class</strong>
-              <small>Legal Play not activated</small>
+              <small>No Legal Play bridge exists</small>
             </div>
             <span>{title.legalOfferingClass}</span>
           </div>
         </div>
       </section>
 
-      <EmptyState symbol="⚙" title="No match entry yet">
-        <p>
-          There is intentionally no button to start a robot combat match. The next build
-          must prove driving, weapons, training opponent, garage validation, and server
-          authority before any match surface is exposed.
-        </p>
-      </EmptyState>
+      <section className="app-section">
+        <div className="callout">
+          <StatusPill tone="hold">Hosted PvP unavailable</StatusPill>
+          <p>
+            This release proves the complete local training loop. Matchmaking, private
+            rooms, spectators, reconnects, hosted authoritative servers, and ranked
+            online play remain a separate release.
+          </p>
+        </div>
+      </section>
     </>
   );
 }

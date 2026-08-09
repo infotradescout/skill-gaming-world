@@ -9,7 +9,7 @@ import {
 import {
   dealKlondikeLayout,
   KlondikeDeal,
-  KLONDIKE_DRAW_ONE_RULESET,
+  KLONDIKE_DRAW_THREE_RULESET,
   PositionedCard,
 } from "./deal";
 import {
@@ -85,7 +85,7 @@ export interface MoveEvent {
 
 export interface KlondikeGameState {
   readonly gameId: string;
-  readonly rulesetVersion: typeof KLONDIKE_DRAW_ONE_RULESET;
+  readonly rulesetVersion: typeof KLONDIKE_DRAW_THREE_RULESET;
   readonly dealGeneratorVersion: Readonly<KlondikeDeal>["generatorVersion"];
   readonly dealCommitment: string;
   readonly status: GameStatus;
@@ -160,7 +160,7 @@ export function createKlondikeGameState(input: {
 
   const state: Readonly<KlondikeGameState> = deepFreeze({
     gameId,
-    rulesetVersion: KLONDIKE_DRAW_ONE_RULESET,
+    rulesetVersion: KLONDIKE_DRAW_THREE_RULESET,
     dealGeneratorVersion: input.deal.generatorVersion,
     dealCommitment: input.deal.commitment,
     status: "ACTIVE",
@@ -348,11 +348,14 @@ function applyLegalIntent(
           "Stock is empty; recycle the waste first",
         );
       }
-      const card = next.stock.pop();
-      if (card === undefined) {
-        throw new DomainError("ILLEGAL_MOVE", "Stock is empty");
+      const drawCount = Math.min(3, next.stock.length);
+      for (let index = 0; index < drawCount; index += 1) {
+        const card = next.stock.pop();
+        if (card === undefined) {
+          throw new DomainError("ILLEGAL_MOVE", "Stock is empty");
+        }
+        next.waste.push(card);
       }
-      next.waste.push(card);
       break;
     }
 

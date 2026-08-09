@@ -1,42 +1,48 @@
-# Godot Runtime Boundary
+# Bay 13 Godot Runtime
 
-The Godot gameplay runtime is deliberately not represented as finished in this v0.1 package.
+This directory contains the playable **Bay 13: The Scrapyard** vertical slice for Godot 4.7.1. It runs as the same project in the editor, as a headless authority, and as the web export served by Skill Gaming World.
 
-This folder marks the destination for the first playable vertical slice after the Blender-generated assets are produced and visually accepted.
+## Included slice
 
-## Local editor (this machine)
+- three starter machines: Yard Mule (Rammer), Keelcutter (Ripper), and Pilebreaker (Maul);
+- force-based `RigidBody3D` driving with keyboard, gamepad, and touch input;
+- a three-minute local training match with damage, knockout, arena-out, decision, draw, and reset outcomes;
+- a modular garage for chassis, wheels, front assembly, weapon, and paint;
+- catalog, mass, power, size, weapon-count, attachment, overlap, and prohibited-value validation;
+- canonical blueprint hashes plus exact local save/load reconstruction;
+- server-authoritative WebSocket intent and snapshot transport;
+- a browser export at `/games/bay-13/index.html`;
+- Free / No Value product treatment. Paid entry and valuable prizes remain unavailable.
 
-Verified **2026-08-07**:
+The current public slice is local training. The network transport is implemented and smoke-tested, but matchmaking, session allocation, abuse controls, and hosted PvP operations remain a future release boundary.
 
-| Role | Path |
-| --- | --- |
-| Editor (GUI) | `C:\Users\flavo\Downloads\Godot_v4.7.1-stable_win64.exe\Godot_v4.7.1-stable_win64.exe` |
-| Console (CLI / `--version`) | `C:\Users\flavo\Downloads\Godot_v4.7.1-stable_win64.exe\Godot_v4.7.1-stable_win64_console.exe` |
-| Zip archive | `C:\Users\flavo\Downloads\Godot_v4.7.1-stable_win64.exe.zip` |
+## Verify
 
-- Version string: `4.7.1.stable.official.a13da4feb` (**PASS** vs required Godot 4.7.1 stable).
-- Not on `PATH`; not installed via winget/choco/scoop; no Steam library copy; no Program Files install; registry uninstall keys empty for Godot.
-- AppData config present at `%APPDATA%\Godot` (editor settings `editor_settings-4.7.tres`).
-- Transient zip extract also seen under `%LOCALAPPDATA%\Temp\…Godot_v4.7.1…` — prefer the Downloads folder above.
+Install Godot 4.7.1 and either set `GODOT_BIN` or place the Linux executable at `.tooling/godot/Godot_v4.7.1-stable_linux.x86_64` from the repository root.
 
-Launch helper: `launch-godot.bat` in this directory.
-
-Example CLI check:
-
-```bat
-"C:\Users\flavo\Downloads\Godot_v4.7.1-stable_win64.exe\Godot_v4.7.1-stable_win64_console.exe" --version
+```bash
+npm run robot-combat:verify-runtime
+npm run robot-combat:export-web
 ```
 
-## Target runtime
+The runtime verification command fails on parser errors and requires all of the following:
 
-- Godot 4.7.1 stable;
-- one shared match implementation for offline, local-host, and dedicated-server modes;
-- custom force-based `RigidBody3D` robot movement;
-- server-owned weapon state, collisions, damage, clock, and result;
-- modular garage that reconstructs robots only from the approved part catalog;
-- WebSocket multiplayer for browser-compatible clients;
-- headless authoritative match server;
-- no client-trusted mass, power, collision, force, damage, or winner data;
-- Free and no-value only.
+- 32 blueprint, safety, persistence, and rules assertions;
+- 12 live scene assertions;
+- a successful two-process WebSocket connection and handshake.
 
-The exact required vertical slice and acceptance proof are in `../docs/NEXT_RUNTIME_BUILD.md`.
+The export command writes the checked-in browser build under `public/games/bay-13/` and verifies that the HTML, JavaScript, package, and WebAssembly outputs are nonempty.
+
+## Source map
+
+| Area | Source |
+| --- | --- |
+| App flow, menu, HUD, garage, touch UI | `scripts/main.gd` |
+| Arena geometry and safety enclosure | `scripts/arena_builder.gd` |
+| Robot movement and construction | `scripts/robot_body.gd` |
+| Match authority and training opponent | `scripts/match_controller.gd` |
+| Blueprint rules and persistence | `scripts/blueprint_service.gd` |
+| WebSocket authority/client bridge | `scripts/network_bridge.gd` |
+| Automated runtime proof | `tests/` and `verify_runtime.sh` |
+
+The governing product requirements remain in [`../../../docs/NEXT_RUNTIME_BUILD.md`](../../../docs/NEXT_RUNTIME_BUILD.md), with arena canon in [`../../../docs/ARENA_STORY_BIBLE.md`](../../../docs/ARENA_STORY_BIBLE.md).

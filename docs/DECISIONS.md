@@ -37,6 +37,7 @@ nonexecutable until the listed authority releases it.
 | D-028 | Accepted | The executable ranked catalog is safe-demo-only and requires a distinct seed-encryption key. | Random seed/nonce material is encrypted and frozen per process; missing/rotated keys deny entry, and production requires durable encrypted publication storage. |
 | D-029 | Accepted | Production cannot enable the in-memory demo adapter. | `NODE_ENV=production` with `DEMO_MODE=true` is invalid configuration. |
 | D-030 | Accepted | Restore the `SOCIAL_CASINO` hard hold by removing Fortune Dice execution and playable casino claims. | Casino remains an unavailable shell; dormant game-domain code does not create a callable route. |
+| D-031 | Accepted | Supersede D-012 with versioned Klondike Draw 3 as Monetaire's governing ruleset. One stock action moves up to three cards, while deterministic deals and server-authoritative moves/time remain unchanged. | New sessions and ranked publications pin `KLONDIKE_DRAW_THREE_V1`; the prior Draw 1 decision remains historical and does not govern new play. |
 
 ## Decision change process
 

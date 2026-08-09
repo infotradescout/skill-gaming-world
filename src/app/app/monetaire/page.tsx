@@ -14,7 +14,7 @@ export default async function MonetaireLobbyPage() {
         title="Monetaire"
         actions={<Link className="button button-primary" href="/app/monetaire/practice">Start practice</Link>}
       >
-        <p>Draw 1 Klondike · versioned rules · transparent scoring.</p>
+        <p>Draw 3 Klondike · versioned rules · transparent scoring.</p>
       </AppPageHeader>
       <div className="lobby-grid">
         <section className="lobby-feature surface">

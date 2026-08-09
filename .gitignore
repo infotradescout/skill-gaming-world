@@ -26,6 +26,9 @@
 # generated robot combat assets (Blender output)
 /generated/robot-combat/
 /.tmp-sgw-robot-foundation/
+/.tooling/
+/games/robot-combat/godot/.godot/
+/games/robot-combat/godot/.tmp-*
 
 # misc
 .DS_Store

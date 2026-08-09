@@ -515,7 +515,7 @@ describe("server-authoritative game APIs", () => {
     expect(getDemoStore().appeals).toHaveLength(1);
   });
 
-  it("completes the curated competition through 97 server-validated moves", async () => {
+  it("completes the curated competition through 81 server-validated moves", async () => {
     const cookie = await playerCookie("proof-player@example.test");
     const entered = await enterCompetition(
       request(
@@ -555,7 +555,7 @@ describe("server-authoritative game APIs", () => {
 
     expect(finalSession).toMatchObject({
       status: "WON",
-      validMoveCount: 97,
+      validMoveCount: 81,
       serverAuthoritative: true,
     });
 
@@ -571,11 +571,11 @@ describe("server-authoritative game APIs", () => {
     expect(leaderboardBody.standings[0]).toMatchObject({
       rank: 1,
       completed: true,
-      validMoves: 97,
+      validMoves: 81,
     });
   });
 
-  it("completes an unranked practice deal through the same 97-command validator", async () => {
+  it("completes an unranked practice deal through the same 81-command validator", async () => {
     const cookie = await playerCookie("practice-proof-player@example.test");
     const started = await startSession(
       request("/api/game/sessions", "POST", { mode: "PRACTICE" }, cookie),
@@ -610,7 +610,7 @@ describe("server-authoritative game APIs", () => {
     expect(finalSession).toMatchObject({
       mode: "PRACTICE",
       status: "WON",
-      validMoveCount: 97,
+      validMoveCount: 81,
       dealGeneratorVersion: "CURATED_SOLVABLE_V1",
       serverAuthoritative: true,
     });

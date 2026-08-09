@@ -49,7 +49,7 @@ type PublicationEvent = Readonly<{
 type EncryptedPublicationRecord = Readonly<{
   competitionId: typeof CURATED_COMPETITION_ID;
   dealId: typeof CURATED_DEAL_ID;
-  rulesetVersion: "KLONDIKE_DRAW_ONE_V1";
+  rulesetVersion: "KLONDIKE_DRAW_THREE_V1";
   dealGeneratorVersion: "CURATED_SOLVABLE_V1";
   scoreVersion: typeof OFFICIAL_SCORE_VERSION;
   dealCommitment: string;
@@ -143,7 +143,7 @@ function publicationCommitment(input: {
       seed: input.seed,
       revealNonce: input.revealNonce,
       dealCommitment: input.dealCommitment,
-      rulesetVersion: "KLONDIKE_DRAW_ONE_V1",
+      rulesetVersion: "KLONDIKE_DRAW_THREE_V1",
       dealGeneratorVersion: "CURATED_SOLVABLE_V1",
       scoreVersion: OFFICIAL_SCORE_VERSION,
       validationEvidenceReference: input.validationEvidenceReference,
@@ -239,7 +239,7 @@ function assertPublicationRecordIntegrity(
   if (
     record.competitionId !== CURATED_COMPETITION_ID ||
     record.dealId !== CURATED_DEAL_ID ||
-    record.rulesetVersion !== "KLONDIKE_DRAW_ONE_V1" ||
+    record.rulesetVersion !== "KLONDIKE_DRAW_THREE_V1" ||
     record.dealGeneratorVersion !== "CURATED_SOLVABLE_V1" ||
     record.scoreVersion !== OFFICIAL_SCORE_VERSION ||
     record.cipher !== "AES_256_GCM" ||
@@ -390,7 +390,7 @@ function createPublicationRecord(): EncryptedPublicationRecord {
   const header: PublicationAuthenticatedHeader = deepFreeze({
     competitionId: CURATED_COMPETITION_ID,
     dealId: CURATED_DEAL_ID,
-    rulesetVersion: "KLONDIKE_DRAW_ONE_V1",
+    rulesetVersion: "KLONDIKE_DRAW_THREE_V1",
     dealGeneratorVersion: "CURATED_SOLVABLE_V1",
     scoreVersion: OFFICIAL_SCORE_VERSION,
     dealCommitment: deal.commitment,

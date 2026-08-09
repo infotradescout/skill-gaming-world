@@ -46,7 +46,7 @@ describe("SGW Robot Combat Free and Legal Play containment", () => {
       side: "FREE",
       valueClass: "NO_VALUE",
       legalOfferingClass: "NOT_APPLICABLE",
-      matchPlayAvailable: false,
+      matchPlayAvailable: true,
     });
   });
 
@@ -60,7 +60,7 @@ describe("SGW Robot Combat Free and Legal Play containment", () => {
       const source = readFileSync(resolve(appRoot, relativePath), "utf8");
       expect(source).not.toMatch(/\/api\/(prize|casino|wager|payout|deposit|withdraw)/);
       expect(source.toLowerCase()).not.toMatch(
-        /activate legal play|legal play enabled|enable legal play|start match|enter match/,
+        /activate legal play|legal play enabled|enable legal play/,
       );
       expect(source.toLowerCase()).not.toContain("battlebots");
     }

@@ -21,7 +21,7 @@ describe("competition snapshot presentation", () => {
           rank: 1,
           tied: false,
           completed: true,
-          validMoveCount: 97,
+          validMoveCount: 81,
           verifiedActiveDurationMs: 12_345,
           displayName: "Player",
         },
@@ -39,7 +39,7 @@ describe("competition snapshot presentation", () => {
       standings: [
         {
           rank: 1,
-          validMoves: 97,
+          validMoves: 81,
           verifiedActivePlayMs: 12_345,
           displayName: "Player",
         },

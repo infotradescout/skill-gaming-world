@@ -10,12 +10,12 @@ const games = [
     art: "cards",
   },
   {
-    badge: "In development",
-    title: "SGW Robot Combat",
-    copy: "Original robot construction and combat foundation. Match play is not available yet.",
-    href: "/robot-combat",
-    action: "View status",
-    art: "crown",
+    badge: "Playable · Free",
+    title: "Bay 13: The Scrapyard",
+    copy: "Build an original combat machine, test it in the shipyard, and fight a training opponent.",
+    href: "/games/bay-13/index.html",
+    action: "Enter Bay 13",
+    art: "robot",
   },
   {
     badge: "On hold",
@@ -113,6 +113,7 @@ export default function HomePage() {
                 {game.art === "cards" && <><span>A♠</span><span>Q♥</span><span>J♣</span></>}
                 {game.art === "dice" && <><span>⚄</span><span>⚅</span></>}
                 {game.art === "crown" && <span>♛</span>}
+                {game.art === "robot" && <><span>13</span><span>⚙</span></>}
               </div>
               <div className="game-tile-copy">
                 <small>{game.badge}</small>

@@ -39,7 +39,7 @@ export default function MonetairePage() {
         aside={<CardStudy compact />}
       >
         <p>
-          Draw 1 Klondike designed for deliberate, auditable competition. Practice
+          Draw 3 Klondike designed for deliberate, auditable competition. Practice
           at your own pace or compare performance in noncash ranked events.
         </p>
       </PageHero>

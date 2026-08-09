@@ -62,7 +62,7 @@ export default async function PlayerDashboardPage({
         <section className="dashboard-primary surface">
           <div>
             <StatusPill tone="live">Practice available</StatusPill>
-            <h2>Monetaire Draw 1</h2>
+            <h2>Monetaire Draw 3</h2>
             <p>
               Open the deterministic practice deal. Your in-progress board is saved on
               this device.

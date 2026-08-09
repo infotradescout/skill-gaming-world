@@ -56,7 +56,7 @@ Exit evidence:
 
 Deliver:
 
-- versioned Draw 1 ruleset and deterministic shuffle;
+- versioned Draw 3 ruleset and deterministic shuffle;
 - server-created session, authoritative validation, sequence/idempotency/state
   hash, resume/abandon;
 - touch, pointer, and practical keyboard controls;
@@ -130,4 +130,3 @@ These are separate programs, not automatic phases:
 
 No milestone date or business success in Monetaire Play releases a restricted
 gate by itself.
-

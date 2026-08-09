@@ -1,26 +1,32 @@
 # Skill Gaming World
 
-Skill Gaming World is the parent experience for skill-based entertainment. Its
-first title is **Monetaire — Competitive Solitaire**.
+Skill Gaming World is the parent experience for skill-based entertainment. It
+currently includes **Monetaire — Competitive Solitaire** and the playable,
+free **Bay 13: The Scrapyard** robot-combat training slice.
 
 This repository is intentionally structured around one account and one site
 with two top-level product selectors:
 
-- **Skill Gaming World** — Monetaire Play first; prize competition capability
-  remains under a separate legal and technical hold.
+- **Skill Gaming World** — Monetaire Play and Bay 13 local training; prize
+  competition capability remains under a separate legal and technical hold.
 - **Casino** — an unavailable shell identified internally only as
   `CASINO_WORKING_TITLE`; social-casino execution and real-money casino
   operations remain disabled.
 
 ## Current boundary
 
-The initial executable product is limited to **MONETAIRE_PLAY**:
+The executable product is limited to **MONETAIRE_PLAY** plus Bay 13's free,
+no-value local training mode:
 
-- deterministic Klondike Solitaire, Draw 1;
+- deterministic Klondike Solitaire, Draw 3;
 - practice and noncash ranked competition;
 - achievements, rankings, and nonredeemable Play Coins;
 - sandbox-only package simulation;
 - responsible-play controls, auditability, and public fairness information.
+
+Bay 13 adds a browser-playable Godot vertical slice with three starter robots,
+a training opponent, garage customization, validated blueprint save/load, and
+tested authoritative networking primitives. Hosted PvP is not yet offered.
 
 The repository must not expose paid prize entry, valuable prizes, cash payout,
 redeemable currency, casino deposits, casino wagers, casino withdrawals, or
@@ -61,6 +67,8 @@ Start with:
 - [Legal feature gates](docs/LEGAL_FEATURE_GATES.md)
 - [Currency isolation](docs/CURRENCY_ISOLATION.md)
 - [Monetaire fairness contract](docs/MONETAIRE_FAIRNESS_CONTRACT.md)
+- [Bay 13 runtime requirements](docs/NEXT_RUNTIME_BUILD.md)
+- [Bay 13 Godot runtime](games/robot-combat/godot/README.md)
 - [Counsel questions](docs/LEGAL_COUNSEL_QUESTIONS.md)
 - [Launch checklist](docs/LAUNCH_CHECKLIST.md)
 - [Work Mode handoff](WORK_MODE_HANDOFF.md)
@@ -73,6 +81,8 @@ npm install
 npm run dev
 npm run check
 npm run test:e2e
+npm run robot-combat:verify-runtime
+npm run robot-combat:export-web
 ```
 
 Use distinct random values for `SESSION_SECRET` and

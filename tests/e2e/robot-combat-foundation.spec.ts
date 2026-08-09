@@ -1,13 +1,15 @@
 import { expect, test } from "@playwright/test";
 
-test("robot combat development page stays honest and non-playable", async ({ page }) => {
+test("Bay 13 public page launches free training without Legal Play claims", async ({ page }) => {
   await page.goto("/robot-combat");
 
   await expect(
-    page.getByRole("heading", { name: "SGW Robot Combat", exact: true }),
+    page.getByRole("heading", { name: "Bay 13: The Scrapyard", exact: true }),
   ).toBeVisible();
-  await expect(page.getByText("Foundation only — not playable yet.")).toBeVisible();
-  await expect(page.getByText("No paid entry, wager, cash prize")).toBeVisible();
-  await expect(page.getByRole("link", { name: /start match/i })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: /start match/i })).toHaveCount(0);
+  await expect(page.getByText(/No paid entry, wager, cash prize/i)).toBeVisible();
+  await expect(page.getByRole("link", { name: /play bay 13/i })).toHaveAttribute(
+    "href",
+    "/games/bay-13/index.html",
+  );
+  await expect(page.getByText(/Hosted player-versus-player matchmaking is not live yet/i)).toBeVisible();
 });

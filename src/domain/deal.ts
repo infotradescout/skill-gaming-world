@@ -16,8 +16,8 @@ import {
   sha256Hex,
 } from "./shared";
 
-export const KLONDIKE_DRAW_ONE_RULESET = "KLONDIKE_DRAW_ONE_V1" as const;
-export type KlondikeRulesetVersion = typeof KLONDIKE_DRAW_ONE_RULESET;
+export const KLONDIKE_DRAW_THREE_RULESET = "KLONDIKE_DRAW_THREE_V1" as const;
+export type KlondikeRulesetVersion = typeof KLONDIKE_DRAW_THREE_RULESET;
 
 export const DEAL_GENERATORS = [
   "SHA256_FISHER_YATES_V1",
@@ -123,7 +123,7 @@ export function createDealCommitment(input: {
     serializeDealForCommitment({
       seed,
       rulesetVersion:
-        input.rulesetVersion ?? KLONDIKE_DRAW_ONE_RULESET,
+        input.rulesetVersion ?? KLONDIKE_DRAW_THREE_RULESET,
       generatorVersion:
         input.generatorVersion ?? "SHA256_FISHER_YATES_V1",
       orderedCardIds: input.orderedCardIds,
@@ -145,13 +145,13 @@ export function createSeededKlondikeDeal(
 
   const commitment = createDealCommitment({
     seed,
-    rulesetVersion: KLONDIKE_DRAW_ONE_RULESET,
+    rulesetVersion: KLONDIKE_DRAW_THREE_RULESET,
     generatorVersion: "SHA256_FISHER_YATES_V1",
     orderedCardIds: cards.map((card) => card.id),
   });
 
   return deepFreeze({
-    rulesetVersion: KLONDIKE_DRAW_ONE_RULESET,
+    rulesetVersion: KLONDIKE_DRAW_THREE_RULESET,
     generatorVersion: "SHA256_FISHER_YATES_V1",
     orderedDeck: cards,
     commitment,
@@ -165,8 +165,8 @@ export function verifyDealReveal(input: {
   readonly generatorVersion?: DealGeneratorVersion;
 }): boolean {
   if (
-    (input.rulesetVersion ?? KLONDIKE_DRAW_ONE_RULESET) !==
-    KLONDIKE_DRAW_ONE_RULESET
+    (input.rulesetVersion ?? KLONDIKE_DRAW_THREE_RULESET) !==
+    KLONDIKE_DRAW_THREE_RULESET
   ) {
     return false;
   }
@@ -257,11 +257,17 @@ export function createCuratedSolvableKlondikeDeal(
     "QUEEN",
     "KING",
   ];
-  const stockDrawOrder = stockRanks.flatMap((rank) =>
+  const foundationMoveOrder = stockRanks.flatMap((rank) =>
     shuffledCopy<Suit>(SUITS, nextUint32).map((suit) =>
       createCard(suit, rank),
     ),
   );
+  // Draw 3 places each three-card batch onto waste in draw order, making the
+  // final card the first playable card. Reverse each proven three-move group
+  // in stock so the visible waste order still advances every suit from 8 to K.
+  const stockDrawOrder = Array.from({ length: 8 }, (_, batch) =>
+    foundationMoveOrder.slice(batch * 3, batch * 3 + 3).reverse(),
+  ).flat();
   // dealKlondikeLayout reverses the committed remainder into a pop-based stock.
   const orderedDeck = [
     ...tableauColumns.flat(),
@@ -269,13 +275,13 @@ export function createCuratedSolvableKlondikeDeal(
   ];
   const commitment = createDealCommitment({
     seed,
-    rulesetVersion: KLONDIKE_DRAW_ONE_RULESET,
+    rulesetVersion: KLONDIKE_DRAW_THREE_RULESET,
     generatorVersion: "CURATED_SOLVABLE_V1",
     orderedCardIds: orderedDeck.map((card) => card.id),
   });
 
   return deepFreeze({
-    rulesetVersion: KLONDIKE_DRAW_ONE_RULESET,
+    rulesetVersion: KLONDIKE_DRAW_THREE_RULESET,
     generatorVersion: "CURATED_SOLVABLE_V1",
     orderedDeck,
     commitment,
@@ -285,7 +291,7 @@ export function createCuratedSolvableKlondikeDeal(
 export function dealKlondikeLayout(
   deal: Readonly<KlondikeDeal>,
 ): Readonly<DealtKlondikeLayout> {
-  if (deal.rulesetVersion !== KLONDIKE_DRAW_ONE_RULESET) {
+  if (deal.rulesetVersion !== KLONDIKE_DRAW_THREE_RULESET) {
     throw new DomainError("UNSUPPORTED_RULESET", "Unsupported ruleset");
   }
   if (
