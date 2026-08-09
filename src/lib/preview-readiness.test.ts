@@ -1,5 +1,6 @@
 import { PGlite } from "@electric-sql/pglite";
-import { sql } from "drizzle-orm";
+import { sql, type SQL } from "drizzle-orm";
+import { PgDialect } from "drizzle-orm/pg-core";
 import { drizzle } from "drizzle-orm/pglite";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -149,6 +150,14 @@ async function healthWithAuditGraph(events: AuditLink[]) {
       if (executionCount === 2) {
         return [{ migrationCount: 10 }];
       }
+
+      const topologyQuery = new PgDialect().sqlToQuery(query as SQL).sql;
+      expect(topologyQuery).toContain(
+        'array[event."event_hash"::text]::text[]',
+      );
+      expect(topologyQuery).toMatch(
+        /array_append\(\s*parent\.visited_event_hashes,\s*child\."event_hash"::text\s*\)::text\[\]/,
+      );
 
       let queryResult;
       try {

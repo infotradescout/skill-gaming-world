@@ -260,7 +260,8 @@ export async function GET() {
                 select
                   event."id",
                   event."event_hash",
-                  array[event."event_hash"] as visited_event_hashes
+                  array[event."event_hash"::text]::text[]
+                    as visited_event_hashes
                 from public."audit_events" as event
                 where event."previous_event_hash" is null
 
@@ -271,8 +272,8 @@ export async function GET() {
                   child."event_hash",
                   array_append(
                     parent.visited_event_hashes,
-                    child."event_hash"
-                  )
+                    child."event_hash"::text
+                  )::text[]
                 from reachable_audit_events as parent
                 join public."audit_events" as child
                   on child."previous_event_hash" = parent."event_hash"
