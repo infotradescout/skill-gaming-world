@@ -35,7 +35,7 @@ export default function MonetairePlayPage() {
         aside={<TrustDisclosure compact />}
       >
         <p>
-          Start with practice. Learn Draw 1 Klondike controls, see valid-move feedback,
+          Start with practice. Learn Draw 3 Klondike controls, see valid-move feedback,
           and understand how a completed game is measured.
         </p>
       </PageHero>

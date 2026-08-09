@@ -26,7 +26,7 @@ export interface CuratedSolutionProof {
   readonly proofVersion: typeof CURATED_SOLUTION_PROOF_VERSION;
   readonly dealId: string;
   readonly dealCommitment: string;
-  readonly acceptedMoveCount: 97;
+  readonly acceptedMoveCount: 81;
   readonly finalStatus: "WON";
   readonly finalEventHash: string;
   readonly transcriptHash: string;
@@ -59,16 +59,19 @@ export function createCuratedSolutionIntents(): readonly MoveIntent[] {
   intents.push({ type: "FLIP_TABLEAU", column: 2 });
   intents.push({ type: "TABLEAU_TO_FOUNDATION", fromColumn: 2 });
 
-  // Ranks 8–K are in stock order and can each go straight to foundation.
-  for (let stockCard = 0; stockCard < 24; stockCard += 1) {
+  // Ranks 8–K are in stock order. Each server action exposes up to three
+  // cards, then the visible waste cards move to foundation in reverse order.
+  for (let stockBatch = 0; stockBatch < 8; stockBatch += 1) {
     intents.push({ type: "DRAW_STOCK" });
-    intents.push({ type: "WASTE_TO_FOUNDATION" });
+    for (let wasteCard = 0; wasteCard < 3; wasteCard += 1) {
+      intents.push({ type: "WASTE_TO_FOUNDATION" });
+    }
   }
 
-  if (intents.length !== 97) {
+  if (intents.length !== 81) {
     throw new DomainError(
       "INVALID_CURATED_PROOF",
-      "Curated proof must contain exactly 97 accepted moves",
+      "Curated Draw 3 proof must contain exactly 81 accepted moves",
     );
   }
   return deepFreeze(intents);
@@ -128,7 +131,7 @@ export function replayCuratedSolvableDeal(input: {
 
   if (
     state.status !== "WON" ||
-    state.validMoveCount !== 97 ||
+    state.validMoveCount !== 81 ||
     !verifyMoveEventChain(state.events)
   ) {
     throw new DomainError(
@@ -153,7 +156,7 @@ export function replayCuratedSolvableDeal(input: {
     proofVersion: CURATED_SOLUTION_PROOF_VERSION,
     dealId,
     dealCommitment: input.deal.commitment,
-    acceptedMoveCount: 97,
+    acceptedMoveCount: 81,
     finalStatus: "WON",
     finalEventHash,
     transcriptHash,

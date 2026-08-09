@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { AppPageHeader } from "@/components/app-shell";
+import { CardCustomization } from "@/components/card-customization";
 import { SolitaireBoard } from "@/components/solitaire-board";
 import { runtimeUserFromToken, SESSION_COOKIE } from "@/lib/auth";
 import { runtimeEligibilitySnapshot } from "@/lib/runtime-eligibility";
@@ -25,6 +26,7 @@ export default async function PracticePage({
       <AppPageHeader eyebrow="Monetaire Play" title="Practice board">
         <p>Learn the board without an entry fee, prize, or effect on ranked results.</p>
       </AppPageHeader>
+      <CardCustomization />
       <SolitaireBoard resumeSessionId={session} />
     </>
   );

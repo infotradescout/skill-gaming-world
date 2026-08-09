@@ -423,6 +423,186 @@
   font-family: Georgia, "Times New Roman", serif;
 }
 
+.card-front-midnight .card-face {
+  border-color: rgba(136, 180, 207, 0.34);
+  background: linear-gradient(145deg, #1d2935, #0e151e);
+  color: #eaf2f5;
+}
+
+.card-front-midnight .card-red {
+  color: #ff8f91;
+}
+
+.card-front-parchment .card-face {
+  border-color: rgba(112, 73, 26, 0.35);
+  background:
+    radial-gradient(circle at 70% 22%, rgba(255, 255, 255, 0.38), transparent 32%),
+    linear-gradient(145deg, #f0dca9, #d7b878);
+  color: #342716;
+}
+
+.card-front-parchment .card-red {
+  color: #9e3f36;
+}
+
+.card-back-shipyard .card-back {
+  border-color: rgba(238, 187, 75, 0.5);
+  background: repeating-linear-gradient(135deg, rgba(13, 19, 23, 0.96) 0 12px, rgba(214, 158, 49, 0.9) 12px 24px);
+}
+
+.card-back-shipyard .card-back::after {
+  border-color: rgba(248, 224, 165, 0.55);
+  background: rgba(18, 27, 32, 0.38);
+}
+
+.card-back-blueprint .card-back {
+  border-color: rgba(116, 190, 224, 0.48);
+  background-color: #12374f;
+  background-image:
+    linear-gradient(rgba(138, 205, 232, 0.16) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(138, 205, 232, 0.16) 1px, transparent 1px);
+  background-size: 12px 12px;
+}
+
+.card-back-blueprint .card-back::after {
+  border-color: rgba(149, 213, 237, 0.5);
+}
+
+.card-customizer {
+  display: grid;
+  gap: 1.2rem;
+  margin-bottom: 1rem;
+  padding: 1.2rem;
+}
+
+.card-customizer-heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 0.62fr);
+  gap: 2rem;
+  align-items: end;
+}
+
+.card-customizer-heading h2 {
+  margin-top: 0.35rem;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.7rem;
+  font-weight: 500;
+  letter-spacing: -0.025em;
+}
+
+.card-customizer-heading > p {
+  color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1.55;
+}
+
+.card-customizer-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.card-customizer fieldset {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 0.85rem;
+}
+
+.card-customizer legend {
+  padding-inline: 0.35rem;
+  color: var(--brass-300);
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.card-customizer-options {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.55rem;
+}
+
+.card-theme-button {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 0.1rem 0.55rem;
+  align-items: center;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.025);
+  color: #dfe7e3;
+  padding: 0.55rem;
+  cursor: pointer;
+  text-align: left;
+}
+
+.card-theme-button:hover,
+.card-theme-button[aria-pressed="true"] {
+  border-color: var(--brass-300);
+  background: rgba(227, 201, 138, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(227, 201, 138, 0.13);
+}
+
+.card-theme-button > span {
+  display: grid;
+  width: 36px;
+  height: 50px;
+  grid-row: span 2;
+  place-items: center;
+  border-radius: 0.3rem;
+  background: #f3efe5;
+  color: #1a241f;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 0.8rem;
+  box-shadow: 0 5px 12px rgba(0, 0, 0, 0.24);
+}
+
+.card-theme-button strong {
+  overflow: hidden;
+  font-size: 0.7rem;
+  text-overflow: ellipsis;
+}
+
+.card-theme-button small {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.55rem;
+  line-height: 1.25;
+}
+
+.card-front-swatch-midnight > span {
+  background: #182431;
+  color: #eef4f5;
+}
+
+.card-front-swatch-parchment > span {
+  background: #e4c98e;
+  color: #3d2b15;
+}
+
+.card-back-swatch-monetaire > span {
+  border: 1px solid #c8a64e;
+  background: #14372c;
+  color: #dfbd67;
+}
+
+.card-back-swatch-shipyard > span {
+  background: repeating-linear-gradient(135deg, #1b2225 0 6px, #d19a31 6px 12px);
+  color: #fff3d0;
+}
+
+.card-back-swatch-blueprint > span {
+  background-color: #12374f;
+  background-image:
+    linear-gradient(rgba(154, 217, 239, 0.24) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(154, 217, 239, 0.24) 1px, transparent 1px);
+  background-size: 7px 7px;
+  color: #c5efff;
+}
+
 .card-slot {
   display: grid;
   place-items: center;
@@ -958,6 +1138,15 @@ kbd {
 }
 
 @media (max-width: 680px) {
+  .card-customizer-heading,
+  .card-customizer-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .card-customizer-options {
+    grid-template-columns: 1fr;
+  }
+
   .game-start {
     min-height: auto;
     padding: 1.25rem;

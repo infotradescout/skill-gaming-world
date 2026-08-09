@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type DragEvent } from "react";
+import { useCardPreferences } from "./card-preferences";
 
 type Suit = "CLUBS" | "DIAMONDS" | "HEARTS" | "SPADES";
 type Rank =
@@ -205,6 +206,7 @@ export function SolitaireBoard({
   storageKey?: string;
   resumeSessionId?: string;
 }) {
+  const cardPreferences = useCardPreferences();
   const [session, setSession] = useState<ServerGameSession | null>(initialSession);
   const [selection, setSelection] = useState<Selection | null>(null);
   const [feedback, setFeedback] = useState(
@@ -546,7 +548,7 @@ export function SolitaireBoard({
 
   return (
     <section
-      className="solitaire surface"
+      className={`solitaire surface card-front-${cardPreferences.front} card-back-${cardPreferences.back}`}
       aria-label={`Monetaire ${isPractice ? "practice" : "competition"} board`}
       aria-busy={pending}
       onKeyDown={handleKeyDown}

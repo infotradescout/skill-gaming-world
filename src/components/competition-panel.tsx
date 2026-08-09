@@ -150,7 +150,7 @@ export function CompetitionPanel({
         <div>
           <StatusPill tone="live">Noncash · {competition.status}</StatusPill>
           <h2>{competition.name}</h2>
-          <p>Draw 1 Klondike · identical curated deal · public ranking formula</p>
+          <p>Draw 3 Klondike · identical curated deal · public ranking formula</p>
         </div>
         {allowEntry ? (
           <button

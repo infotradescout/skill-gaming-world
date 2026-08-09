@@ -18,7 +18,7 @@ import {
   verifyMoveEventChain,
 } from "./game-engine";
 
-describe("deterministic Klondike Draw-1 deal", () => {
+describe("deterministic Klondike Draw-3 deal", () => {
   it("reproduces the same ordered deck and SHA-256 commitment", () => {
     const first = createSeededKlondikeDeal(
       "9a9ae87e94d1644b967114f36fc60ce0",
@@ -111,8 +111,8 @@ describe("server-authoritative move processing", () => {
     if (!result.accepted) {
       throw new Error("expected legal draw");
     }
-    expect(result.state.stock).toHaveLength(23);
-    expect(result.state.waste).toHaveLength(1);
+    expect(result.state.stock).toHaveLength(21);
+    expect(result.state.waste).toHaveLength(3);
     expect(result.state.validMoveCount).toBe(1);
     expect(result.state.lastSequence).toBe(1);
     expect(result.event.serverReceivedAtMs).toBe(10_000);

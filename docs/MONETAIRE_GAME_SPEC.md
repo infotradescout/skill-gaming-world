@@ -2,7 +2,8 @@
 
 ## Ruleset
 
-The first ruleset is **Klondike Solitaire, Draw 1**. Every ruleset has an
+The first ruleset is **Klondike Solitaire, Draw 3**. One stock action moves up
+to three cards to the waste, with only the top waste card playable. Every ruleset has an
 immutable identifier and semantic version. A game session stores the exact
 ruleset version and deal identifier; “latest” is never resolved during play.
 
@@ -112,4 +113,3 @@ interface DealSolver {
 
 Only `VERIFIED_SOLVABLE` is eligible for ranked publication. `UNSOLVED` and
 `INDETERMINATE` are excluded without being relabeled.
-

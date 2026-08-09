@@ -23,6 +23,14 @@
 # production
 /build
 
+# generated robot combat assets (Blender output)
+/generated/robot-combat/
+/.tmp-sgw-robot-foundation/
+/.tooling/
+/games/robot-combat/godot/.godot/
+/games/robot-combat/godot/.tmp-*
+/public/games/bay-13/index.wasm
+
 # misc
 .DS_Store
 *.pem

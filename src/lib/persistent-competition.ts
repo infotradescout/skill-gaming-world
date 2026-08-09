@@ -33,7 +33,7 @@ import { getRuntimeEnv } from "./env";
 import { GameServiceError } from "./game-service";
 import { assertPersistentAccess } from "./persistent-game";
 
-const RULESET_VERSION = "KLONDIKE_DRAW_ONE_V1";
+const RULESET_VERSION = "KLONDIKE_DRAW_THREE_V1";
 const SCORE_VERSION = "MONETAIRE_SCORE_V1";
 const COMPETITION_DURATION_MS = 7 * 24 * 60 * 60 * 1_000;
 

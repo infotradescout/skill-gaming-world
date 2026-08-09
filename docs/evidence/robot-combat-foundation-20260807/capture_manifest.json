@@ -1,0 +1,18 @@
+{
+  "evidence_root": "D:\\AAATraderCorner\\TradeScout\\skill-gaming-world\\docs\\evidence\\robot-combat-foundation-20260807",
+  "captured_files": [
+    "D:\\AAATraderCorner\\TradeScout\\skill-gaming-world\\docs\\evidence\\robot-combat-foundation-20260807\\02_complete_arena.png",
+    "D:\\AAATraderCorner\\TradeScout\\skill-gaming-world\\docs\\evidence\\robot-combat-foundation-20260807\\03_bot_rammer.png",
+    "D:\\AAATraderCorner\\TradeScout\\skill-gaming-world\\docs\\evidence\\robot-combat-foundation-20260807\\04_bot_ripper.png",
+    "D:\\AAATraderCorner\\TradeScout\\skill-gaming-world\\docs\\evidence\\robot-combat-foundation-20260807\\05_bot_maul.png",
+    "D:\\AAATraderCorner\\TradeScout\\skill-gaming-world\\docs\\evidence\\robot-combat-foundation-20260807\\06_modular_parts.png",
+    "D:\\AAATraderCorner\\TradeScout\\skill-gaming-world\\docs\\evidence\\robot-combat-foundation-20260807\\07_attachment_sockets_pivots.png",
+    "D:\\AAATraderCorner\\TradeScout\\skill-gaming-world\\docs\\evidence\\robot-combat-foundation-20260807\\08_collision_objects.png",
+    "D:\\AAATraderCorner\\TradeScout\\skill-gaming-world\\docs\\evidence\\robot-combat-foundation-20260807\\09_arena_level_scale.png"
+  ],
+  "preview_copied_from_generator": true,
+  "camera_contract": "CAM_Overview",
+  "notes": "01 preview from generator CAM_Overview; 02 arena overview; 03-05 bot close-ups; 06 modular parts; 07 sockets/pivots; 08 collision overlay; 09 lower arena-level scale view.",
+  "visual_approval": "FAIL",
+  "authority_gate": "HELD until OWNER PREVIEW: PASS"
+}

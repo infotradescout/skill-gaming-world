@@ -122,7 +122,7 @@ describe("immutable ranked competition contract", () => {
       deal,
     });
     expect(verified.proof.finalStatus).toBe("WON");
-    expect(verified.proof.acceptedMoveCount).toBe(97);
+    expect(verified.proof.acceptedMoveCount).toBe(81);
     expect(verified.validation.evidenceReference).toBe(
       `sha256:${verified.proof.transcriptHash}`,
     );
@@ -187,7 +187,7 @@ describe("immutable ranked competition contract", () => {
         validationId: "validation-2",
         dealId: "deal-2",
         dealCommitment: deal.commitment,
-        rulesetVersion: "KLONDIKE_DRAW_ONE_V1",
+        rulesetVersion: "KLONDIKE_DRAW_THREE_V1",
         dealGeneratorVersion: deal.generatorVersion,
         status: "UNVALIDATED",
         solverName: "placeholder",
@@ -212,7 +212,7 @@ describe("immutable ranked competition contract", () => {
         validationId: "validation-claimed",
         dealId: "deal-claimed",
         dealCommitment: deal.commitment,
-        rulesetVersion: "KLONDIKE_DRAW_ONE_V1",
+        rulesetVersion: "KLONDIKE_DRAW_THREE_V1",
         dealGeneratorVersion: deal.generatorVersion,
         status: "VERIFIED_SOLVABLE",
         solverName: "unsupported-label",

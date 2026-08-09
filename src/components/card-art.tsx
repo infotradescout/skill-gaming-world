@@ -21,7 +21,7 @@ export function CardStudy({ compact = false }: { compact?: boolean }) {
       </div>
       <div className="study-orbit study-orbit-one" />
       <div className="study-orbit study-orbit-two" />
-      <span className="study-label">Draw 1 · Klondike</span>
+      <span className="study-label">Draw 3 · Klondike</span>
     </div>
   );
 }

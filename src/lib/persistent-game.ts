@@ -121,7 +121,7 @@ async function ensureRuleset() {
     .insert(rulesetVersions)
     .values({
       gameDefinitionId: definition.id,
-      version: "KLONDIKE_DRAW_ONE_V1",
+      version: "KLONDIKE_DRAW_THREE_V1",
       rules: { draw: 1, redeals: "unlimited", valuablePrize: false },
       scoring: { version: "MONETAIRE_SCORE_V1" },
       immutableAt: new Date(),
@@ -133,7 +133,7 @@ async function ensureRuleset() {
     .where(
       and(
         eq(rulesetVersions.gameDefinitionId, definition.id),
-        eq(rulesetVersions.version, "KLONDIKE_DRAW_ONE_V1"),
+        eq(rulesetVersions.version, "KLONDIKE_DRAW_THREE_V1"),
       ),
     )
     .limit(1);

@@ -1,0 +1,81 @@
+{
+  "report_title": "SGW Robot Combat Foundation — Owner Visual Gate",
+  "build_version": "0.2.0",
+  "generated_at": "2026-08-07T18:51:54Z",
+  "blender": "5.2.0 LTS",
+  "generator_script": "tools/blender/robot-combat/sgw_robot_combat_arena.py",
+  "authority": {
+    "visual_approval": "FAIL",
+    "runtime_continuation": "HELD",
+    "godot_playable_slice": "HELD",
+    "pull_request_completion": "HELD",
+    "merge": "HELD",
+    "deployment": "HELD",
+    "continuation_requires_exact_statement": "OWNER PREVIEW: PASS",
+    "note": "Comments such as better / better than nothing / closer / keep working are not approval."
+  },
+  "validation_status": {
+    "bundle_structural": "PASS",
+    "manifest_schema": "PASS",
+    "modular_construction": "PASS",
+    "named_robot_roots": "PASS",
+    "attachment_sockets": "PASS",
+    "weapon_pivots": "PASS",
+    "collision_objects": "PASS",
+    "robot_metadata": "PASS",
+    "part_metadata": "PASS",
+    "manifest_generation": "PASS",
+    "separate_glb_exports": "PASS",
+    "complete_scene_glb_export": "PASS",
+    "repeatable_clean_run": "PASS",
+    "script_reproducible_assets": "PASS",
+    "evidence_capture_set": "PASS",
+    "owner_visual_preview": "FAIL",
+    "godot_runtime": "HELD",
+    "playable_slice": "HELD",
+    "pr_merge_deploy": "HELD"
+  },
+  "scene_inspection_summary": {
+    "bot_roots": ["BOT_RAMMER_ROOT", "BOT_RIPPER_ROOT", "BOT_MAUL_ROOT"],
+    "weapon_pivots": ["RIPPER_WeaponPivot", "MAUL_HammerPivot", "MAUL_HammerWeaponPivot"],
+    "socket_object_count": 43,
+    "collision_object_count": 18,
+    "part_library_count": 12,
+    "arena_floor_present": true,
+    "arena_wall_present": true,
+    "duplicate_suffix_names": []
+  },
+  "evidence_paths": {
+    "01_main_preview": "docs/evidence/robot-combat-foundation-20260807/01_blender_generated_preview.png",
+    "02_complete_arena_overview": "docs/evidence/robot-combat-foundation-20260807/02_complete_arena.png",
+    "03_rammer_closeup": "docs/evidence/robot-combat-foundation-20260807/03_bot_rammer.png",
+    "04_ripper_closeup": "docs/evidence/robot-combat-foundation-20260807/04_bot_ripper.png",
+    "05_maul_closeup": "docs/evidence/robot-combat-foundation-20260807/05_bot_maul.png",
+    "06_modular_parts": "docs/evidence/robot-combat-foundation-20260807/06_modular_parts.png",
+    "07_attachment_sockets_pivots": "docs/evidence/robot-combat-foundation-20260807/07_attachment_sockets_pivots.png",
+    "08_collision_object_inspection": "docs/evidence/robot-combat-foundation-20260807/08_collision_objects.png",
+    "09_arena_level_scale": "docs/evidence/robot-combat-foundation-20260807/09_arena_level_scale.png",
+    "capture_manifest": "docs/evidence/robot-combat-foundation-20260807/capture_manifest.json",
+    "generated_preview": "generated/robot-combat/SGW_Robot_Combat_Arena_Preview.png",
+    "generated_blend": "generated/robot-combat/SGW_Robot_Combat_Arena_v0_1.blend",
+    "bundle_validation": "generated/robot-combat/manifest/validation_report.json",
+    "scene_inspection": "generated/robot-combat/manifest/scene_inspection_report.json",
+    "asset_manifest": "generated/robot-combat/manifest/sgw_robot_combat_manifest.json"
+  },
+  "exports": {
+    "arena_glb": "generated/robot-combat/exports/sgw_robot_combat_arena.glb",
+    "bot_rammer_glb": "generated/robot-combat/exports/bot_rammer.glb",
+    "bot_ripper_glb": "generated/robot-combat/exports/bot_ripper.glb",
+    "bot_maul_glb": "generated/robot-combat/exports/bot_maul.glb",
+    "part_library_glb": "generated/robot-combat/exports/sgw_robot_part_library.glb",
+    "full_scene_glb": "generated/robot-combat/exports/sgw_robot_combat_full_scene.glb"
+  },
+  "rebuild_notes": [
+    "Arena rebuilt as industrial combat venue with armored lower walls, framed polycarbonate bays, heavy posts, service gates, corner armor, dark competition-steel panels, wear marks, hazard bays, and exterior service decks.",
+    "Center SGW identity uses painted restrained markings; center glowing white crossbars removed; overhead rigging moved to perimeter.",
+    "Rammer / Ripper / Maul rebuilt toward engineered silhouettes with layered armor, recessed wheels, weapon supports, pivots, and restrained ID color.",
+    "All outputs regenerated from the Blender script; no manual .blend-only patch.",
+    "Stopped at owner visual gate. No Godot runtime, playable slice, PR completion, merge, or deployment work performed."
+  ],
+  "stop_condition": "STOP after corrected screenshots + validation report. Awaiting exact statement OWNER PREVIEW: PASS."
+}
