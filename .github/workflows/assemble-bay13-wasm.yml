@@ -7,6 +7,12 @@ on:
     paths:
       - ".release/bay13-wasm/**"
       - ".github/workflows/assemble-bay13-wasm.yml"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - ".release/bay13-wasm/**"
+      - ".github/workflows/assemble-bay13-wasm.yml"
 
 permissions:
   contents: write
