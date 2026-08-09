@@ -14,6 +14,7 @@ import {
   sandboxPurchases,
   scores,
   selfExclusions,
+  rulesetSupersessions,
 } from "./schema";
 
 describe("database ledger safety migration", () => {
@@ -256,6 +257,30 @@ describe("database immutable-history migration", () => {
     );
     expect(migration).toContain(
       "ranked game session does not match its entry contract",
+    );
+  });
+});
+
+describe("Draw 3 production-truth repair", () => {
+  const migration = readFileSync(
+    resolve(process.cwd(), "drizzle", "0008_draw_three_truth_repair.sql"),
+    "utf8",
+  );
+
+  it("records an append-only successor and blocks old-runtime republication", () => {
+    expect(checkNames(rulesetSupersessions)).toContain(
+      "ruleset_supersessions_distinct_versions",
+    );
+    expect(migration).toContain("KLONDIKE_DRAW_THREE_V1");
+    expect(migration).toContain("KLONDIKE_DRAW_THREE_V2");
+    expect(migration).toContain('"draw":3');
+    expect(migration).toContain(
+      "MONETAIRE_COMPLETION_MOVES_ACTIVE_TIME_V1",
+    );
+    expect(migration).toContain("ruleset_supersessions_append_only");
+    expect(migration).toContain("competitions_superseded_ruleset_guard");
+    expect(migration).toContain(
+      "superseded ruleset cannot publish a new competition",
     );
   });
 });

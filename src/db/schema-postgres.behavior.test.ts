@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 import { PGlite } from "@electric-sql/pglite";
 import { describe, expect, it } from "vitest";
 
-const migrationFiles = [
+const migrationFilesBeforeTruthRepair = [
   "0000_eager_garia.sql",
   "0001_chemical_screwball.sql",
   "0002_volatile_hammerhead.sql",
@@ -11,6 +11,12 @@ const migrationFiles = [
   "0004_lowly_nightcrawler.sql",
   "0005_strange_night_thrasher.sql",
   "0006_dusty_charles_xavier.sql",
+  "0007_fortune_dice_rounds.sql",
+] as const;
+const truthRepairMigration = "0008_draw_three_truth_repair.sql" as const;
+const migrationFiles = [
+  ...migrationFilesBeforeTruthRepair,
+  truthRepairMigration,
 ] as const;
 
 const playLedger = "00000000-0000-0000-0000-000000000001";
@@ -19,6 +25,194 @@ const debitAccount = "00000000-0000-0000-0000-000000000011";
 const creditAccount = "00000000-0000-0000-0000-000000000012";
 
 describe("PostgreSQL database invariants", () => {
+  it("seeds the exact sealed V2 contract on a brand-new database", async () => {
+    await withDatabase(async (database) => {
+      const result = await database.query<{
+        version: string;
+        draw: string;
+        scoringVersion: string;
+        sealed: boolean;
+      }>(`
+        SELECT
+          ruleset."version",
+          ruleset."rules" ->> 'draw' AS "draw",
+          ruleset."scoring" ->> 'version' AS "scoringVersion",
+          ruleset."immutable_at" IS NOT NULL AS "sealed"
+        FROM public."ruleset_versions" AS ruleset
+        JOIN public."game_definitions" AS definition
+          ON definition."id" = ruleset."game_definition_id"
+        WHERE definition."key" = 'MONETAIRE_SOLITAIRE'
+      `);
+
+      expect(result.rows).toEqual([
+        {
+          version: "KLONDIKE_DRAW_THREE_V2",
+          draw: "3",
+          scoringVersion: "MONETAIRE_COMPLETION_MOVES_ACTIVE_TIME_V1",
+          sealed: true,
+        },
+      ]);
+    });
+  });
+
+  it("preserves the bad Draw 3 record, cancels only its empty competition, and creates the correct successor", async () => {
+    const database = new PGlite();
+    await database.waitReady;
+
+    try {
+      await applyMigrations(database, migrationFilesBeforeTruthRepair);
+      const game = "00000000-0000-0000-0000-000000000501";
+      const oldRuleset = "00000000-0000-0000-0000-000000000502";
+      const emptyDeal = "00000000-0000-0000-0000-000000000503";
+      const emptyCompetition = "00000000-0000-0000-0000-000000000505";
+
+      await database.exec(`
+        INSERT INTO public."game_definitions" ("id", "key", "public_name")
+        VALUES ('${game}', 'MONETAIRE_SOLITAIRE', 'Monetaire');
+        INSERT INTO public."ruleset_versions"
+          ("id", "game_definition_id", "version", "rules", "scoring", "immutable_at")
+        VALUES
+          ('${oldRuleset}', '${game}', 'KLONDIKE_DRAW_THREE_V1', '{"draw":1,"redeals":"unlimited","valuablePrize":false}', '{"version":"MONETAIRE_SCORE_V1"}', '2026-01-01T00:00:00Z');
+        INSERT INTO public."deals"
+          ("id", "ruleset_version_id", "seed_ciphertext", "seed_commitment", "canonical_deal_hash", "immutable_at")
+        VALUES
+          ('${emptyDeal}', '${oldRuleset}', 'empty-ciphertext', '${"a".repeat(64)}', '${"b".repeat(64)}', '2026-01-01T00:00:00Z');
+        INSERT INTO public."deal_validations"
+          ("deal_id", "validator_key", "validator_version", "status", "evidence_hash", "evidence", "validated_at")
+        VALUES
+          ('${emptyDeal}', 'test', 'v1', 'VERIFIED_SOLVABLE', '${"e".repeat(64)}', '{}', '2026-01-01T00:00:00Z');
+        INSERT INTO public."competitions"
+          ("id", "public_name", "status", "deal_id", "ruleset_version_id", "opens_at", "closes_at", "published_at")
+        VALUES
+          ('${emptyCompetition}', 'Empty mistaken record', 'PUBLISHED', '${emptyDeal}', '${oldRuleset}', '2026-01-02T00:00:00Z', '2036-01-02T00:00:00Z', '2026-01-01T00:00:00Z')
+      `);
+
+      await applyMigration(database, truthRepairMigration);
+
+      const rulesets = await database.query<{
+        version: string;
+        rules: { draw: number };
+        scoring: { version: string };
+      }>(`
+        SELECT "version", "rules", "scoring"
+        FROM public."ruleset_versions"
+        WHERE "game_definition_id" = '${game}'
+        ORDER BY "version"
+      `);
+      expect(rulesets.rows).toEqual([
+        {
+          version: "KLONDIKE_DRAW_THREE_V1",
+          rules: { draw: 1, redeals: "unlimited", valuablePrize: false },
+          scoring: { version: "MONETAIRE_SCORE_V1" },
+        },
+        {
+          version: "KLONDIKE_DRAW_THREE_V2",
+          rules: { draw: 3, redeals: "unlimited", valuablePrize: false },
+          scoring: {
+            version: "MONETAIRE_COMPLETION_MOVES_ACTIVE_TIME_V1",
+          },
+        },
+      ]);
+
+      const competitions = await database.query<{
+        id: string;
+        status: string;
+        closedAt: Date | null;
+      }>(`
+        SELECT "id", "status", "closed_at" AS "closedAt"
+        FROM public."competitions"
+        ORDER BY "id"
+      `);
+      expect(competitions.rows).toEqual([
+        expect.objectContaining({
+          id: emptyCompetition,
+          status: "CANCELLED",
+          closedAt: expect.any(Date),
+        }),
+      ]);
+
+      const supersessions = await database.query<{
+        superseded: string;
+        successor: string;
+      }>(`
+        SELECT
+          "superseded_ruleset_version_id" AS "superseded",
+          "successor_ruleset_version_id" AS "successor"
+        FROM public."ruleset_supersessions"
+      `);
+      expect(supersessions.rows).toHaveLength(1);
+      expect(supersessions.rows[0]?.superseded).toBe(oldRuleset);
+
+      await expectPgReject(
+        database,
+        `
+          INSERT INTO public."competitions"
+            ("public_name", "status", "deal_id", "ruleset_version_id", "opens_at", "closes_at", "published_at")
+          VALUES
+            ('Old runtime race', 'PUBLISHED', '${emptyDeal}', '${oldRuleset}', '2027-01-02T00:00:00Z', '2036-01-02T00:00:00Z', '2027-01-01T00:00:00Z')
+        `,
+        "superseded ruleset cannot publish a new competition",
+      );
+    } finally {
+      await database.close();
+    }
+  });
+
+  it("aborts before repair when the mistaken active competition has an entry", async () => {
+    const database = new PGlite();
+    await database.waitReady;
+
+    try {
+      await applyMigrations(database, migrationFilesBeforeTruthRepair);
+      const game = "00000000-0000-0000-0000-000000000601";
+      const ruleset = "00000000-0000-0000-0000-000000000602";
+      const deal = "00000000-0000-0000-0000-000000000603";
+      const competition = "00000000-0000-0000-0000-000000000604";
+      const user = "00000000-0000-0000-0000-000000000605";
+
+      await database.exec(`
+        INSERT INTO public."game_definitions" ("id", "key", "public_name")
+        VALUES ('${game}', 'MONETAIRE_SOLITAIRE', 'Monetaire');
+        INSERT INTO public."ruleset_versions"
+          ("id", "game_definition_id", "version", "rules", "scoring", "immutable_at")
+        VALUES
+          ('${ruleset}', '${game}', 'KLONDIKE_DRAW_THREE_V1', '{"draw":1,"redeals":"unlimited","valuablePrize":false}', '{"version":"MONETAIRE_SCORE_V1"}', '2026-01-01T00:00:00Z');
+        INSERT INTO public."deals"
+          ("id", "ruleset_version_id", "seed_ciphertext", "seed_commitment", "canonical_deal_hash", "immutable_at")
+        VALUES
+          ('${deal}', '${ruleset}', 'entered-ciphertext', '${"1".repeat(64)}', '${"2".repeat(64)}', '2026-01-01T00:00:00Z');
+        INSERT INTO public."deal_validations"
+          ("deal_id", "validator_key", "validator_version", "status", "evidence_hash", "evidence", "validated_at")
+        VALUES
+          ('${deal}', 'test', 'v1', 'VERIFIED_SOLVABLE', '${"3".repeat(64)}', '{}', '2026-01-01T00:00:00Z');
+        INSERT INTO public."competitions"
+          ("id", "public_name", "status", "deal_id", "ruleset_version_id", "opens_at", "closes_at", "published_at")
+        VALUES
+          ('${competition}', 'Entered mistaken record', 'OPEN', '${deal}', '${ruleset}', '2026-01-02T00:00:00Z', '2036-01-02T00:00:00Z', '2026-01-01T00:00:00Z');
+        INSERT INTO public."users" ("id", "email", "password_hash")
+        VALUES ('${user}', 'entered-repair@example.test', 'not-a-real-password-hash');
+        INSERT INTO public."competition_entries"
+          ("competition_id", "user_id", "deal_id", "entered_at")
+        VALUES
+          ('${competition}', '${user}', '${deal}', '2026-08-09T00:00:00Z')
+      `);
+
+      await expect(
+        applyMigration(database, truthRepairMigration),
+      ).rejects.toThrow(
+        "Draw 3 truth repair refuses to cancel a competition with player entries",
+      );
+      const successor = await database.query<{ count: number }>(`
+        SELECT count(*)::integer AS "count"
+        FROM public."ruleset_versions"
+        WHERE "version" = 'KLONDIKE_DRAW_THREE_V2'
+      `);
+      expect(successor.rows[0]?.count).toBe(0);
+    } finally {
+      await database.close();
+    }
+  });
+
   it("applies every migration and enforces active PLAY_COIN ledger accounting", async () => {
     await withDatabase(async (db) => {
       await seedLedgerFoundation(db);
@@ -293,21 +487,35 @@ async function withDatabase(
   await database.waitReady;
 
   try {
-    for (const migration of migrationFiles) {
-      const sql = readFileSync(
-        resolve(process.cwd(), "drizzle", migration),
-        "utf8",
-      );
-      for (const statement of sql
-        .split("--> statement-breakpoint")
-        .map((value) => value.trim())
-        .filter(Boolean)) {
-        await database.exec(statement);
-      }
-    }
+    await applyMigrations(database, migrationFiles);
     await assertion(database);
   } finally {
     await database.close();
+  }
+}
+
+async function applyMigrations(
+  database: PGlite,
+  migrations: readonly string[],
+): Promise<void> {
+  for (const migration of migrations) {
+    await applyMigration(database, migration);
+  }
+}
+
+async function applyMigration(
+  database: PGlite,
+  migration: string,
+): Promise<void> {
+  const migrationSql = readFileSync(
+    resolve(process.cwd(), "drizzle", migration),
+    "utf8",
+  );
+  for (const statement of migrationSql
+    .split("--> statement-breakpoint")
+    .map((value) => value.trim())
+    .filter(Boolean)) {
+    await database.exec(statement);
   }
 }
 

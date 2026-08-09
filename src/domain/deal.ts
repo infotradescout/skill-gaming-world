@@ -16,8 +16,28 @@ import {
   sha256Hex,
 } from "./shared";
 
-export const KLONDIKE_DRAW_THREE_RULESET = "KLONDIKE_DRAW_THREE_V1" as const;
-export type KlondikeRulesetVersion = typeof KLONDIKE_DRAW_THREE_RULESET;
+export const KLONDIKE_DRAW_THREE_RULESET = "KLONDIKE_DRAW_THREE_V2" as const;
+export const LEGACY_KLONDIKE_DRAW_THREE_RULESET =
+  "KLONDIKE_DRAW_THREE_V1" as const;
+export type KlondikeRulesetVersion =
+  | typeof KLONDIKE_DRAW_THREE_RULESET
+  | typeof LEGACY_KLONDIKE_DRAW_THREE_RULESET;
+
+export const KLONDIKE_DRAW_THREE_RULES = deepFreeze({
+  draw: 3,
+  redeals: "unlimited",
+  valuablePrize: false,
+});
+
+export function isKlondikeDrawThreeRules(value: unknown): boolean {
+  if (!value || typeof value !== "object") return false;
+  const rules = value as Record<string, unknown>;
+  return (
+    rules.draw === KLONDIKE_DRAW_THREE_RULES.draw &&
+    rules.redeals === KLONDIKE_DRAW_THREE_RULES.redeals &&
+    rules.valuablePrize === KLONDIKE_DRAW_THREE_RULES.valuablePrize
+  );
+}
 
 export const DEAL_GENERATORS = [
   "SHA256_FISHER_YATES_V1",
@@ -26,7 +46,7 @@ export const DEAL_GENERATORS = [
 export type DealGeneratorVersion = (typeof DEAL_GENERATORS)[number];
 
 export interface KlondikeDeal {
-  readonly rulesetVersion: KlondikeRulesetVersion;
+  readonly rulesetVersion: typeof KLONDIKE_DRAW_THREE_RULESET;
   readonly generatorVersion: DealGeneratorVersion;
   readonly orderedDeck: readonly Readonly<Card>[];
   readonly commitment: string;
@@ -164,9 +184,11 @@ export function verifyDealReveal(input: {
   readonly rulesetVersion?: KlondikeRulesetVersion;
   readonly generatorVersion?: DealGeneratorVersion;
 }): boolean {
+  const rulesetVersion =
+    input.rulesetVersion ?? KLONDIKE_DRAW_THREE_RULESET;
   if (
-    (input.rulesetVersion ?? KLONDIKE_DRAW_THREE_RULESET) !==
-    KLONDIKE_DRAW_THREE_RULESET
+    rulesetVersion !== KLONDIKE_DRAW_THREE_RULESET &&
+    rulesetVersion !== LEGACY_KLONDIKE_DRAW_THREE_RULESET
   ) {
     return false;
   }
@@ -181,7 +203,13 @@ export function verifyDealReveal(input: {
     input.generatorVersion === "CURATED_SOLVABLE_V1"
       ? createCuratedSolvableKlondikeDeal(input.seed)
       : createSeededKlondikeDeal(input.seed);
-  return deal.commitment === input.commitment;
+  const commitment = createDealCommitment({
+    seed: input.seed,
+    rulesetVersion,
+    generatorVersion: deal.generatorVersion,
+    orderedCardIds: deal.orderedDeck.map((card) => card.id),
+  });
+  return commitment === input.commitment;
 }
 
 function shuffledCopy<T>(

@@ -7,6 +7,11 @@ to three cards to the waste, with only the top waste card playable. Every rulese
 immutable identifier and semantic version. A game session stores the exact
 ruleset version and deal identifier; “latest” is never resolved during play.
 
+New play and publications use `KLONDIKE_DRAW_THREE_V2`, whose stored contract
+records `draw: 3` and `MONETAIRE_COMPLETION_MOVES_ACTIVE_TIME_V1` scoring. The
+mistaken sealed V1 record remains available only for historical verification and
+cannot publish new competitions.
+
 Ruleset data must define:
 
 - 52-card deck encoding and canonical suit/rank order;

@@ -38,6 +38,7 @@ nonexecutable until the listed authority releases it.
 | D-029 | Accepted | Production cannot enable the in-memory demo adapter. | `NODE_ENV=production` with `DEMO_MODE=true` is invalid configuration. |
 | D-030 | Accepted | Restore the `SOCIAL_CASINO` hard hold by removing Fortune Dice execution and playable casino claims. | Casino remains an unavailable shell; dormant game-domain code does not create a callable route. |
 | D-031 | Accepted | Supersede D-012 with versioned Klondike Draw 3 as Monetaire's governing ruleset. One stock action moves up to three cards, while deterministic deals and server-authoritative moves/time remain unchanged. | New sessions and ranked publications pin `KLONDIKE_DRAW_THREE_V1`; the prior Draw 1 decision remains historical and does not govern new play. |
+| D-032 | Accepted | Supersede D-031 by preserving the mistaken immutable `KLONDIKE_DRAW_THREE_V1` record, canceling only its empty active competition, and publishing Draw 3 through `KLONDIKE_DRAW_THREE_V2`. | The historical contradiction remains auditable; all new practice sessions, deals, and ranked publications require stored `draw: 3` rules and `MONETAIRE_COMPLETION_MOVES_ACTIVE_TIME_V1` scoring. |
 
 ## Decision change process
 

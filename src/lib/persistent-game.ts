@@ -25,6 +25,10 @@ import {
   finalizeActivityClock,
   hashKlondikeGameState,
   hashMoveRequest,
+  isKlondikeDrawThreeRules,
+  KLONDIKE_DRAW_THREE_RULES,
+  KLONDIKE_DRAW_THREE_RULESET,
+  OFFICIAL_SCORE_VERSION,
   type KlondikeGameState,
   type MoveIntent,
   type ServerActivityClock,
@@ -121,23 +125,33 @@ async function ensureRuleset() {
     .insert(rulesetVersions)
     .values({
       gameDefinitionId: definition.id,
-      version: "KLONDIKE_DRAW_THREE_V1",
-      rules: { draw: 1, redeals: "unlimited", valuablePrize: false },
-      scoring: { version: "MONETAIRE_SCORE_V1" },
+      version: KLONDIKE_DRAW_THREE_RULESET,
+      rules: KLONDIKE_DRAW_THREE_RULES,
+      scoring: { version: OFFICIAL_SCORE_VERSION },
       immutableAt: new Date(),
     })
     .onConflictDoNothing();
   const [ruleset] = await database
-    .select({ id: rulesetVersions.id })
+    .select({
+      id: rulesetVersions.id,
+      rules: rulesetVersions.rules,
+      scoring: rulesetVersions.scoring,
+    })
     .from(rulesetVersions)
     .where(
       and(
         eq(rulesetVersions.gameDefinitionId, definition.id),
-        eq(rulesetVersions.version, "KLONDIKE_DRAW_THREE_V1"),
+        eq(rulesetVersions.version, KLONDIKE_DRAW_THREE_RULESET),
       ),
     )
     .limit(1);
   if (!ruleset) throw new Error("RULESET_MISSING");
+  if (
+    !isKlondikeDrawThreeRules(ruleset.rules) ||
+    ruleset.scoring.version !== OFFICIAL_SCORE_VERSION
+  ) {
+    throw new Error("RULESET_CONTRACT_MISMATCH");
+  }
   return ruleset.id;
 }
 
@@ -575,7 +589,7 @@ export async function submitPersistentMove(input: PersistentMoveInput) {
               verifiedActiveDurationMs: BigInt(
                 activityClock.accumulatedActiveMs,
               ),
-              scoringVersion: "MONETAIRE_SCORE_V1",
+              scoringVersion: OFFICIAL_SCORE_VERSION,
             })
             .onConflictDoNothing();
         }

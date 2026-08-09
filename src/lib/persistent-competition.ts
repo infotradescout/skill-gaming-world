@@ -25,6 +25,10 @@ import {
   createCuratedSolvableKlondikeDeal,
   createKlondikeGameState,
   createServerActivityClock,
+  isKlondikeDrawThreeRules,
+  KLONDIKE_DRAW_THREE_RULES,
+  KLONDIKE_DRAW_THREE_RULESET,
+  OFFICIAL_SCORE_VERSION,
   sha256Hex,
 } from "@/domain";
 
@@ -33,8 +37,6 @@ import { getRuntimeEnv } from "./env";
 import { GameServiceError } from "./game-service";
 import { assertPersistentAccess } from "./persistent-game";
 
-const RULESET_VERSION = "KLONDIKE_DRAW_THREE_V1";
-const SCORE_VERSION = "MONETAIRE_SCORE_V1";
 const COMPETITION_DURATION_MS = 7 * 24 * 60 * 60 * 1_000;
 
 function rankedKey(): Buffer {
@@ -91,9 +93,9 @@ async function ensureConfiguredRuleset() {
     .insert(rulesetVersions)
     .values({
       gameDefinitionId: definition.id,
-      version: RULESET_VERSION,
-      rules: { draw: 1, redeals: "unlimited", valuablePrize: false },
-      scoring: { version: SCORE_VERSION },
+      version: KLONDIKE_DRAW_THREE_RULESET,
+      rules: KLONDIKE_DRAW_THREE_RULES,
+      scoring: { version: OFFICIAL_SCORE_VERSION },
       immutableAt: new Date(),
     })
     .onConflictDoNothing();
@@ -103,11 +105,17 @@ async function ensureConfiguredRuleset() {
     .where(
       and(
         eq(rulesetVersions.gameDefinitionId, definition.id),
-        eq(rulesetVersions.version, RULESET_VERSION),
+        eq(rulesetVersions.version, KLONDIKE_DRAW_THREE_RULESET),
       ),
     )
     .limit(1);
   if (!ruleset) throw new Error("RULESET_MISSING");
+  if (
+    !isKlondikeDrawThreeRules(ruleset.rules) ||
+    ruleset.scoring.version !== OFFICIAL_SCORE_VERSION
+  ) {
+    throw new Error("RULESET_CONTRACT_MISMATCH");
+  }
   return ruleset;
 }
 
@@ -128,6 +136,7 @@ export async function ensurePersistentCompetition() {
         and(
           inArray(competitions.status, ["PUBLISHED", "OPEN"]),
           gt(competitions.closesAt, now),
+          eq(competitions.rulesetVersionId, ruleset.id),
         ),
       )
       .orderBy(asc(competitions.opensAt), asc(competitions.id))
@@ -151,7 +160,7 @@ export async function ensurePersistentCompetition() {
       .returning();
     const evidence = {
       protocol: "MONETAIRE_CURATED_SOLVABLE_V1",
-      rulesetVersion: RULESET_VERSION,
+      rulesetVersion: KLONDIKE_DRAW_THREE_RULESET,
       canonicalDealHash,
     };
     await transaction.insert(dealValidations).values({
@@ -201,18 +210,27 @@ export async function persistentCompetitionSnapshot() {
     if (updated) Object.assign(competition, updated);
   }
   const standings = await persistentLeaderboard(competition.id);
-  const [deal] = await getDatabase()
-    .select({ commitment: deals.seedCommitment })
+  const [publication] = await getDatabase()
+    .select({
+      commitment: deals.seedCommitment,
+      rulesetVersion: rulesetVersions.version,
+    })
     .from(deals)
+    .innerJoin(
+      rulesetVersions,
+      eq(rulesetVersions.id, deals.rulesetVersionId),
+    )
     .where(eq(deals.id, competition.dealId))
     .limit(1);
+  if (!publication) throw new Error("COMPETITION_PUBLICATION_MISSING");
   return {
     competitionId: competition.id,
     publicName: competition.publicName,
     status: competition.status === "OPEN" ? "ACTIVE" : competition.status,
     entryCostPlayCoins: 0,
     valuablePrize: false,
-    dealCommitment: deal?.commitment ?? null,
+    dealCommitment: publication.commitment,
+    rulesetVersion: publication.rulesetVersion,
     opensAtServerMs: competition.opensAt.getTime(),
     closesAtServerMs: competition.closesAt.getTime(),
     standings,

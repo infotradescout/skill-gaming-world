@@ -14,6 +14,7 @@ describe("competition snapshot presentation", () => {
       entryCostPlayCoins: 0,
       valuablePrize: false,
       dealCommitment: "commitment",
+      rulesetVersion: "KLONDIKE_DRAW_THREE_V2",
       opensAtServerMs: Date.UTC(2026, 6, 26, 12),
       closesAtServerMs: Date.UTC(2026, 7, 2, 12),
       standings: [
@@ -33,7 +34,7 @@ describe("competition snapshot presentation", () => {
       name: "Configured noncash ranking",
       environment: "configured",
       entryCount: null,
-      rulesetVersion: null,
+      rulesetVersion: "KLONDIKE_DRAW_THREE_V2",
       validation: null,
       opensAt: "2026-07-26T12:00:00.000Z",
       standings: [
