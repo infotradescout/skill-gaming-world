@@ -32,6 +32,10 @@ The runtime verification command fails on parser errors and requires all of the 
 - a successful two-process WebSocket connection and handshake.
 
 The export command writes the checked-in browser build under `public/games/bay-13/` and verifies that the HTML, JavaScript, package, and WebAssembly outputs are nonempty.
+It also creates deterministic compressed WebAssembly source parts under
+`web-export/`. The npm dev, build, and start lifecycles reassemble those parts
+and verify their SHA-256 digest, keeping the repository transport compact while
+serving the exact tested binary.
 
 ## Source map
 

@@ -33,6 +33,7 @@ is served at `/games/bay-13/index.html`.
 | Next.js configured production build | Pass; 49 routes compiled |
 | Production HTTP route and asset smoke test | Pass |
 | WebAssembly response | `application/wasm`, byte range returns HTTP 206 |
+| Compressed WebAssembly source reassembly | Exact size and SHA-256 pass |
 
 The Godot suite is available through `npm run robot-combat:verify-runtime`.
 The browser artifact is reproduced through `npm run robot-combat:export-web`.

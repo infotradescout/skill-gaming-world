@@ -29,6 +29,7 @@
 /.tooling/
 /games/robot-combat/godot/.godot/
 /games/robot-combat/godot/.tmp-*
+/public/games/bay-13/index.wasm
 
 # misc
 .DS_Store
