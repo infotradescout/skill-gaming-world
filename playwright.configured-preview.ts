@@ -1,5 +1,10 @@
 import { defineConfig, devices } from "@playwright/test";
 
+import {
+  canonicalServiceOrigin,
+  isCanonicalPreviewOptedIn,
+} from "./tests/configured-preview/preview-origin-guard";
+
 function configuredPreviewBaseUrl(): string {
   const rawValue = process.env.PREVIEW_BASE_URL?.trim();
   if (!rawValue) {
@@ -22,9 +27,12 @@ function configuredPreviewBaseUrl(): string {
       "PREVIEW_BASE_URL must use HTTPS unless it targets a loopback host.",
     );
   }
-  if (parsed.origin === "https://skill-gaming-world.onrender.com") {
+  if (
+    parsed.origin === canonicalServiceOrigin &&
+    !isCanonicalPreviewOptedIn()
+  ) {
     throw new Error(
-      "Configured-preview verification refuses to run against the production origin.",
+      "Configured-preview verification refuses the canonical origin unless PREVIEW_ALLOW_CANONICAL_ORIGIN=true is paired with an isolated canonical preview target and database fingerprint.",
     );
   }
 

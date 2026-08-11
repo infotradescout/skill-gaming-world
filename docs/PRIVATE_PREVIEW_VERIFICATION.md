@@ -1,9 +1,12 @@
 # Private Preview Verification
 
 This suite verifies an already-running configured Monetaire Play preview. It
-never starts the local safe-demo server, is intentionally excluded from
-`npm run check`, and refuses the production origin. The two-account scenario
-must use an isolated hosted service and isolated database branch because it
+never starts the local safe-demo server and is intentionally excluded from
+`npm run check`. It refuses the canonical service origin by default. A
+single-service deployment may opt in explicitly with
+`PREVIEW_ALLOW_CANONICAL_ORIGIN=true`, but only alongside a canonical-preview
+target ID and isolated database fingerprint. The two-account scenario must use
+an isolated hosted service and isolated database branch because it
 creates ordinary accounts, competition entries, sessions, moves, scores, and
 achievement evidence.
 
@@ -49,6 +52,10 @@ The test runner must have:
 - `PREVIEW_E2E_TARGET_ID` matching the server target ID;
 - `PREVIEW_DATABASE_FINGERPRINT` matching the isolated database endpoint
   fingerprint exposed by health;
+- `PREVIEW_ALLOW_CANONICAL_ORIGIN=true` when the one-service deployment uses
+  `https://skill-gaming-world.onrender.com`; the runner accepts this only with
+  a target ID beginning `sgw-canonical-preview-` and a 64-character SHA-256
+  database fingerprint;
 - Chromium installed for Playwright, or
   `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` set to a compatible Chromium binary.
 
