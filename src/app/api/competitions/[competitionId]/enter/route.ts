@@ -112,10 +112,6 @@ export async function POST(
         id,
       );
     }
-    console.error("COMPETITION_ENTRY_FAILED", {
-      requestId: id,
-      error: error instanceof Error ? error.message : String(error),
-    });
     return jsonError(500, "COMPETITION_ENTRY_FAILED", "Entry could not be created.", id);
   }
 }

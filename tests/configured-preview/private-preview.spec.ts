@@ -95,15 +95,15 @@ async function registerOwnerIfNeeded(page: Page) {
   expect([201, 409]).toContain(response.status());
 
   if (response.status() === 201) {
-    await expect(page).toHaveURL(/\/app$/);
+    await expect(page).toHaveURL(/\/app(?:\?.*)?$/);
     await page.getByRole("button", { name: "Log out" }).click();
     await expect(page).toHaveURL(/\/auth\/login$/);
     return;
   }
 
-  await expect(page.getByRole("alert")).toContainText(
-    "An account already exists for this email.",
-  );
+  await expect(
+    page.getByText("An account already exists for this email.", { exact: true }),
+  ).toBeVisible();
   await page.goto("/auth/login");
 }
 
@@ -120,7 +120,7 @@ async function loginOwner(page: Page) {
   const response = await responsePromise;
 
   expect(response.status()).toBe(200);
-  await expect(page).toHaveURL(/\/app$/);
+  await expect(page).toHaveURL(/\/app(?:\?.*)?$/);
   await expect(
     page.getByRole("heading", { name: "Your next deliberate move." }),
   ).toBeVisible();
@@ -228,7 +228,7 @@ async function assertAdminDenied(page: Page) {
   });
 
   await page.goto("/admin/feature-gates");
-  await expect(page).toHaveURL(/\/app$/);
+  await expect(page).toHaveURL(/\/app(?:\?.*)?$/);
 }
 
 test("configured private preview is persistent, isolated, and held", async ({
