@@ -492,6 +492,21 @@ button {
   .data-row > :nth-child(2) {
     display: none;
   }
+
+  .data-row.competition-standing-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .data-row.competition-standing-row > :nth-child(2) {
+    display: block;
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .data-row.competition-standing-row > :last-child {
+    grid-column: 2;
+    grid-row: 2;
+  }
 }
 
 @media (max-width: 660px) {
