@@ -35,7 +35,7 @@ export default async function AccountHistoryPage() {
         {projection.recentSessions.length ? (
           <div className="data-list surface-soft">
             {projection.recentSessions.map((session) => (
-              <div className="data-row" key={session.id}>
+              <div className="data-row history-session-row" key={session.id}>
                 <div>
                   <strong>
                     {session.mode === "PRACTICE"
