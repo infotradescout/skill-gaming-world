@@ -30,6 +30,7 @@
 /games/robot-combat/godot/.godot/
 /games/robot-combat/godot/.tmp-*
 /public/games/bay-13/index.wasm
+/public/games/robot-combat/index.wasm
 
 # misc
 .DS_Store

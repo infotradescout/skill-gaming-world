@@ -283,6 +283,7 @@ export function RobotCombatArena({ playerId, initialMatch, catalog }: RobotComba
           </section>
         ) : null}
 
+        <Link className="text-link" href="/app/robot-combat/runtime">Open the separate 3D runtime prototype</Link>
         <Link className="text-link" href="/app/robot-combat">Back to workshop</Link>
       </aside>
     </div>

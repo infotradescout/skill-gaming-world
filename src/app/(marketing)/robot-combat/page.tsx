@@ -60,11 +60,11 @@ export default function RobotCombatMarketingPage() {
           <FeatureCard
             number="03"
             title="Fight from a valid revision"
-            status={<StatusPill tone="hold">Online rollout next</StatusPill>}
+            status={<StatusPill tone="live">Browser authority proven</StatusPill>}
           >
             Match state, ready gates, commands, damage, terminal outcomes, and
-            disconnects now have an authority contract. Hosted deployment and full
-            browser reachability still need proof.
+            rebuild questions are playable in the development browser arena. Hosted
+            deployment and binding the 3D runtime to that authority remain next.
           </FeatureCard>
         </div>
       </Section>
@@ -73,9 +73,10 @@ export default function RobotCombatMarketingPage() {
         <div className="play-availability callout">
           <StatusPill tone="hold">In active development</StatusPill>
           <p>
-            The workshop can save inspection-valid revisions through the authenticated
-            app. The match authority and database contract are being wired next. There
-            is no wagering, deposit, prize, payout, or purchased performance path.
+            The authenticated workshop, free two-player browser authority arena, and
+            exported 3D runtime prototype are available in development. Render
+            deployment and live 3D-to-authority binding are not claimed yet. There is
+            no wagering, deposit, prize, payout, or purchased performance path.
           </p>
         </div>
       </Section>

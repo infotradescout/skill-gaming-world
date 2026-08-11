@@ -28,7 +28,7 @@ With Godot 4.7.1 available as `GODOT_BIN`:
 npm run robot-combat:verify-runtime
 ```
 
-The local proof currently includes 16 blueprint/workshop assertions and 15 live scene assertions. The verification script also retains the existing WebSocket handshake smoke as transport evidence; that smoke is not hosted-match proof.
+The local proof currently includes 16 blueprint/workshop assertions and 16 live scene assertions. The verification script also retains the existing WebSocket handshake smoke as transport evidence; that smoke is not hosted-match proof.
 
 For a rendered arena check on desktop, run the project with the user argument `--demo-arena`:
 

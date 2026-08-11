@@ -21,7 +21,7 @@ scene_log="$(mktemp "$script_dir/.tmp-scene.XXXXXX")"
 network_tmp="$(mktemp -d "$script_dir/.tmp-network-smoke.XXXXXX")"
 server_log="$network_tmp/server.log"
 client_log="$network_tmp/client.log"
-port="${BAY13_NETWORK_SMOKE_PORT:-9247}"
+port="${ROBOT_COMBAT_NETWORK_SMOKE_PORT:-9247}"
 server_pid=""
 
 cleanup() {
@@ -45,7 +45,7 @@ if grep -Eq "^ERROR:|SCRIPT ERROR|Parse Error|Compile Error|ROBOT_COMBAT_TEST_FA
 fi
 
 "$godot_bin" --headless --path "$script_dir" --script res://tests/scene_test_runner.gd 2>&1 | tee "$scene_log"
-grep -q "ROBOT_COMBAT_SCENE_ASSERTIONS:15:PASS" "$scene_log"
+grep -q "ROBOT_COMBAT_SCENE_ASSERTIONS:16:PASS" "$scene_log"
 if grep -Eq "^ERROR:|SCRIPT ERROR|Parse Error|Compile Error|ROBOT_COMBAT_SCENE_FAILURE" "$scene_log"; then
   exit 1
 fi
@@ -79,4 +79,4 @@ fi
 
 sed -n '1,240p' "$server_log"
 sed -n '1,240p' "$client_log"
-echo "BAY13_WEBSOCKET_HANDSHAKE:PASS"
+echo "ROBOT_COMBAT_WEBSOCKET_HANDSHAKE:PASS"

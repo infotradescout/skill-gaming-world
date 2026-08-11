@@ -32,14 +32,14 @@ operations. Its correct classification is **local prototype evidence**.
 
 | Product requirement | Current highest proven state | Missing before this is a real product |
 | --- | --- | --- |
-| Workshop-first builder | Implemented locally | Durable revisions, richer graph editing, accessible browser surface |
-| Observable construction consequences | Implemented locally | Canonical server inspection shared by client and match authority |
-| Three teaching archetypes | Implemented locally | Guided teaching journeys and conversion into personal revisions |
+| Workshop-first builder | Authenticated browser workshop with durable revisions | Richer graph editing, guided teaching journeys, accessibility hardening |
+| Observable construction consequences | Canonical server inspection shared by builds and match authority | More physical consequence types and recorded private-test evidence |
+| Three teaching archetypes | Implemented as editable browser starters | Guided teaching journeys and conversion into personal revisions |
 | Private test bay | Implemented locally | Full test state, restart/recovery truth, recorded test evidence |
-| Online 1v1 | Transport handshake only | Match allocation, two clients, ready gate, authoritative commands, reconnect/disconnect outcome |
-| Localized damage and explanation | Simplified local integrity log | Component damage, structural effects, causal timeline, rebuild questions |
-| Build history | Local last-valid save only | Account-owned durable revisions, hashes, rollback, concurrent-write protection |
-| SGW entry surface | Existing marketing/app shell | Browser game entry that reaches the real runtime and reflects actual availability |
+| Online 1v1 | Demo-mode two-browser lifecycle with join, ready, commands, terminal state, and disconnect outcome | Production database/live concurrency/reconnect proof and match allocation |
+| Localized damage and explanation | Server component damage, event snapshots, terminal report, and rebuild questions | Structural effects, causal timeline UI, and richer weapon/contact rules |
+| Build history | Account-owned revisions, hashes, rollback-ready records, and concurrent-write protection in configured mode | Production migration/deployment proof and richer history UX |
+| SGW entry surface | Authenticated browser workshop → authority arena plus separately exported 3D runtime route | Bind the 3D renderer to hosted match state and reflect live availability |
 | Operations | Local scripts | Match authority deployment, observability, load/concurrency tests, release proof |
 
 ## Implementation order
@@ -52,7 +52,8 @@ operations. Its correct classification is **local prototype evidence**.
 4. **Online match** — waiting room, opponent join, both-ready gate, authoritative
    input, clock, terminal outcomes, disconnect/reconnect handling.
 5. **SGW surface** — one route into the game, authenticated player handoff, browser
-   runtime loading, truthful unavailable/error states, and no stale Bay 13 claims.
+   authority arena, separately exported 3D runtime, truthful boundary/error states,
+   and no stale Bay 13 marketing claims.
 6. **Content and operations** — replaceable arena/content assets, audio and feedback,
    accessibility, telemetry, deployment, concurrency evidence, and release gates.
 
@@ -68,4 +69,7 @@ The completion bar is an observable end-to-end journey:
 
 `SGW entry → authenticated player → workshop → valid revision → private test → opponent wait → both ready → authoritative fight → outcome → damage report → rebuild`
 
-Until that journey is reachable and verified, the product is not complete.
+The browser authority journey is now reachable and verified in demo mode. The
+product is still not complete: the hosted Render path, production persistence and
+concurrency proof, browser private-test state, and 3D-to-authority binding remain
+open.

@@ -1,4 +1,4 @@
-class_name Bay13NetworkBridge
+class_name RobotCombatNetworkBridge
 extends Node
 
 signal control_intent_received(peer_id: int, intent: Dictionary)
@@ -6,7 +6,7 @@ signal server_snapshot_received(snapshot: Dictionary)
 signal smoke_completed(role: String)
 signal smoke_failed(role: String, message: String)
 
-const PROTOCOL_VERSION := "BAY13_WEBSOCKET_AUTHORITY_V1"
+const PROTOCOL_VERSION := "ROBOT_COMBAT_WEBSOCKET_AUTHORITY_V1"
 
 var role := "offline"
 var peer: WebSocketMultiplayerPeer

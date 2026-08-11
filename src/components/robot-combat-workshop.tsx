@@ -352,6 +352,11 @@ export function RobotCombatWorkshop({ playerId, catalog, starterBlueprints }: Wo
           ) : <p className="muted">Save a revision to see the server&apos;s mass, power, balance, clearance, and connection results.</p>}
         </section>
         <section className="surface-soft">
+          <p className="eyebrow">3D runtime prototype</p>
+          <p className="muted small">The exported Godot workshop and arena is real visual/runtime work. It is still separate from the hosted match authority.</p>
+          <Link className="button button-secondary" href="/app/robot-combat/runtime">Open 3D prototype</Link>
+        </section>
+        <section className="surface-soft">
           <p className="eyebrow">Arena gate</p>
           <button className="button button-primary" type="button" disabled={!savedBuild || busy} onClick={() => void createMatch()}>
             Open a free 1v1 match

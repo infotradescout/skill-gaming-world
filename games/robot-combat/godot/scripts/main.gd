@@ -847,7 +847,7 @@ func _start_network_smoke(args: PackedStringArray) -> void:
 	for arg in args:
 		if arg.begins_with("--port="):
 			port = int(arg.trim_prefix("--port="))
-	var bridge: Bay13NetworkBridge = NetworkBridgeScript.new()
+	var bridge: RobotCombatNetworkBridge = NetworkBridgeScript.new()
 	bridge.smoke_completed.connect(_network_smoke_completed)
 	bridge.smoke_failed.connect(_network_smoke_failed)
 	add_child(bridge)

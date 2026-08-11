@@ -46,6 +46,22 @@ test("authenticated workshop saves an inspected revision and opens a match", asy
   await expect(page.getByText("Waiting for another builder", { exact: true })).toBeVisible();
 });
 
+test("authenticated app exposes the exported 3D runtime with its boundary stated", async ({ page, request }) => {
+  await registerPlayer(page);
+  await page.goto("/app/robot-combat/runtime");
+
+  await expect(page.getByRole("heading", { name: "Workshop and arena prototype", exact: true })).toBeVisible();
+  await expect(page.getByText(/not yet bound to the hosted match authority/i)).toBeVisible();
+  await expect(page.locator("iframe[title='Robot Combat 3D runtime prototype']")).toHaveAttribute(
+    "src",
+    "/games/robot-combat/index.html",
+  );
+
+  const artifact = await request.get("/games/robot-combat/index.html");
+  expect(artifact.ok()).toBeTruthy();
+  await expect(artifact.text()).resolves.toContain("Robot Combat Prototype");
+});
+
 test("two builders can ready, control, damage, and report a match", async ({ page, browser }) => {
   await registerPlayer(page);
   await page.goto("/app/robot-combat");
