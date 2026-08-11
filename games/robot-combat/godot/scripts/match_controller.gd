@@ -21,9 +21,15 @@ var _training_spawn := Transform3D.IDENTITY
 var _player_machine := "RAMMER"
 var _player_paint := Color("c99f3d")
 var _rebuilt_blueprint := {}
+var remote_mode := false
+var _remote_local_slot := "A"
+var _remote_robot_a: RobotBody
+var _remote_robot_b: RobotBody
+var _remote_report_emitted := false
 
 func begin_match(machine: String, paint: Color, player_spawn: Vector3, training_spawn: Vector3, rebuilt_blueprint: Dictionary = {}) -> void:
 	_clear_robots()
+	remote_mode = false
 	_player_machine = machine.to_upper()
 	_player_paint = paint
 	_rebuilt_blueprint = rebuilt_blueprint
@@ -42,7 +48,48 @@ func begin_match(machine: String, paint: Color, player_spawn: Vector3, training_
 	match_started.emit(player_robot.machine_name, training_robot.machine_name)
 	_emit_hud()
 
+func begin_remote_match(machine_a: String, paint_a: Color, spawn_a: Vector3, rebuilt_a: Dictionary, machine_b: String, paint_b: Color, spawn_b: Vector3, rebuilt_b: Dictionary, local_slot: String) -> void:
+	_clear_robots()
+	remote_mode = true
+	_remote_local_slot = "B" if local_slot == "B" else "A"
+	_remote_report_emitted = false
+	var transform_a := Transform3D(Basis(Vector3.UP, PI), spawn_a)
+	var transform_b := Transform3D(Basis(Vector3.UP, PI), spawn_b)
+	_remote_robot_a = _spawn_robot(machine_a, paint_a, _remote_local_slot == "A", transform_a, rebuilt_a.get("blueprint", {}), rebuilt_a)
+	_remote_robot_b = _spawn_robot(machine_b, paint_b, _remote_local_slot == "B", transform_b, rebuilt_b.get("blueprint", {}), rebuilt_b)
+	_remote_robot_a.server_enabled = false
+	_remote_robot_b.server_enabled = false
+	_remote_robot_a.freeze = true
+	_remote_robot_b.freeze = true
+	if _remote_local_slot == "A":
+		player_robot = _remote_robot_a
+		training_robot = _remote_robot_b
+	else:
+		player_robot = _remote_robot_b
+		training_robot = _remote_robot_a
+	_player_machine = player_robot.machine_key
+	_player_paint = paint_a if _remote_local_slot == "A" else paint_b
+	match_active = true
+	time_remaining = MATCH_LENGTH_SECONDS
+	last_result = {}
+	match_started.emit(player_robot.machine_name, training_robot.machine_name)
+	_emit_remote_hud("WAITING_FOR_OPPONENT", {})
+
+func update_remote_builds(rebuilt_a: Dictionary, rebuilt_b: Dictionary) -> void:
+	if not remote_mode:
+		return
+	if is_instance_valid(_remote_robot_a) and rebuilt_a.get("accepted", false):
+		_remote_robot_a.apply_authoritative_blueprint(rebuilt_a, str(rebuilt_a.get("blueprint_hash", "UNSIGNED")))
+		_remote_robot_a.server_enabled = false
+		_remote_robot_a.freeze = true
+	if is_instance_valid(_remote_robot_b) and rebuilt_b.get("accepted", false):
+		_remote_robot_b.apply_authoritative_blueprint(rebuilt_b, str(rebuilt_b.get("blueprint_hash", "UNSIGNED")))
+		_remote_robot_b.server_enabled = false
+		_remote_robot_b.freeze = true
+
 func reset_match() -> void:
+	if remote_mode:
+		return
 	begin_match(_player_machine, _player_paint, _player_spawn.origin, _training_spawn.origin, _rebuilt_blueprint)
 
 func stop_match() -> void:
@@ -53,6 +100,8 @@ func stop_match() -> void:
 		training_robot.freeze = true
 
 func _physics_process(delta: float) -> void:
+	if remote_mode:
+		return
 	if not match_active or not is_instance_valid(player_robot) or not is_instance_valid(training_robot):
 		return
 	time_remaining = maxf(0.0, time_remaining - delta)
@@ -77,6 +126,87 @@ func authoritative_snapshot() -> Dictionary:
 		"result": last_result,
 	}
 
+func apply_remote_snapshot(snapshot: Dictionary) -> void:
+	if not remote_mode:
+		return
+	var robots_value: Variant = snapshot.get("robots", {})
+	if robots_value is Dictionary:
+		_apply_remote_robot(_remote_robot_a, robots_value.get("A", {}))
+		_apply_remote_robot(_remote_robot_b, robots_value.get("B", {}))
+	var phase := str(snapshot.get("phase", "WAITING_FOR_OPPONENT"))
+	var elapsed_seconds := float(snapshot.get("elapsedMs", 0.0)) / 1000.0
+	time_remaining = maxf(0.0, MATCH_LENGTH_SECONDS - elapsed_seconds)
+	match_active = phase in ["WAITING_FOR_OPPONENT", "READY_CHECK", "ACTIVE"]
+	_emit_remote_hud(phase, snapshot)
+	if not match_active and not _remote_report_emitted:
+		_remote_report_emitted = true
+		var robots: Dictionary = robots_value if robots_value is Dictionary else {}
+		var local_state: Dictionary = robots.get(_remote_local_slot, {})
+		var opponent_slot := "B" if _remote_local_slot == "A" else "A"
+		var opponent_state: Dictionary = robots.get(opponent_slot, {})
+		var winnerslot := str(snapshot.get("winnerSlot", ""))
+		var winner_name := "Draw"
+		if winnerslot == _remote_local_slot:
+			winner_name = player_robot.machine_name
+		elif not winnerslot.is_empty():
+			winner_name = training_robot.machine_name
+		var questions_value: Variant = snapshot.get("rebuildQuestions", {})
+		var questions: Array = []
+		if questions_value is Dictionary and questions_value.get(_remote_local_slot) is Array:
+			questions = questions_value.get(_remote_local_slot)
+		last_result = {
+			"winner": winner_name,
+			"reason": str(snapshot.get("terminalReason", "SESSION_END")),
+			"player_health": float(local_state.get("integrity", player_robot.health)),
+			"training_health": float(opponent_state.get("integrity", training_robot.health)),
+			"elapsed_seconds": elapsed_seconds,
+			"player_damage_log": _remote_damage_log(local_state),
+			"rebuild_questions": questions,
+		}
+		match_finished.emit(last_result)
+
+func _apply_remote_robot(robot: RobotBody, remote_value: Variant) -> void:
+	if not is_instance_valid(robot) or not remote_value is Dictionary:
+		return
+	var remote: Dictionary = remote_value
+	var position_value: Variant = remote.get("position", {})
+	if position_value is Dictionary:
+		var target := Vector3(
+			float(position_value.get("x", robot.global_position.x)),
+			robot.global_position.y,
+			float(position_value.get("z", robot.global_position.z)),
+		)
+		robot.global_position = target
+	var heading := float(remote.get("heading", 0.0))
+	robot.global_rotation = Vector3(0.0, PI + heading, 0.0)
+	robot.linear_velocity = Vector3.ZERO
+	robot.angular_velocity = Vector3.ZERO
+	robot.health = clampf(float(remote.get("integrity", robot.health)), 0.0, robot.max_health)
+	robot.weapon_active = false
+	robot.health_changed.emit(robot.health, robot.max_health)
+
+func _emit_remote_hud(phase: String, snapshot: Dictionary) -> void:
+	var active := phase == "ACTIVE"
+	hud_changed.emit({
+		"server_authoritative": true,
+		"remote_snapshot": snapshot,
+		"phase": phase,
+		"clock_seconds": time_remaining,
+		"active": active,
+		"player": player_robot.authoritative_snapshot() if is_instance_valid(player_robot) else {},
+		"training": training_robot.authoritative_snapshot() if is_instance_valid(training_robot) else {},
+	})
+
+func _remote_damage_log(remote_state: Dictionary) -> Array[String]:
+	var log: Array[String] = []
+	var value: Variant = remote_state.get("damageLog", [])
+	if not value is Array:
+		return log
+	for record in value:
+		if record is Dictionary:
+			log.append("%s damage · %s" % [str(record.get("damage", 0)), str(record.get("targetComponent", "component"))])
+	return log
+
 func _spawn_robot(machine: String, paint: Color, player_controlled: bool, spawn_transform: Transform3D, blueprint: Dictionary, rebuilt: Dictionary) -> RobotBody:
 	var robot: RobotBody = RobotBodyScript.new()
 	robot.name = "PlayerRobot" if player_controlled else "TrainingRobot"
@@ -94,6 +224,8 @@ func _clear_robots() -> void:
 			robot.queue_free()
 	player_robot = null
 	training_robot = null
+	_remote_robot_a = null
+	_remote_robot_b = null
 
 func _update_training_intent() -> void:
 	var offset := player_robot.global_position - training_robot.global_position

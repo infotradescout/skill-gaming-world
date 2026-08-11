@@ -4,6 +4,7 @@ const ArenaBuilderScript := preload("res://scripts/arena_builder.gd")
 const BlueprintServiceScript := preload("res://scripts/blueprint_service.gd")
 const MatchControllerScript := preload("res://scripts/match_controller.gd")
 const NetworkBridgeScript := preload("res://scripts/network_bridge.gd")
+const RemoteMatchBridgeScript := preload("res://scripts/remote_match_bridge.gd")
 const RobotAssemblyScript := preload("res://scripts/robot_assembly.gd")
 const RobotSchematicScript := preload("res://scripts/robot_schematic.gd")
 
@@ -53,6 +54,12 @@ var weapon_mount_offset := 0.0
 var virtual_throttle := 0.0
 var virtual_steer := 0.0
 var virtual_weapon := false
+var remote_runtime_mode := false
+var remote_runtime_started := false
+var remote_slot := "A"
+var remote_bridge: RobotCombatRemoteMatchBridge
+var remote_blueprint_hash_a := ""
+var remote_blueprint_hash_b := ""
 
 var ui_root: Control
 var workshop_panel: PanelContainer
@@ -99,10 +106,14 @@ func _ready() -> void:
 	add_child(match_controller)
 	_build_camera()
 	_build_interface()
-	_load_starter("RAMMER", true)
-	_show_workshop()
-	if "--demo-arena" in args:
-		call_deferred("_start_arena")
+	var remote_match_id := RemoteMatchBridgeScript.browser_query_value("matchId")
+	if not remote_match_id.is_empty():
+		_start_remote_runtime(remote_match_id, RemoteMatchBridgeScript.browser_query_value("slot"))
+	else:
+		_load_starter("RAMMER", true)
+		_show_workshop()
+		if "--demo-arena" in args:
+			call_deferred("_start_arena")
 
 func _process(delta: float) -> void:
 	if phase == Phase.TEST_BAY or phase == Phase.ARENA:
@@ -716,6 +727,78 @@ func _start_session(test_mode: bool) -> void:
 		combat_event_label.text = "ARENA RUN  ·  WASD / ARROWS DRIVE  ·  SPACE WEAPON  ·  R RESET"
 	combat_mode_label.text = "PRIVATE TEST BAY" if test_mode else "ARENA // LOCAL OPPONENT"
 
+func _start_remote_runtime(match_id: String, requested_slot: String) -> void:
+	remote_runtime_mode = true
+	remote_slot = "B" if requested_slot == "B" else "A"
+	phase = Phase.ARENA
+	workshop_panel.visible = false
+	inspection_panel.visible = false
+	revisions_panel.visible = false
+	report_overlay.visible = false
+	combat_hud.visible = true
+	combat_mode_label.text = "LIVE AUTHORITY MIRROR"
+	combat_title_label.text = "CONNECTING TO MATCH %s" % match_id.left(8).to_upper()
+	combat_event_label.text = "READ-ONLY 3D RENDERER  ·  BROWSER AUTHORITY OWNS COMMANDS"
+	camera.position = arena.camera_anchor
+	camera.look_at(Vector3(0.0, 0.4, 0.0), Vector3.UP)
+	remote_bridge = RemoteMatchBridgeScript.new()
+	remote_bridge.name = "HostedRobotCombatAuthorityMirror"
+	remote_bridge.configure(match_id, remote_slot)
+	remote_bridge.snapshot_received.connect(_on_remote_snapshot)
+	remote_bridge.status_changed.connect(_on_remote_bridge_status)
+	remote_bridge.failed.connect(_on_remote_bridge_failed)
+	add_child(remote_bridge)
+	remote_bridge.start()
+
+func _on_remote_snapshot(snapshot: Dictionary) -> void:
+	var players_value: Variant = snapshot.get("players", {})
+	var players: Dictionary = players_value if players_value is Dictionary else {}
+	var player_a: Variant = players.get("A", {})
+	var player_b: Variant = players.get("B", {})
+	var rebuilt_a := _remote_rebuild(player_a, "RAMMER")
+	var rebuilt_b := _remote_rebuild(player_b, "RIPPER")
+	if not remote_runtime_started:
+		remote_runtime_started = true
+		remote_blueprint_hash_a = str(rebuilt_a.get("blueprint_hash", ""))
+		remote_blueprint_hash_b = str(rebuilt_b.get("blueprint_hash", ""))
+		match_controller.begin_remote_match(
+			_machine_key_from_blueprint(rebuilt_a.blueprint), _remote_paint("A"), arena.spawn_player, rebuilt_a,
+			_machine_key_from_blueprint(rebuilt_b.blueprint), _remote_paint("B"), arena.spawn_training, rebuilt_b,
+			remote_slot,
+		)
+	else:
+		var hash_a := str(rebuilt_a.get("blueprint_hash", ""))
+		var hash_b := str(rebuilt_b.get("blueprint_hash", ""))
+		if hash_a != remote_blueprint_hash_a or hash_b != remote_blueprint_hash_b:
+			remote_blueprint_hash_a = hash_a
+			remote_blueprint_hash_b = hash_b
+			match_controller.update_remote_builds(rebuilt_a, rebuilt_b)
+	match_controller.apply_remote_snapshot(snapshot)
+
+func _remote_rebuild(player_value: Variant, fallback_machine: String) -> Dictionary:
+	if player_value is Dictionary:
+		var player: Dictionary = player_value
+		var blueprint_value: Variant = player.get("blueprint", {})
+		if blueprint_value is Dictionary:
+			var adapted := BlueprintServiceScript.web_blueprint_to_godot(blueprint_value)
+			var rebuilt := BlueprintServiceScript.server_rebuild(adapted)
+			if rebuilt.get("accepted", false):
+				return rebuilt
+	return BlueprintServiceScript.server_rebuild(BlueprintServiceScript.default_blueprint(fallback_machine))
+
+func _remote_paint(slot: String) -> Color:
+	return Color("3e918a") if slot == "B" else Color("caa03f")
+
+func _on_remote_bridge_status(message: String) -> void:
+	if is_instance_valid(combat_event_label):
+		combat_event_label.text = "LIVE AUTHORITY  ·  %s" % message.to_upper()
+
+func _on_remote_bridge_failed(message: String) -> void:
+	if is_instance_valid(combat_mode_label):
+		combat_mode_label.text = "LIVE AUTHORITY MIRROR · BLOCKED"
+	if is_instance_valid(combat_event_label):
+		combat_event_label.text = message.to_upper()
+
 func _reset_session() -> void:
 	if phase == Phase.TEST_BAY or phase == Phase.ARENA:
 		_start_session(phase == Phase.TEST_BAY)
@@ -754,6 +837,16 @@ func _on_hud_changed(snapshot: Dictionary) -> void:
 	combat_opponent_label.text = "OPPONENT   %03d INTEGRITY" % int(ceil(float(snapshot.training.health)))
 
 func _on_match_finished(result: Dictionary) -> void:
+	if remote_runtime_mode:
+		phase = Phase.REPORT
+		combat_hud.visible = true
+		report_overlay.visible = false
+		if is_instance_valid(remote_bridge):
+			remote_bridge.stop()
+		combat_mode_label.text = "LIVE AUTHORITY MIRROR · MATCH COMPLETE"
+		combat_title_label.text = "%s  ·  %s" % [str(result.get("winner", "DRAW")).to_upper(), str(result.get("reason", "SESSION_END")).replace("_", " ")]
+		combat_event_label.text = "TERMINAL SNAPSHOT RECEIVED  ·  REBUILD QUESTIONS REMAIN IN THE BROWSER AUTHORITY REPORT"
+		return
 	phase = Phase.REPORT
 	combat_hud.visible = false
 	report_overlay.visible = true

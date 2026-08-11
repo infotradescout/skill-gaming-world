@@ -121,6 +121,65 @@ static func build_blueprint(selection: Dictionary) -> Dictionary:
 		"parts": parts,
 	}
 
+static func web_blueprint_to_godot(web_blueprint: Dictionary) -> Dictionary:
+	# The hosted browser authority owns schema v1. The exported Godot runtime
+	# owns the visual schema v2. This adapter copies only build geometry and
+	# identity; it never copies health, position, damage, or result values.
+	var parts: Array = []
+	for value in web_blueprint.get("parts", []):
+		if not value is Dictionary:
+			continue
+		var source: Dictionary = value
+		var catalog_id := _web_catalog_id(str(source.get("partKey", "")))
+		if catalog_id.is_empty():
+			continue
+		var parent_value: Variant = source.get("parentInstanceId", null)
+		var position_value: Variant = source.get("position", {})
+		var position := [0.0, 0.0, 0.0]
+		if position_value is Dictionary:
+			position = [
+				float(position_value.get("x", 0.0)),
+				float(position_value.get("y", 0.0)),
+				float(position_value.get("z", 0.0)),
+			]
+		var parent_id := "" if parent_value == null else str(parent_value)
+		var instance_id := str(source.get("instanceId", "hosted-part-%d" % parts.size()))
+		if instance_id == "frame":
+			instance_id = "root"
+		# The browser schema names the chassis instance "frame"; the local
+		# renderer's normalized root is the literal "root".
+		if parent_id == "frame":
+			parent_id = "root"
+		parts.append({
+			"instance_id": instance_id,
+			"catalog_id": catalog_id,
+			"parent": parent_id,
+			"position": position,
+			"rotation": [0.0, float(source.get("rotationY", 0.0)), 0.0],
+		})
+	return {
+		"blueprint_version": 2,
+		"rules_version": RULES_VERSION,
+		"name": str(web_blueprint.get("name", "Hosted machine")),
+		"paint": str(web_blueprint.get("paint", "yard-yellow")),
+		"parts": parts,
+	}
+
+static func _web_catalog_id(part_key: String) -> String:
+	match part_key:
+		"chassis.light": return "chassis_compact"
+		"chassis.heavy": return "chassis_armored"
+		"drive.wheel": return "wheel_drive"
+		"drive.track": return "wheel_grip"
+		"power.cell": return "battery_compact"
+		"power.twin": return "battery_competition"
+		"armor.wedge": return "front_wedge"
+		"armor.bumper": return "front_plow"
+		"weapon.ram": return "weapon_ram"
+		"weapon.spinner": return "weapon_spinner"
+		"weapon.hammer": return "weapon_hammer"
+		_: return ""
+
 static func inspect_blueprint(blueprint: Dictionary) -> Dictionary:
 	var reasons: Array[String] = []
 	var warnings: Array[String] = []

@@ -63,6 +63,27 @@ func _run() -> void:
 	var loaded := BlueprintServiceScript.load_blueprint()
 	check(saved.accepted and loaded.accepted and loaded.blueprint_hash == saved.blueprint_hash, "The last-valid revision survives a save/load cycle")
 
+	var hosted_blueprint := {
+		"schemaVersion": 1,
+		"name": "Hosted pusher",
+		"parts": [
+			{"instanceId": "frame", "partKey": "chassis.light", "parentInstanceId": null, "socket": "root", "position": {"x": 0.0, "y": 0.4, "z": 0.0}, "rotationY": 0.0},
+			{"instanceId": "drive-left", "partKey": "drive.wheel", "parentInstanceId": "frame", "socket": "drive-left", "position": {"x": -0.85, "y": 0.15, "z": 0.0}, "rotationY": 0.0},
+			{"instanceId": "drive-right", "partKey": "drive.wheel", "parentInstanceId": "frame", "socket": "drive-right", "position": {"x": 0.85, "y": 0.15, "z": 0.0}, "rotationY": 0.0},
+			{"instanceId": "power", "partKey": "power.cell", "parentInstanceId": "frame", "socket": "top-power", "position": {"x": 0.0, "y": 0.82, "z": 0.0}, "rotationY": 0.0},
+			{"instanceId": "armor", "partKey": "armor.wedge", "parentInstanceId": "frame", "socket": "front-armor", "position": {"x": 0.0, "y": 0.27, "z": -0.9}, "rotationY": 0.0},
+			{"instanceId": "weapon", "partKey": "weapon.ram", "parentInstanceId": "frame", "socket": "front-weapon", "position": {"x": 0.0, "y": 0.32, "z": -1.0}, "rotationY": 0.0},
+		],
+	}
+	var adapted_hosted := BlueprintServiceScript.web_blueprint_to_godot(hosted_blueprint)
+	var rebuilt_hosted := BlueprintServiceScript.server_rebuild(adapted_hosted)
+	var hosted_ok := bool(rebuilt_hosted.get("accepted", false))
+	if not hosted_ok:
+		print("ROBOT_COMBAT_HOSTED_ADAPTER_REASONS:%s" % str(rebuilt_hosted.get("validation", {}).get("reasons", [])))
+	check(hosted_ok and str(rebuilt_hosted.get("blueprint", {}).get("name", "")) == "Hosted pusher", "Hosted blueprint schema adapts into a valid Godot visual build")
+	var hosted_parts: Array = rebuilt_hosted.get("blueprint", {}).get("parts", [])
+	check(hosted_parts.size() == 6 and str(hosted_parts[5].get("catalog_id", "")) == "weapon_ram", "Hosted part identity maps into the Godot catalog without value state")
+
 	var value_fields_denied := true
 	for field in BlueprintServiceScript.FORBIDDEN_VALUE_FIELDS:
 		var value_blueprint := rammer.duplicate(true)
@@ -71,8 +92,8 @@ func _run() -> void:
 			value_fields_denied = false
 	check(value_fields_denied, "Free-side value-bearing fields remain denied")
 
-	if checks != 16:
-		failures.append("Expected 16 checks but executed %d." % checks)
+	if checks != 18:
+		failures.append("Expected 18 checks but executed %d." % checks)
 	if failures.is_empty():
 		print("ROBOT_COMBAT_WORKSHOP_ASSERTIONS:%d:PASS" % checks)
 		quit(0)

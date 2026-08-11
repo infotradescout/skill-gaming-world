@@ -283,7 +283,14 @@ export function RobotCombatArena({ playerId, initialMatch, catalog }: RobotComba
           </section>
         ) : null}
 
-        <Link className="text-link" href="/app/robot-combat/runtime">Open the separate 3D runtime prototype</Link>
+        <Link
+          className="text-link"
+          href={mySlot ? `/app/robot-combat/runtime?matchId=${encodeURIComponent(match.matchId)}&slot=${mySlot}` : "/app/robot-combat/runtime"}
+          target="_blank"
+          rel="noreferrer"
+        >
+          Open the live 3D authority mirror
+        </Link>
         <Link className="text-link" href="/app/robot-combat">Back to workshop</Link>
       </aside>
     </div>

@@ -44,6 +44,27 @@ test("authenticated workshop saves an inspected revision and opens a match", asy
   await expect(page).toHaveURL(/\/app\/robot-combat\/matches\//);
   await expect(page.getByRole("heading", { name: "Authority arena", exact: true })).toBeVisible();
   await expect(page.getByText("Waiting for another builder", { exact: true })).toBeVisible();
+  const mirrorLink = page.getByRole("link", { name: "Open the live 3D authority mirror", exact: true });
+  const mirrorHref = await mirrorLink.getAttribute("href");
+  expect(mirrorHref).toMatch(/\/app\/robot-combat\/runtime\?matchId=[^&]+&slot=A$/);
+  await expect(mirrorLink).toHaveAttribute("target", "_blank");
+  const authorityRequests: string[] = [];
+  page.on("request", (request) => {
+    if (request.url().includes("/api/robot-combat/matches/")) authorityRequests.push(request.url());
+  });
+  await page.goto(mirrorHref ?? "");
+  await expect(page).toHaveURL(/\/app\/robot-combat\/runtime\?matchId=[^&]+&slot=A$/);
+  await expect(page.getByRole("heading", { name: "Live authority mirror", exact: true })).toBeVisible();
+  await expect(page.locator("iframe[title='Robot Combat 3D runtime prototype']")).toHaveAttribute(
+    "src",
+    /\/games\/robot-combat\/index\.html\?matchId=[^&]+&slot=A$/,
+  );
+  const liveMatchId = new URL(mirrorHref ?? "", page.url()).searchParams.get("matchId") ?? "";
+  await expect.poll(
+    () => authorityRequests.some((requestUrl) => requestUrl.includes("/api/robot-combat/matches/" + liveMatchId)),
+    { timeout: 15000 },
+  ).toBeTruthy();
+  await expect(page.locator("iframe[title='Robot Combat 3D runtime prototype']").contentFrame().locator("canvas")).toBeVisible({ timeout: 15000 });
 });
 
 test("authenticated app exposes the exported 3D runtime with its boundary stated", async ({ page, request }) => {
@@ -51,7 +72,7 @@ test("authenticated app exposes the exported 3D runtime with its boundary stated
   await page.goto("/app/robot-combat/runtime");
 
   await expect(page.getByRole("heading", { name: "Workshop and arena prototype", exact: true })).toBeVisible();
-  await expect(page.getByText(/not yet bound to the hosted match authority/i)).toBeVisible();
+  await expect(page.getByText(/Open it from a live match/i)).toBeVisible();
   await expect(page.locator("iframe[title='Robot Combat 3D runtime prototype']")).toHaveAttribute(
     "src",
     "/games/robot-combat/index.html",

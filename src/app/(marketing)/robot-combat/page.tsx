@@ -63,8 +63,8 @@ export default function RobotCombatMarketingPage() {
             status={<StatusPill tone="live">Browser authority proven</StatusPill>}
           >
             Match state, ready gates, commands, damage, terminal outcomes, and
-            rebuild questions are playable in the development browser arena. Hosted
-            deployment and binding the 3D runtime to that authority remain next.
+            rebuild questions are playable in the development browser arena. The
+            match-aware 3D mirror now follows that authority in the same session.
           </FeatureCard>
         </div>
       </Section>
@@ -74,9 +74,10 @@ export default function RobotCombatMarketingPage() {
           <StatusPill tone="hold">In active development</StatusPill>
           <p>
             The authenticated workshop, free two-player browser authority arena, and
-            exported 3D runtime prototype are available in development. Render
-            deployment and live 3D-to-authority binding are not claimed yet. There is
-            no wagering, deposit, prize, payout, or purchased performance path.
+            exported 3D runtime prototype are available in development, including a
+            match-aware read-only mirror. Render deployment, production persistence,
+            and live concurrency proof are not claimed yet. There is no wagering,
+            deposit, prize, payout, or purchased performance path.
           </p>
         </div>
       </Section>

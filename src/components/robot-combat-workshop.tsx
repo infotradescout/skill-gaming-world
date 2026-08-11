@@ -353,7 +353,7 @@ export function RobotCombatWorkshop({ playerId, catalog, starterBlueprints }: Wo
         </section>
         <section className="surface-soft">
           <p className="eyebrow">3D runtime prototype</p>
-          <p className="muted small">The exported Godot workshop and arena is real visual/runtime work. It is still separate from the hosted match authority.</p>
+          <p className="muted small">The exported Godot workshop and arena is real visual/runtime work. Open it from a live match to mirror the hosted authority snapshot; the standalone route remains a local prototype.</p>
           <Link className="button button-secondary" href="/app/robot-combat/runtime">Open 3D prototype</Link>
         </section>
         <section className="surface-soft">
