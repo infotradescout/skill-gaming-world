@@ -37,7 +37,7 @@ export function enforceSameOrigin(request: NextRequest): NextResponse | null {
   const origin = request.headers.get("origin");
   if (
     origin === request.nextUrl.origin ||
-    isEquivalentProductionOrigin(origin, request.nextUrl.origin) ||
+    isEquivalentProductionOrigin(origin, request) ||
     isEquivalentLocalOrigin(origin, request.nextUrl.origin)
   ) {
     return null;
@@ -57,7 +57,7 @@ export function enforceSameOrigin(request: NextRequest): NextResponse | null {
 
 function isEquivalentProductionOrigin(
   suppliedOrigin: string | null,
-  requestOrigin: string,
+  request: NextRequest,
 ): boolean {
   if (process.env.NODE_ENV !== "production" || !suppliedOrigin) {
     return false;
@@ -65,15 +65,22 @@ function isEquivalentProductionOrigin(
 
   try {
     const supplied = new URL(suppliedOrigin);
-    const expected = new URL(requestOrigin);
     const loopbackHosts = new Set(["localhost", "127.0.0.1", "[::1]"]);
 
-    return (
-      supplied.protocol === "https:" &&
-      supplied.host === expected.host &&
-      !loopbackHosts.has(supplied.hostname) &&
-      !loopbackHosts.has(expected.hostname)
-    );
+    const expectedOrigins = [
+      request.nextUrl.origin,
+      process.env.RENDER_EXTERNAL_URL?.trim(),
+    ].filter((value): value is string => Boolean(value));
+
+    return expectedOrigins.some((expectedOrigin) => {
+      const expected = new URL(expectedOrigin);
+      return (
+        supplied.protocol === "https:" &&
+        supplied.host === expected.host &&
+        !loopbackHosts.has(supplied.hostname) &&
+        !loopbackHosts.has(expected.hostname)
+      );
+    });
   } catch {
     return false;
   }

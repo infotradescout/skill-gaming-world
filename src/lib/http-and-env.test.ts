@@ -9,6 +9,7 @@ const originalDemoMode = process.env.DEMO_MODE;
 const originalDatabaseUrl = process.env.DATABASE_URL;
 const originalSessionSecret = process.env.SESSION_SECRET;
 const originalCompetitionKey = process.env.COMPETITION_SEED_ENCRYPTION_KEY;
+const originalRenderExternalUrl = process.env.RENDER_EXTERNAL_URL;
 const mutableEnv = process.env as Record<string, string | undefined>;
 
 afterEach(() => {
@@ -24,6 +25,11 @@ afterEach(() => {
     delete process.env.COMPETITION_SEED_ENCRYPTION_KEY;
   } else {
     process.env.COMPETITION_SEED_ENCRYPTION_KEY = originalCompetitionKey;
+  }
+  if (originalRenderExternalUrl === undefined) {
+    delete process.env.RENDER_EXTERNAL_URL;
+  } else {
+    process.env.RENDER_EXTERNAL_URL = originalRenderExternalUrl;
   }
 });
 
@@ -83,6 +89,27 @@ describe("mutation request boundaries", () => {
     );
 
     expect(forwarded).toBeNull();
+    expect(crossSite?.status).toBe(403);
+  });
+
+  it("accepts Render's public Origin when the runtime URL is internal", () => {
+    mutableEnv.NODE_ENV = "production";
+    mutableEnv.RENDER_EXTERNAL_URL = "https://skill-gaming-world.onrender.com";
+
+    const publicOrigin = enforceSameOrigin(
+      new NextRequest("https://localhost:10000/api/example", {
+        method: "POST",
+        headers: { origin: "https://skill-gaming-world.onrender.com" },
+      }),
+    );
+    const crossSite = enforceSameOrigin(
+      new NextRequest("https://localhost:10000/api/example", {
+        method: "POST",
+        headers: { origin: "https://attacker.example" },
+      }),
+    );
+
+    expect(publicOrigin).toBeNull();
     expect(crossSite?.status).toBe(403);
   });
 
