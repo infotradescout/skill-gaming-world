@@ -4,11 +4,9 @@ import {
   CURATED_COMPETITION_ID,
   publicCompetitionSnapshotIfAvailable,
 } from "@/lib/competition-catalog";
-import { jsonError, requestId } from "@/lib/http";
 import { getRuntimeEnv } from "@/lib/env";
-import {
-  persistentCompetitionSnapshotById,
-} from "@/lib/persistent-competition";
+import { jsonError, requestId } from "@/lib/http";
+import { persistentCompetitionSnapshotById } from "@/lib/persistent-competition";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +21,7 @@ export async function GET(
       ? publicCompetitionSnapshotIfAvailable()
       : null
     : await persistentCompetitionSnapshotById(competitionId);
+
   if (!competition) {
     return jsonError(
       404,
@@ -31,10 +30,6 @@ export async function GET(
       requestId(request),
     );
   }
-  return NextResponse.json({
-    competitionId,
-    scoring:
-      "Completed games rank by fewest valid moves, then lowest verified active-play duration. Exact completed ties remain tied; all incomplete games share the next rank.",
-    standings: competition.standings,
-  });
+
+  return NextResponse.json({ competition });
 }

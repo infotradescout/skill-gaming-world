@@ -9,6 +9,7 @@ import {
   persistentUserFromToken,
   revokePersistentSession,
 } from "./persistent-auth";
+import type { RuntimeAuditEventInput } from "./audit";
 
 export const SESSION_COOKIE = "sgw_session";
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 7;
@@ -35,10 +36,13 @@ export function createDemoSession(userId: string) {
   return { token, expiresAt: new Date(now + SESSION_TTL_MS) };
 }
 
-export async function createRuntimeSession(userId: string) {
+export async function createRuntimeSession(
+  userId: string,
+  audit?: RuntimeAuditEventInput,
+) {
   return getRuntimeEnv().DEMO_MODE
     ? createDemoSession(userId)
-    : createPersistentSession(userId);
+    : createPersistentSession(userId, audit);
 }
 
 export function setSessionCookie(
@@ -78,12 +82,18 @@ export function revokeDemoSession(request: NextRequest) {
   }
 }
 
-export async function revokeRuntimeSession(request: NextRequest) {
+export async function revokeRuntimeSession(
+  request: NextRequest,
+  audit?: RuntimeAuditEventInput,
+) {
   if (getRuntimeEnv().DEMO_MODE) {
     revokeDemoSession(request);
     return;
   }
-  await revokePersistentSession(request.cookies.get(SESSION_COOKIE)?.value);
+  await revokePersistentSession(
+    request.cookies.get(SESSION_COOKIE)?.value,
+    audit,
+  );
 }
 
 export function currentDemoUser(request: NextRequest): DemoUser | null {

@@ -44,31 +44,40 @@ export async function POST(request: NextRequest) {
   }
 
   const days = durationDays[parsed.data.duration];
-  const startsAt = new Date();
-  const draftRecord = {
-    userId: user.id,
-    scope: parsed.data.scope,
-    startsAt: startsAt.toISOString(),
-    endsAt:
-      days === null
-        ? undefined
-        : new Date(startsAt.getTime() + days * 24 * 60 * 60 * 1000).toISOString(),
-    permanent: days === null,
-    removalPolicy: "COMPLIANCE_REVIEW_ONLY" as const,
-  };
-  const record = getRuntimeEnv().DEMO_MODE
-    ? { id: createId("exclude"), ...draftRecord }
+  const demoMode = getRuntimeEnv().DEMO_MODE;
+  const record = demoMode
+    ? (() => {
+        const startsAt = new Date();
+        return {
+          id: createId("exclude"),
+          userId: user.id,
+          scope: parsed.data.scope,
+          startsAt: startsAt.toISOString(),
+          endsAt:
+            days === null
+              ? undefined
+              : new Date(
+                  startsAt.getTime() + days * 24 * 60 * 60 * 1000,
+                ).toISOString(),
+          permanent: days === null,
+          removalPolicy: "COMPLIANCE_REVIEW_ONLY" as const,
+        };
+      })()
     : await persistSelfExclusion({
         user,
         scope: parsed.data.scope,
-        startsAt,
-        endsAt: draftRecord.endsAt ? new Date(draftRecord.endsAt) : undefined,
-        permanent: draftRecord.permanent,
+        durationDays: days,
+        requestId: id,
       }).then((created) => ({
         id: created.id,
-        ...draftRecord,
+        userId: created.userId,
+        scope: parsed.data.scope,
+        startsAt: created.startsAt.toISOString(),
+        endsAt: created.endsAt?.toISOString(),
+        permanent: created.permanent,
+        removalPolicy: "COMPLIANCE_REVIEW_ONLY" as const,
       }));
-  if (getRuntimeEnv().DEMO_MODE) {
+  if (demoMode) {
     const store = getDemoStore();
     store.selfExclusions = Object.freeze([
       ...store.selfExclusions,
@@ -87,20 +96,23 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  await appendRuntimeAuditEvent({
-    eventType: "SELF_EXCLUSION_ACTIVATED",
-    actorId: user.id,
-    subjectType: "SELF_EXCLUSION",
-    subjectId: record.id,
-    reason: `Player selected ${parsed.data.duration} for ${parsed.data.scope}.`,
-    beforeState: before,
-    afterState: {
-      status: user.status,
-      scope: record.scope,
-      endsAt: record.endsAt,
-      permanent: record.permanent,
-    },
-  });
+  if (demoMode) {
+    await appendRuntimeAuditEvent({
+      eventType: "SELF_EXCLUSION_ACTIVATED",
+      actorId: user.id,
+      subjectType: "SELF_EXCLUSION",
+      subjectId: record.id,
+      reason: `Player selected ${parsed.data.duration} for ${parsed.data.scope}.`,
+      beforeState: before,
+      afterState: {
+        status: user.status,
+        scope: record.scope,
+        endsAt: record.endsAt,
+        permanent: record.permanent,
+        environment: "safe-demo",
+      },
+    });
+  }
 
   return NextResponse.json(
     {

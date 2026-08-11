@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { getRuntimeEnv } from "./env";
+import { configuredDatabaseFingerprint, getRuntimeEnv } from "./env";
 import { enforceSameOrigin } from "./http";
 
 const originalNodeEnv = process.env.NODE_ENV;
@@ -89,6 +89,22 @@ describe("mutation request boundaries", () => {
 });
 
 describe("runtime configuration", () => {
+  it("fingerprints the database target without including credentials", () => {
+    const first = configuredDatabaseFingerprint(
+      "postgresql://user:secret-a@preview-branch.example:5432/app?sslmode=require",
+    );
+    const rotatedSecret = configuredDatabaseFingerprint(
+      "postgresql://user:secret-b@preview-branch.example:5432/app?sslmode=require",
+    );
+    const productionBranch = configuredDatabaseFingerprint(
+      "postgresql://user:secret-b@production-branch.example:5432/app?sslmode=require",
+    );
+
+    expect(first).toMatch(/^[a-f0-9]{64}$/);
+    expect(rotatedSecret).toBe(first);
+    expect(productionBranch).not.toBe(first);
+  });
+
   it("rejects the in-memory demo adapter in a production runtime", () => {
     mutableEnv.NODE_ENV = "production";
     process.env.DEMO_MODE = "true";

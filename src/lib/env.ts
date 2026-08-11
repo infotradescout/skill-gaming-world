@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { z } from "zod";
 
 const booleanString = z
@@ -24,6 +25,13 @@ const runtimeEnvSchema = z
     SESSION_SECRET: z.string().min(32).optional(),
     COMPETITION_SEED_ENCRYPTION_KEY: z.string().min(32).optional(),
     PREVIEW_OWNER_EMAIL: optionalEmail,
+    CONFIGURED_E2E_TARGET_ID: z
+      .string()
+      .trim()
+      .min(16)
+      .max(128)
+      .regex(/^[A-Za-z0-9._:-]+$/)
+      .optional(),
     FEATURE_MONETAIRE_PRIZE: booleanString,
     FEATURE_SOCIAL_CASINO: booleanString,
     FEATURE_REAL_MONEY_CASINO: booleanString,
@@ -68,6 +76,16 @@ const runtimeEnvSchema = z
   });
 
 export type RuntimeEnv = ReturnType<typeof getRuntimeEnv>;
+
+export function configuredDatabaseFingerprint(
+  databaseUrl: string | undefined,
+): string | null {
+  if (!databaseUrl) return null;
+  const parsed = new URL(databaseUrl);
+  const port = parsed.port || "5432";
+  const identity = `${parsed.protocol}//${parsed.hostname.toLowerCase()}:${port}${parsed.pathname}`;
+  return createHash("sha256").update(identity).digest("hex");
+}
 
 export function getRuntimeEnv() {
   const parsed = runtimeEnvSchema.parse(process.env);

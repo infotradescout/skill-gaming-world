@@ -119,7 +119,7 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
       ) : (
         <div className="auth-form-meta">
           <span className="field-hint">
-            Sessions use a fixed seven-day secure-cookie lifetime in safe demo.
+            Sessions use a fixed seven-day secure-cookie lifetime.
           </span>
           <Link href="/account">Need account help?</Link>
         </div>

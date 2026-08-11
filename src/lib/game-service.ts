@@ -23,6 +23,7 @@ import {
   type DemoUser,
 } from "./demo-store";
 import { createId } from "./ids";
+import { getRuntimeEnv } from "./env";
 import { evaluateDemoPlayerAccess } from "./player-access";
 
 export class GameServiceError extends Error {
@@ -260,7 +261,9 @@ function publicCard(
 }
 
 export function publicGameSession(session: DemoGameSession) {
-  const observedAtMs = Date.now();
+  const observedAtMs = getRuntimeEnv().DEMO_MODE
+    ? Math.max(Date.now(), session.activityClock.lastServerEventMs)
+    : session.activityClock.lastServerEventMs;
   const verifiedActivePlayMs =
     session.activityClock.status === "FINALIZED"
       ? session.activityClock.accumulatedActiveMs

@@ -18,12 +18,17 @@ import {
 } from "@/lib/http";
 import { hashPassword } from "@/lib/password";
 import {
-  createPersistentUser,
+  createPersistentRegistration,
   persistentUserByEmail,
 } from "@/lib/persistent-auth";
 
 const registrationSchema = z.object({
-  displayName: z.string().trim().min(2).max(80),
+  displayName: z
+    .string()
+    .trim()
+    .min(2)
+    .max(80)
+    .refine((value) => !value.includes("\u0000")),
   email: z.string().trim().toLowerCase().email().max(320),
   password: z.string().min(12).max(128),
   acceptPlayCoinTerms: z.literal(true),
@@ -41,7 +46,13 @@ export async function POST(request: NextRequest) {
   if (!parsed.success) {
     return jsonError(400, "INVALID_REGISTRATION", "Check the registration fields.", id);
   }
-  const rateError = await enforceRateLimit(request, "register", 8, 60_000);
+  const rateError = await enforceRateLimit(
+    request,
+    "register",
+    8,
+    60_000,
+    { anonymousCredential: parsed.data.email },
+  );
   if (rateError) return rateError;
 
   // Hash before the final uniqueness check so two concurrent registrations
@@ -57,9 +68,10 @@ export async function POST(request: NextRequest) {
 
   const acceptedAt = new Date().toISOString();
   let user;
+  let session;
   try {
-    user = env.DEMO_MODE
-      ? {
+    if (env.DEMO_MODE) {
+      user = {
         id: createDemoUserId(),
         email: parsed.data.email,
         displayName: parsed.data.displayName,
@@ -69,12 +81,17 @@ export async function POST(request: NextRequest) {
         acceptedPlayCoinTermsVersion: PLAY_COIN_TERMS_VERSION,
         acceptedPlayCoinTermsAt: acceptedAt,
         adminRoles: [],
-        }
-      : await createPersistentUser({
-          email: parsed.data.email,
-          displayName: parsed.data.displayName,
-          passwordHash,
-        });
+      };
+    } else {
+      const registration = await createPersistentRegistration({
+        email: parsed.data.email,
+        displayName: parsed.data.displayName,
+        passwordHash,
+        requestId: id,
+      });
+      user = registration.user;
+      session = registration.session;
+    }
   } catch (error) {
     if (
       typeof error === "object" &&
@@ -96,20 +113,24 @@ export async function POST(request: NextRequest) {
     store.userIdsByEmail.set(user.email, user.id);
   }
 
-  await appendRuntimeAuditEvent({
-    eventType: "ACCOUNT_REGISTERED",
-    actorId: user.id,
-    subjectType: "USER",
-    subjectId: user.id,
-    reason: "Player registered in safe demo mode and accepted Play Coin terms.",
-    afterState: {
-      status: user.status,
-      playCoinTermsVersion: user.acceptedPlayCoinTermsVersion,
-      playCoinTermsAcceptedAt: user.acceptedPlayCoinTermsAt,
-    },
-  });
+  if (env.DEMO_MODE) {
+    await appendRuntimeAuditEvent({
+      eventType: "ACCOUNT_REGISTERED",
+      actorId: user.id,
+      subjectType: "USER",
+      subjectId: user.id,
+      reason: "Player registered and accepted the Play Coin terms.",
+      afterState: {
+        status: user.status,
+        environment: "safe-demo",
+        playCoinTermsVersion: user.acceptedPlayCoinTermsVersion,
+        playCoinTermsAcceptedAt: user.acceptedPlayCoinTermsAt,
+      },
+    });
+    session = await createRuntimeSession(user.id);
+  }
 
-  const session = await createRuntimeSession(user.id);
+  if (!session) throw new Error("SESSION_CREATION_FAILED");
   const response = NextResponse.json(
     {
       user: publicUser(user),

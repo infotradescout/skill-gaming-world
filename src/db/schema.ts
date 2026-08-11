@@ -463,6 +463,9 @@ export const dealValidations = pgTable(
   },
   (table) => [
     index("deal_validations_deal_idx").on(table.dealId),
+    uniqueIndex("deal_validations_verified_deal_unique")
+      .on(table.dealId)
+      .where(sql`${table.status} = 'VERIFIED_SOLVABLE'`),
     check(
       "deal_validations_terminal_timestamp",
       sql`${table.status} = 'PENDING' OR ${table.validatedAt} IS NOT NULL`,
@@ -559,6 +562,9 @@ export const competitionEntries = pgTable(
       table.competitionId,
       table.userId,
     ),
+    uniqueIndex("competition_entries_eligibility_decision_unique")
+      .on(table.eligibilityDecisionId)
+      .where(sql`${table.eligibilityDecisionId} IS NOT NULL`),
   ],
 );
 
@@ -608,9 +614,25 @@ export const gameSessions = pgTable(
   (table) => [
     index("game_sessions_user_idx").on(table.userId),
     index("game_sessions_competition_entry_idx").on(table.competitionEntryId),
+    uniqueIndex("game_sessions_competition_entry_unique")
+      .on(table.competitionEntryId)
+      .where(sql`${table.competitionEntryId} IS NOT NULL`),
+    index("game_sessions_terminal_status_idx")
+      .on(table.status)
+      .where(sql`${table.status} IN ('COMPLETED', 'ABANDONED')`),
     check(
       "game_sessions_mode_allowed",
       sql`${table.sessionMode} IN ('PRACTICE', 'NONCASH_COMPETITION')`,
+    ),
+    check(
+      "game_sessions_mode_entry_consistent",
+      sql`(
+        ${table.sessionMode} = 'PRACTICE'
+        AND ${table.competitionEntryId} IS NULL
+      ) OR (
+        ${table.sessionMode} = 'NONCASH_COMPETITION'
+        AND ${table.competitionEntryId} IS NOT NULL
+      )`,
     ),
   ],
 );
@@ -636,10 +658,9 @@ export const moveEvents = pgTable(
     createdAt,
   },
   (table) => [
-    uniqueIndex("move_events_session_sequence_unique").on(
-      table.gameSessionId,
-      table.sequence,
-    ),
+    uniqueIndex("move_events_session_sequence_unique")
+      .on(table.gameSessionId, table.sequence)
+      .where(sql`${table.accepted} = true`),
     uniqueIndex("move_events_session_idempotency_unique").on(
       table.gameSessionId,
       table.idempotencyKey,
@@ -717,7 +738,16 @@ export const leaderboardSnapshots = pgTable(
     snapshotHash: varchar("snapshot_hash", { length: 64 }).notNull(),
     createdAt,
   },
-  (table) => [index("leaderboard_snapshots_competition_idx").on(table.competitionId)],
+  (table) => [
+    index("leaderboard_snapshots_competition_idx").on(table.competitionId),
+    uniqueIndex("leaderboard_snapshots_competition_unique").on(
+      table.competitionId,
+    ),
+    check(
+      "leaderboard_snapshots_hash_sha256",
+      sql`${table.snapshotHash} ~ '^[0-9a-f]{64}$'`,
+    ),
+  ],
 );
 
 export const fraudFlags = pgTable(

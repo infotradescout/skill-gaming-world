@@ -6,6 +6,7 @@ import {
   currentRuntimeUser,
   revokeRuntimeSession,
 } from "@/lib/auth";
+import { getRuntimeEnv } from "@/lib/env";
 import { enforceRateLimit, enforceSameOrigin } from "@/lib/http";
 
 export async function POST(request: NextRequest) {
@@ -15,14 +16,26 @@ export async function POST(request: NextRequest) {
   if (rateError) return rateError;
 
   const user = await currentRuntimeUser(request);
-  await revokeRuntimeSession(request);
-  if (user) {
+  const env = getRuntimeEnv();
+  const logoutAudit = user
+    ? {
+        eventType: "ACCOUNT_LOGOUT",
+        actorId: user.id,
+        subjectType: "USER",
+        subjectId: user.id,
+        reason: "The authenticated session was explicitly revoked.",
+        afterState: {
+          environment: env.DEMO_MODE ? "safe-demo" : "configured",
+        },
+      }
+    : undefined;
+  await revokeRuntimeSession(
+    request,
+    env.DEMO_MODE ? undefined : logoutAudit,
+  );
+  if (logoutAudit && env.DEMO_MODE) {
     await appendRuntimeAuditEvent({
-      eventType: "ACCOUNT_LOGOUT",
-      actorId: user.id,
-      subjectType: "USER",
-      subjectId: user.id,
-      reason: "The authenticated session was explicitly revoked.",
+      ...logoutAudit,
     });
   }
   const response = NextResponse.json({ signedOut: true });

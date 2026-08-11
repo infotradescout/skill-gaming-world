@@ -31,24 +31,26 @@ export async function GET(request: NextRequest) {
       ["FINANCE_AUDITOR", "COMPLIANCE_ADMIN", "SUPER_ADMIN"].includes(role),
     )
   ) {
+    const environment = getRuntimeEnv().DEMO_MODE ? "safe-demo" : "configured";
     await appendRuntimeAuditEvent({
       eventType: "ADMIN_AUDIT_LOG_ACCESS_DENIED",
       actorId: user.id,
       subjectType: "AUDIT_LOG",
-      subjectId: "safe-demo-audit-log",
+      subjectId: `${environment}-audit-log`,
       reason: "Authenticated user lacked an audit-reader role.",
-      afterState: { outcome: "DENIED" },
+      afterState: { outcome: "DENIED", environment },
     });
     return jsonError(403, "ADMIN_ROLE_REQUIRED", "This audit surface is restricted.", id);
   }
 
+  const environment = getRuntimeEnv().DEMO_MODE ? "safe-demo" : "configured";
   await appendRuntimeAuditEvent({
     eventType: "ADMIN_AUDIT_LOG_VIEWED",
     actorId: user.id,
     subjectType: "AUDIT_LOG",
-    subjectId: "safe-demo-audit-log",
-    reason: "Authorized administrator viewed the safe-demo audit log.",
-    afterState: { outcome: "ALLOWED" },
+    subjectId: `${environment}-audit-log`,
+    reason: "Authorized administrator viewed the audit log.",
+    afterState: { outcome: "ALLOWED", environment },
   });
   return NextResponse.json({
     appendOnly: !getRuntimeEnv().DEMO_MODE,

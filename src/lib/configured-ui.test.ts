@@ -74,4 +74,16 @@ describe("configured player UI boundaries", () => {
     expect(home).not.toContain("#12");
     expect(home).not.toContain("Fortune Dice");
   });
+
+  it("keeps shared authentication copy environment-neutral", () => {
+    const authForm = readFileSync(
+      resolve(process.cwd(), "src/components/auth-form.tsx"),
+      "utf8",
+    );
+
+    expect(authForm).toContain(
+      "Sessions use a fixed seven-day secure-cookie lifetime.",
+    );
+    expect(authForm).not.toContain("lifetime in safe demo");
+  });
 });

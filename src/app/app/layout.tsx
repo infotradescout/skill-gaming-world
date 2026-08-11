@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { runtimeUserFromToken, SESSION_COOKIE } from "@/lib/auth";
 import { playCoinBalance } from "@/lib/demo-store";
+import { getRuntimeEnv } from "@/lib/env";
+import { persistentPlayCoinProjection } from "@/lib/persistent-projections";
 import "@/components/player-app.css";
 
 export const metadata: Metadata = {
@@ -16,10 +18,13 @@ export default async function PlayerAppLayout({ children }: { children: React.Re
   if (!user) {
     redirect("/auth/login");
   }
+  const initialPlayCoinBalance = getRuntimeEnv().DEMO_MODE
+    ? playCoinBalance(user.id)
+    : (await persistentPlayCoinProjection(user.id)).balanceMinor;
   return (
     <AppShell
       user={{ displayName: user.displayName, status: user.status }}
-      initialPlayCoinBalance={playCoinBalance(user.id)}
+      initialPlayCoinBalance={initialPlayCoinBalance}
     >
       {children}
     </AppShell>

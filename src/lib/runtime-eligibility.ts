@@ -1,11 +1,10 @@
-import { eq } from "drizzle-orm";
-
 import { getDatabase } from "@/db/client";
-import { selfExclusions } from "@/db/schema";
 
-import type { DemoSelfExclusion, DemoUser } from "./demo-store";
+import type { DemoUser } from "./demo-store";
 import { getDemoStore } from "./demo-store";
 import { getRuntimeEnv } from "./env";
+import { evaluateConfiguredMonetairePlayAuthorization } from "./configured-jurisdiction";
+import { persistentPlayerAccessSnapshot } from "./persistent-player-access";
 import {
   evaluateDemoPlayerAccess,
   type DemoPlayerAccessDecision,
@@ -35,75 +34,63 @@ export type RuntimeEligibilitySnapshot = {
   };
 };
 
-function restrictionScope(value: string): DemoSelfExclusion["scope"] {
-  if (
-    value === "ALL_PRODUCTS" ||
-    value === "SKILL_GAMING_WORLD" ||
-    value === "CASINO"
-  ) {
-    return value;
-  }
-  return "ALL_PRODUCTS";
-}
-
-async function runtimeSelfExclusions(
-  userId: string,
-): Promise<readonly DemoSelfExclusion[]> {
-  if (getRuntimeEnv().DEMO_MODE) {
-    return getDemoStore().selfExclusions.filter(
-      (exclusion) => exclusion.userId === userId,
-    );
-  }
-  const records = await getDatabase()
-    .select()
-    .from(selfExclusions)
-    .where(eq(selfExclusions.userId, userId));
-  return records.map((record) => ({
-    id: record.id,
-    userId: record.userId,
-    scope: restrictionScope(record.scope),
-    startsAt: record.startsAt.toISOString(),
-    endsAt: record.endsAt?.toISOString(),
-    permanent: record.permanent,
-    removalPolicy: "COMPLIANCE_REVIEW_ONLY",
-  }));
-}
-
 export async function runtimeEligibilitySnapshot(
   user: Readonly<DemoUser>,
   serverAtMs = Date.now(),
 ): Promise<RuntimeEligibilitySnapshot> {
   const env = getRuntimeEnv();
-  const exclusions = await runtimeSelfExclusions(user.id);
+  const accessSnapshot = env.DEMO_MODE
+    ? {
+        user,
+        exclusions: getDemoStore().selfExclusions.filter(
+          (exclusion) => exclusion.userId === user.id,
+        ),
+        serverAtMs,
+      }
+    : await getDatabase().transaction((transaction) =>
+        persistentPlayerAccessSnapshot(transaction, user),
+      );
   const monetaireAccess = evaluateDemoPlayerAccess({
-    user,
+    user: accessSnapshot.user,
     mode: "MONETAIRE_PLAY",
-    exclusions,
-    serverAtMs,
+    exclusions: accessSnapshot.exclusions,
+    serverAtMs: accessSnapshot.serverAtMs,
   });
   const skillPrizeAccess = evaluateDemoPlayerAccess({
-    user,
+    user: accessSnapshot.user,
     mode: "MONETAIRE_PRIZE",
-    exclusions,
-    serverAtMs,
+    exclusions: accessSnapshot.exclusions,
+    serverAtMs: accessSnapshot.serverAtMs,
   });
   const casinoAccess = evaluateDemoPlayerAccess({
-    user,
+    user: accessSnapshot.user,
     mode: "REAL_MONEY_CASINO",
-    exclusions,
-    serverAtMs,
+    exclusions: accessSnapshot.exclusions,
+    serverAtMs: accessSnapshot.serverAtMs,
   });
   const environment = env.DEMO_MODE ? "safe-demo" : "configured";
+  const deploymentAuthorization = env.DEMO_MODE
+    ? null
+    : evaluateConfiguredMonetairePlayAuthorization(env);
+  const monetaireAllowed =
+    monetaireAccess.allowed &&
+    (deploymentAuthorization?.allowed ?? true);
+  const monetaireReasonCodes = deploymentAuthorization?.allowed === false
+    ? [...new Set([
+        ...monetaireAccess.reasonCodes,
+        deploymentAuthorization.reasonCode,
+      ])]
+    : monetaireAccess.reasonCodes;
 
   return {
     decisionsAreIndependent: true,
     environment,
     accountStatus: monetaireAccess.accountStatus,
     monetairePlay: {
-      decision: monetaireAccess.allowed ? "ALLOW" : "DENY",
+      decision: monetaireAllowed ? "ALLOW" : "DENY",
       environment,
       accountStatus: monetaireAccess.accountStatus,
-      reasonCodes: monetaireAccess.reasonCodes,
+      reasonCodes: monetaireReasonCodes,
     },
     skillPrizeVerification: {
       status: "NOT_STARTED",

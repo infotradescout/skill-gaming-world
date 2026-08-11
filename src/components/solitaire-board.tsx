@@ -200,11 +200,13 @@ export function SolitaireBoard({
   mode = "PRACTICE",
   storageKey = PRACTICE_STORAGE_KEY,
   resumeSessionId,
+  onSessionTerminal,
 }: {
   initialSession?: ServerGameSession | null;
   mode?: ServerGameSession["mode"];
   storageKey?: string;
   resumeSessionId?: string;
+  onSessionTerminal?: () => void;
 }) {
   const cardPreferences = useCardPreferences();
   const [session, setSession] = useState<ServerGameSession | null>(initialSession);
@@ -296,6 +298,9 @@ export function SolitaireBoard({
         | null;
       if (body?.currentSession) {
         setSession(body.currentSession);
+        if (body.currentSession.status !== "ACTIVE") {
+          onSessionTerminal?.();
+        }
       }
       if (!response.ok || body?.accepted === false) {
         setFeedback(apiError(body, "The server rejected that move."));

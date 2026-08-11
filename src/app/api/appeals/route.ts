@@ -19,8 +19,18 @@ import {
 
 const appealSchema = z.object({
   gameSessionId: z.string().trim().min(8).max(128).optional(),
-  subject: z.string().trim().min(5).max(160),
-  statement: z.string().trim().min(20).max(5_000),
+  subject: z
+    .string()
+    .trim()
+    .min(5)
+    .max(160)
+    .refine((value) => !value.includes("\u0000")),
+  statement: z
+    .string()
+    .trim()
+    .min(20)
+    .max(5_000)
+    .refine((value) => !value.includes("\u0000")),
 });
 
 export async function GET(request: NextRequest) {
@@ -52,6 +62,18 @@ export async function POST(request: NextRequest) {
   }
 
   const store = getRuntimeEnv().DEMO_MODE ? getDemoStore() : null;
+  if (
+    parsed.data.gameSessionId &&
+    !store &&
+    !z.string().uuid().safeParse(parsed.data.gameSessionId).success
+  ) {
+    return jsonError(
+      400,
+      "INVALID_APPEAL",
+      "Check the appeal details.",
+      id,
+    );
+  }
   if (parsed.data.gameSessionId && store) {
     const session = store.gameSessionsById.get(
       parsed.data.gameSessionId,
@@ -92,6 +114,7 @@ export async function POST(request: NextRequest) {
       appeal = await createPersistentAppeal({
         userId: user.id,
         ...parsed.data,
+        requestId: id,
       });
     }
   } catch (error) {
@@ -104,17 +127,20 @@ export async function POST(request: NextRequest) {
     }
     throw error;
   }
-  await appendRuntimeAuditEvent({
-    eventType: "PLAYER_APPEAL_SUBMITTED",
-    actorId: user.id,
-    subjectType: "APPEAL",
-    subjectId: appeal.id,
-    reason: "Player submitted a reviewable appeal.",
-    afterState: {
-      status: appeal.status,
-      gameSessionId: appeal.gameSessionId,
-    },
-  });
+  if (store) {
+    await appendRuntimeAuditEvent({
+      eventType: "PLAYER_APPEAL_SUBMITTED",
+      actorId: user.id,
+      subjectType: "APPEAL",
+      subjectId: appeal.id,
+      reason: "Player submitted a reviewable appeal.",
+      afterState: {
+        status: appeal.status,
+        gameSessionId: appeal.gameSessionId,
+        environment: "safe-demo",
+      },
+    });
+  }
 
   return NextResponse.json({ appeal }, { status: 201 });
 }

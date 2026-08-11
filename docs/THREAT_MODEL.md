@@ -64,6 +64,18 @@ Controls must combine prevention with review. Fraud flags do not automatically
 prove wrongdoing; adverse action follows a documented human-review and appeal
 path.
 
+Configured application rate limits do not trust raw forwarding headers or an
+unverified session cookie as client identity. Login and registration map a
+server-keyed HMAC of the normalized credential into one of 256 fixed shards;
+other anonymous/cookie-bearing operations also use fixed keyed shards. This
+bounds database cardinality and prevents forged-cookie rotation from creating
+unlimited buckets, but it deliberately accepts some cross-user shard contention
+because the application has no trustworthy per-client network identifier.
+Expired buckets are pruned by database time. Public competition reads use only
+bounded in-flight coalescing—never a stale projection cache—so identical bursts
+share work while mutable standings remain immediately truthful. Edge/network
+rate limiting and capacity controls remain required for volumetric attacks.
+
 ## Security baseline
 
 - strict environment schema and no committed secrets;
@@ -81,4 +93,3 @@ path.
 Map every control to owner, implementation reference, automated test, manual
 test, monitoring signal, and residual risk. An unchecked control is not
 implemented merely because it is listed here.
-
