@@ -9,6 +9,11 @@ import {
 
 import { createCuratedSolutionIntents, type MoveIntent } from "@/domain";
 
+import {
+  canonicalServiceOrigin,
+  isCanonicalPreviewOptedIn,
+} from "./preview-origin-guard";
+
 function requiredEnvironment(name: string): string {
   const value = process.env[name]?.trim();
   if (!value) throw new Error(`${name} is required.`);
@@ -39,8 +44,10 @@ function previewOrigin(): string {
   const raw = process.env.PREVIEW_BASE_URL?.trim();
   if (!raw) throw new Error("PREVIEW_BASE_URL is required.");
   const origin = new URL(raw).origin;
-  if (origin === "https://skill-gaming-world.onrender.com") {
-    throw new Error("Two-account proof refuses the production origin.");
+  if (origin === canonicalServiceOrigin && !isCanonicalPreviewOptedIn()) {
+    throw new Error(
+      "Two-account proof refuses the canonical origin unless PREVIEW_ALLOW_CANONICAL_ORIGIN=true is paired with an isolated canonical preview target and database fingerprint.",
+    );
   }
   return origin;
 }

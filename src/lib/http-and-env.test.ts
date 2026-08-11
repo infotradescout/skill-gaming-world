@@ -66,6 +66,26 @@ describe("mutation request boundaries", () => {
     expect(fetchMetadata).toBeNull();
   });
 
+  it("accepts HTTPS same-host Origin behind a production TLS proxy", () => {
+    mutableEnv.NODE_ENV = "production";
+
+    const forwarded = enforceSameOrigin(
+      new NextRequest("http://preview.example/api/example", {
+        method: "POST",
+        headers: { origin: "https://preview.example" },
+      }),
+    );
+    const crossSite = enforceSameOrigin(
+      new NextRequest("http://preview.example/api/example", {
+        method: "POST",
+        headers: { origin: "https://attacker.example" },
+      }),
+    );
+
+    expect(forwarded).toBeNull();
+    expect(crossSite?.status).toBe(403);
+  });
+
   it("accepts equivalent loopback hosts outside production only", () => {
     expect(
       enforceSameOrigin(

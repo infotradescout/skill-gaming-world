@@ -37,6 +37,7 @@ export function enforceSameOrigin(request: NextRequest): NextResponse | null {
   const origin = request.headers.get("origin");
   if (
     origin === request.nextUrl.origin ||
+    isEquivalentProductionOrigin(origin, request.nextUrl.origin) ||
     isEquivalentLocalOrigin(origin, request.nextUrl.origin)
   ) {
     return null;
@@ -52,6 +53,30 @@ export function enforceSameOrigin(request: NextRequest): NextResponse | null {
     "A verified same-origin request is required.",
     requestId(request),
   );
+}
+
+function isEquivalentProductionOrigin(
+  suppliedOrigin: string | null,
+  requestOrigin: string,
+): boolean {
+  if (process.env.NODE_ENV !== "production" || !suppliedOrigin) {
+    return false;
+  }
+
+  try {
+    const supplied = new URL(suppliedOrigin);
+    const expected = new URL(requestOrigin);
+    const loopbackHosts = new Set(["localhost", "127.0.0.1", "[::1]"]);
+
+    return (
+      supplied.protocol === "https:" &&
+      supplied.host === expected.host &&
+      !loopbackHosts.has(supplied.hostname) &&
+      !loopbackHosts.has(expected.hostname)
+    );
+  } catch {
+    return false;
+  }
 }
 
 function isEquivalentLocalOrigin(
