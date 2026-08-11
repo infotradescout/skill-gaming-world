@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type {
   RobotBlueprint,
@@ -360,6 +361,9 @@ export function RobotCombatWorkshop({ playerId, catalog, starterBlueprints }: Wo
               <div className="data-row"><span>Match</span><strong>{match.matchId}</strong></div>
               <div className="data-row"><span>Phase</span><strong>{match.phase}</strong></div>
               <div className="data-row"><span>Players</span><strong>{Object.keys(match.players).length} / 2</strong></div>
+              <Link className="button button-secondary" href={`/app/robot-combat/matches/${match.matchId}`}>
+                Enter authority arena
+              </Link>
               {mySlot && myPlayer ? (
                 <>
                   <div className="data-row"><span>Your slot</span><strong>{mySlot} · {myPlayer.ready ? "ready" : "not ready"}</strong></div>

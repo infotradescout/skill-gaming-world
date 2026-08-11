@@ -64,8 +64,21 @@ type MemoryMatch = {
   actionIds: Map<string, RobotMatchEvent>;
 };
 
-const memoryBuilds = new Map<string, Map<string, MemoryBuild>>();
-const memoryMatches = new Map<string, MemoryMatch>();
+type RobotCombatMemoryStore = {
+  builds: Map<string, Map<string, MemoryBuild>>;
+  matches: Map<string, MemoryMatch>;
+};
+
+declare global {
+  var __skillGamingWorldRobotCombatStore: RobotCombatMemoryStore | undefined;
+}
+
+const memoryStore = globalThis.__skillGamingWorldRobotCombatStore ??= {
+  builds: new Map<string, Map<string, MemoryBuild>>(),
+  matches: new Map<string, MemoryMatch>(),
+};
+const memoryBuilds = memoryStore.builds;
+const memoryMatches = memoryStore.matches;
 
 type RobotCombatTransaction = Parameters<
   Parameters<ReturnType<typeof getDatabase>["transaction"]>[0]

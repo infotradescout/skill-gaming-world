@@ -114,6 +114,385 @@
   color: var(--brass-300);
 }
 
+.robot-combat-arena {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(300px, 0.65fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.robot-combat-arena-stage {
+  min-width: 0;
+  padding: clamp(1rem, 3vw, 1.5rem);
+  background:
+    radial-gradient(circle at 50% 45%, rgba(70, 145, 111, 0.18), transparent 38%),
+    linear-gradient(145deg, rgba(11, 28, 24, 0.98), rgba(4, 10, 12, 0.98));
+}
+
+.arena-stage-header,
+.robot-status-heading,
+.robot-integrity-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.arena-stage-header h2 {
+  margin: 0.35rem 0 0;
+  color: var(--paper-50);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.7rem, 4vw, 2.65rem);
+  font-weight: 500;
+  letter-spacing: -0.04em;
+  text-transform: capitalize;
+}
+
+.arena-clock {
+  display: grid;
+  gap: 0.12rem;
+  min-width: 5rem;
+  text-align: right;
+}
+
+.arena-clock span,
+.arena-clock strong {
+  font-variant-numeric: tabular-nums;
+}
+
+.arena-clock span {
+  color: var(--muted);
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.arena-clock strong {
+  color: var(--brass-300);
+  font-size: 1.2rem;
+}
+
+.arena-notice {
+  min-height: 2.4rem;
+  margin: 0.7rem 0 1rem;
+}
+
+.arena-stage {
+  position: relative;
+  min-height: clamp(390px, 48vw, 640px);
+  overflow: hidden;
+  border: 1px solid rgba(155, 202, 176, 0.28);
+  border-radius: 1.1rem;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(48, 111, 82, 0.34), transparent 32%),
+    linear-gradient(135deg, rgba(15, 56, 42, 0.96), rgba(4, 26, 25, 0.98));
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.24), inset 0 0 5rem rgba(0, 0, 0, 0.25);
+}
+
+.arena-stage::before,
+.arena-stage::after {
+  position: absolute;
+  content: "";
+  pointer-events: none;
+}
+
+.arena-stage::before {
+  inset: 5%;
+  border: 1px solid rgba(217, 184, 89, 0.4);
+  border-radius: 0.9rem;
+}
+
+.arena-stage::after {
+  inset: 12% 18%;
+  border: 1px dashed rgba(155, 202, 176, 0.24);
+  border-radius: 50%;
+}
+
+.arena-grid-lines {
+  position: absolute;
+  inset: 5%;
+  opacity: 0.42;
+  background-image:
+    linear-gradient(rgba(155, 202, 176, 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(155, 202, 176, 0.12) 1px, transparent 1px);
+  background-size: 12.5% 12.5%;
+  border-radius: 0.9rem;
+}
+
+.arena-center-mark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 2.4rem;
+  height: 2.4rem;
+  border: 1px solid rgba(217, 184, 89, 0.42);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.arena-center-mark::after {
+  position: absolute;
+  inset: 0.45rem;
+  border: 1px solid rgba(217, 184, 89, 0.35);
+  border-radius: 50%;
+  content: "";
+}
+
+.arena-robot {
+  position: absolute;
+  z-index: 2;
+  display: grid;
+  justify-items: center;
+  gap: 0.35rem;
+  transition: left 180ms linear, top 180ms linear;
+}
+
+.arena-robot-chassis {
+  position: relative;
+  display: block;
+  width: clamp(3.1rem, 7vw, 5.4rem);
+  height: clamp(2.25rem, 5vw, 3.7rem);
+  border: 2px solid currentColor;
+  border-radius: 0.65rem;
+  background: linear-gradient(145deg, rgba(19, 37, 42, 0.98), rgba(5, 14, 18, 0.98));
+  box-shadow: 0 0 1.4rem currentColor;
+}
+
+.arena-robot-chassis::before,
+.arena-robot-chassis::after {
+  position: absolute;
+  top: 18%;
+  width: 0.36rem;
+  height: 64%;
+  border-radius: 0.3rem;
+  background: currentColor;
+  content: "";
+}
+
+.arena-robot-chassis::before { left: -0.55rem; }
+.arena-robot-chassis::after { right: -0.55rem; }
+
+.arena-robot-nose {
+  position: absolute;
+  top: -0.6rem;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-right: 0.45rem solid transparent;
+  border-bottom: 0.65rem solid currentColor;
+  border-left: 0.45rem solid transparent;
+  transform: translateX(-50%);
+}
+
+.arena-robot-label {
+  padding: 0.2rem 0.4rem;
+  border: 1px solid currentColor;
+  border-radius: 0.35rem;
+  background: rgba(3, 9, 11, 0.88);
+  color: var(--paper-50);
+  font-size: 0.65rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  transform: rotate(0deg);
+}
+
+.arena-robot-self { color: #66e7bd; }
+.arena-robot-opponent { color: #ef8b68; }
+
+.arena-stage-message {
+  position: absolute;
+  z-index: 3;
+  top: 50%;
+  left: 50%;
+  padding: 0.65rem 0.9rem;
+  border: 1px solid rgba(217, 184, 89, 0.45);
+  border-radius: 999px;
+  background: rgba(3, 13, 14, 0.78);
+  color: var(--paper-50);
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  transform: translate(-50%, -50%);
+  white-space: nowrap;
+}
+
+.arena-stage-message-terminal {
+  border-color: rgba(239, 139, 104, 0.65);
+}
+
+.arena-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.1rem;
+  margin-top: 0.8rem;
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+
+.arena-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.legend-dot {
+  display: inline-block;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+}
+
+.legend-dot-self { background: #66e7bd; }
+.legend-dot-opponent { background: #ef8b68; }
+
+.robot-combat-arena-sidebar {
+  display: grid;
+  align-content: start;
+  gap: 1rem;
+}
+
+.robot-status-card,
+.arena-controls,
+.arena-report {
+  padding: 1.05rem;
+}
+
+.robot-status-card {
+  border: 1px solid var(--line);
+  border-radius: 0.85rem;
+  background: rgba(11, 20, 22, 0.72);
+}
+
+.robot-status-card-self {
+  border-color: rgba(102, 231, 189, 0.42);
+}
+
+.robot-status-heading strong {
+  display: block;
+  margin-top: 0.25rem;
+  color: var(--paper-50);
+}
+
+.robot-status-build {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0.8rem 0;
+}
+
+.robot-status-build span {
+  padding: 0.25rem 0.4rem;
+  border: 1px solid var(--line);
+  border-radius: 0.3rem;
+  color: var(--muted);
+  font-size: 0.68rem;
+}
+
+.robot-integrity-row {
+  align-items: center;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.robot-integrity-row strong {
+  color: var(--paper-50);
+  font-variant-numeric: tabular-nums;
+}
+
+.robot-integrity-meter,
+.robot-component-meter {
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.robot-integrity-meter {
+  height: 0.42rem;
+  margin: 0.35rem 0 0.8rem;
+  border-radius: 99px;
+}
+
+.robot-integrity-meter span,
+.robot-component-meter span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #3eb68d, #8be6bb);
+  transition: width 180ms linear;
+}
+
+.robot-component-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.robot-component {
+  min-width: 0;
+}
+
+.robot-component > div:first-child {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.35rem;
+  color: var(--muted);
+  font-size: 0.68rem;
+}
+
+.robot-component strong { color: var(--paper-50); }
+
+.robot-component-meter {
+  height: 0.25rem;
+  margin-top: 0.25rem;
+  border-radius: 99px;
+}
+
+.robot-component-disabled strong,
+.robot-component-disabled > div:first-child span {
+  color: #ef8b68;
+}
+
+.robot-component-disabled .robot-component-meter span {
+  background: #ef8b68;
+}
+
+.arena-control-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+  margin-top: 0.7rem;
+}
+
+.arena-control-grid .arena-fire-button {
+  grid-column: 1 / -1;
+}
+
+.arena-report h3 {
+  margin: 0.3rem 0 0.5rem;
+  color: var(--paper-50);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.35rem;
+  font-weight: 500;
+}
+
+.arena-report ul {
+  margin: 0.7rem 0 1rem;
+  padding-left: 1.1rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.55;
+}
+
+.arena-report .button {
+  margin-top: 0.75rem;
+}
+
+.text-link {
+  color: var(--brass-300);
+  font-size: 0.78rem;
+  text-decoration: none;
+}
+
+.text-link:hover { text-decoration: underline; }
+
 .app-stat-grid {
   margin-top: 1rem;
 }
@@ -1210,7 +1589,8 @@ kbd {
 
 @media (max-width: 900px) {
   .dashboard-grid,
-  .lobby-grid {
+  .lobby-grid,
+  .robot-combat-arena {
     grid-template-columns: 1fr;
   }
 }
@@ -1247,6 +1627,22 @@ kbd {
   .dashboard-primary {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .arena-stage {
+    min-height: 330px;
+  }
+
+  .arena-stage-header {
+    align-items: flex-start;
+  }
+
+  .arena-control-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .arena-control-grid .arena-fire-button {
+    grid-column: auto;
   }
 
   .robot-combat-workshop .dashboard-primary .data-row {
