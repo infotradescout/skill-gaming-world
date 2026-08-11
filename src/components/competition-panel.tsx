@@ -245,7 +245,7 @@ export function CompetitionPanel({
         ) : (
           <div className="data-list">
             {competition.standings.map((standing) => (
-              <div className="data-row" key={standing.entryId ?? `${standing.rank}-${standing.validMoves}-${standing.verifiedActivePlayMs}-${standing.displayName ?? ""}`}>
+              <div className="data-row competition-standing-row" key={standing.entryId ?? `${standing.rank}-${standing.validMoves}-${standing.verifiedActivePlayMs}-${standing.displayName ?? ""}`}>
                 <strong>{standing.displayName ? `${standing.displayName} · ` : ""}Rank {standing.rank}{standing.tied ? " · tie" : ""}</strong>
                 <span>{standing.completed ? "Completed" : "Incomplete"}</span>
                 <span>{standing.validMoves} valid moves</span>
