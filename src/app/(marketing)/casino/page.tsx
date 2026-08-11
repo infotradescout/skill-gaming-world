@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 
+import { StatusPill } from "@/components/page-elements";
+
 export const metadata: Metadata = {
   title: "Casino | Skill Gaming World",
   description: "Casino product status for Skill Gaming World.",
@@ -19,6 +21,7 @@ export default function CasinoPage() {
         </div>
         <div className="casino-balance">
           <small>Current status</small>
+          <StatusPill tone="blocked">Server-disabled</StatusPill>
           <strong>HARD <span>HOLD</span></strong>
           <p>Separate legal, consumer, payment, and distribution review required.</p>
         </div>
