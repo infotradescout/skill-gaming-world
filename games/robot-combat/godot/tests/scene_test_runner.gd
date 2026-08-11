@@ -8,53 +8,71 @@ func _initialize() -> void:
 
 func _run() -> void:
 	var packed: PackedScene = load("res://scenes/main.tscn")
-	var game := packed.instantiate()
+	var game = packed.instantiate()
 	root.add_child(game)
 	await process_frame
+	await process_frame
+
+	check(game.phase == game.Phase.WORKSHOP, "Runtime opens in the Robot Combat workshop")
+	check(game.workshop_panel.visible and game.inspection_panel.visible, "Workshop and inspection are first-class visible surfaces")
+	check(game.revisions.size() >= 1 and not game.last_valid_rebuild.is_empty(), "A starter creates a preserved last-valid revision")
+	check(game.preview_assembly != null and game.preview_assembly.get_child_count() > 0, "Preview is assembled from physical parts")
+
+	var original_hash := str(game.last_valid_rebuild.get("blueprint_hash", ""))
+	game.part_buttons["battery"].select(0)
+	game._on_part_selected(0, "battery")
+	await process_frame
+	check(game.save_revision_button.disabled, "An invalid draft cannot be saved")
+	check(str(game.last_valid_rebuild.get("blueprint_hash", "")) == original_hash, "Invalid draft does not overwrite last-valid revision")
+
+	game._load_last_valid()
+	await process_frame
+	check(not game.save_revision_button.disabled and not game.test_bay_button.disabled, "Loading last-valid restores an arena-ready build")
+
+	game._save_revision()
+	await process_frame
+	check(game.revisions.size() >= 2, "Saving creates a named revision instead of a transient menu state")
+
+	game._start_test_bay()
+	await process_frame
 	await physics_frame
+	check(game.phase == game.Phase.TEST_BAY and game.match_controller.match_active, "Private test bay starts from the workshop")
+	check(game.match_controller.player_robot.assembly != null and game.match_controller.player_robot.blueprint_hash.length() == 64, "Arena robot carries the saved build assembly and identity")
+	check(game.match_controller.player_robot.machine_name == "Yard Mule starter", "Arena HUD carries the builder's saved machine name")
 
-	check(game.arena.size == Vector2(24.0, 16.0), "Arena exposes the locked 24 by 16 meter combat floor") # 1
-	check(game.has_node("ShipTransferPlatform"), "Ship-transfer platform is present") # 2
-	check(game.has_node("NorthSafetyBoundary") and game.has_node("SouthSafetyBoundary"), "Visible arena has continuous safety boundaries") # 3
-	check(game.has_node("AuthoritativeMatch"), "One authoritative match controller owns the fight") # 4
-
-	game._select_machine("RAMMER")
-	game._start_match()
-	await physics_frame
-	var controller = game.match_controller
-	check(controller.match_active, "Training match starts from the player menu") # 5
-	check(controller.player_robot.machine_name == "Yard Mule" and controller.training_robot.machine_name == "Keelcutter", "Yard Mule and training opponent spawn from approved starters") # 6
-	check(controller.player_robot.global_position.y > 0.0 and controller.training_robot.global_position.y > 0.0, "Both machines spawn upright above the combat floor") # 7
-	check(controller.player_robot.blueprint_hash.length() == 64, "Arena robot carries the exact approved blueprint hash") # 8
-
+	var before_position: Vector3 = game.match_controller.player_robot.global_position
 	game._set_virtual_drive(1.0, 0.0)
 	game._set_virtual_weapon(true)
 	for _frame in 12:
 		await physics_frame
-	check(controller.player_robot.weapon_active, "Rammer action is server-owned and executable") # 9
-	check(controller.time_remaining < controller.MATCH_LENGTH_SECONDS, "Authoritative match clock advances") # 10
+	var after_position: Vector3 = game.match_controller.player_robot.global_position
+	check(before_position.distance_to(after_position) > 0.01, "Test bay accepts real drive input")
+	check(game.match_controller.time_remaining < game.match_controller.MATCH_LENGTH_SECONDS, "Local authority advances the session clock")
 
-	var before_damage: float = controller.training_robot.health
-	controller.training_robot.server_apply_damage(7.0)
-	check(controller.training_robot.health == before_damage - 7.0, "Server damage changes integrity without client totals") # 11
-	controller.reset_match()
-	await physics_frame
-	check(controller.player_robot.health == controller.player_robot.max_health and absf(controller.time_remaining - controller.MATCH_LENGTH_SECONDS) < 0.1, "Reset rebuilds both robots and the match clock") # 12
+	game.match_controller.training_robot.server_apply_damage(1000.0, "scene proof")
+	await process_frame
+	await process_frame
+	check(game.phase == game.Phase.REPORT and game.report_overlay.visible, "A completed fight opens a consequence report")
+	check(game.report_damage_label.text.contains("INCOMING DAMAGE"), "Report contains readable damage evidence")
 
-	if checks != 12:
-		failures.append("Scene harness expected 12 checks but executed %d." % checks)
+	game._load_last_valid_from_report()
+	await process_frame
+	check(game.phase == game.Phase.WORKSHOP and game.workshop_panel.visible, "Report returns to rebuild without ending the loop")
+
+	if checks != 16:
+		failures.append("Expected 16 checks but executed %d." % checks)
 	if failures.is_empty():
-		print("BAY13_SCENE_ASSERTIONS:12:PASS")
+		print("ROBOT_COMBAT_SCENE_ASSERTIONS:%d:PASS" % checks)
 		quit(0)
 	else:
 		for failure in failures:
-			printerr("BAY13_SCENE_FAILURE:%s" % failure)
-		printerr("BAY13_SCENE_ASSERTIONS:%d:FAIL" % checks)
+			printerr("ROBOT_COMBAT_SCENE_FAILURE:%s" % failure)
+		printerr("ROBOT_COMBAT_SCENE_ASSERTIONS:%d:FAIL" % checks)
 		quit(1)
 
 func check(condition: bool, label: String) -> void:
 	checks += 1
 	if condition:
-		print("BAY13_SCENE_PASS:%02d:%s" % [checks, label])
+		print("ROBOT_COMBAT_SCENE_PASS:%02d:%s" % [checks, label])
 	else:
 		failures.append("%02d:%s" % [checks, label])

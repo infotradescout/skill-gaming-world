@@ -39,14 +39,14 @@ if grep -Eq "^ERROR:|SCRIPT ERROR|Parse Error|Compile Error|Failed to load scrip
 fi
 
 "$godot_bin" --headless --path "$script_dir" --script res://tests/test_runner.gd 2>&1 | tee "$test_log"
-grep -q "BAY13_RUNTIME_ASSERTIONS:32:PASS" "$test_log"
-if grep -Eq "^ERROR:|SCRIPT ERROR|Parse Error|Compile Error|BAY13_TEST_FAILURE" "$test_log"; then
+grep -q "ROBOT_COMBAT_WORKSHOP_ASSERTIONS:16:PASS" "$test_log"
+if grep -Eq "^ERROR:|SCRIPT ERROR|Parse Error|Compile Error|ROBOT_COMBAT_TEST_FAILURE" "$test_log"; then
   exit 1
 fi
 
 "$godot_bin" --headless --path "$script_dir" --script res://tests/scene_test_runner.gd 2>&1 | tee "$scene_log"
-grep -q "BAY13_SCENE_ASSERTIONS:12:PASS" "$scene_log"
-if grep -Eq "^ERROR:|SCRIPT ERROR|Parse Error|Compile Error|BAY13_SCENE_FAILURE" "$scene_log"; then
+grep -q "ROBOT_COMBAT_SCENE_ASSERTIONS:15:PASS" "$scene_log"
+if grep -Eq "^ERROR:|SCRIPT ERROR|Parse Error|Compile Error|ROBOT_COMBAT_SCENE_FAILURE" "$scene_log"; then
   exit 1
 fi
 

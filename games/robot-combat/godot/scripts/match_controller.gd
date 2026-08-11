@@ -8,6 +8,7 @@ signal match_finished(result: Dictionary)
 const MATCH_LENGTH_SECONDS := 180.0
 const DAMAGE_INTERVAL := 0.22
 const RobotBodyScript := preload("res://scripts/robot_body.gd")
+const BlueprintServiceScript := preload("res://scripts/blueprint_service.gd")
 
 var player_robot: RobotBody
 var training_robot: RobotBody
@@ -18,7 +19,7 @@ var _damage_clock := 0.0
 var _player_spawn := Transform3D.IDENTITY
 var _training_spawn := Transform3D.IDENTITY
 var _player_machine := "RAMMER"
-var _player_paint := Color("#c99f3d")
+var _player_paint := Color("c99f3d")
 var _rebuilt_blueprint := {}
 
 func begin_match(machine: String, paint: Color, player_spawn: Vector3, training_spawn: Vector3, rebuilt_blueprint: Dictionary = {}) -> void:
@@ -28,11 +29,12 @@ func begin_match(machine: String, paint: Color, player_spawn: Vector3, training_
 	_rebuilt_blueprint = rebuilt_blueprint
 	_player_spawn = Transform3D(Basis(Vector3.UP, -PI * 0.5), player_spawn)
 	_training_spawn = Transform3D(Basis(Vector3.UP, PI * 0.5), training_spawn)
-	player_robot = _spawn_robot(_player_machine, paint, true, _player_spawn)
-	if rebuilt_blueprint.get("accepted", false):
-		player_robot.apply_authoritative_blueprint(rebuilt_blueprint.blueprint, str(rebuilt_blueprint.blueprint_hash))
+	var player_build: Dictionary = rebuilt_blueprint.get("blueprint", BlueprintServiceScript.default_blueprint(_player_machine))
+	player_robot = _spawn_robot(_player_machine, paint, true, _player_spawn, player_build, rebuilt_blueprint)
 	var training_machine := _training_machine_for(_player_machine)
-	training_robot = _spawn_robot(training_machine, _training_color(training_machine), false, _training_spawn)
+	var training_build := BlueprintServiceScript.default_blueprint(training_machine)
+	var training_rebuilt := BlueprintServiceScript.server_rebuild(training_build)
+	training_robot = _spawn_robot(training_machine, _training_color(training_machine), false, _training_spawn, training_build, training_rebuilt)
 	time_remaining = MATCH_LENGTH_SECONDS
 	_damage_clock = 0.0
 	last_result = {}
@@ -67,7 +69,7 @@ func _physics_process(delta: float) -> void:
 func authoritative_snapshot() -> Dictionary:
 	return {
 		"server_authoritative": true,
-		"rules_version": "BAY13_MATCH_RULES_V1",
+		"rules_version": "ROBOT_COMBAT_LOCAL_RULES_V1",
 		"clock_seconds": time_remaining,
 		"active": match_active,
 		"player": player_robot.authoritative_snapshot() if is_instance_valid(player_robot) else {},
@@ -75,13 +77,15 @@ func authoritative_snapshot() -> Dictionary:
 		"result": last_result,
 	}
 
-func _spawn_robot(machine: String, paint: Color, player_controlled: bool, spawn_transform: Transform3D) -> RobotBody:
+func _spawn_robot(machine: String, paint: Color, player_controlled: bool, spawn_transform: Transform3D, blueprint: Dictionary, rebuilt: Dictionary) -> RobotBody:
 	var robot: RobotBody = RobotBodyScript.new()
 	robot.name = "PlayerRobot" if player_controlled else "TrainingRobot"
-	robot.configure(machine, paint, player_controlled)
+	robot.configure(machine, paint, player_controlled, blueprint)
 	robot.transform = spawn_transform
 	robot.knocked_out.connect(_on_robot_knocked_out)
 	add_child(robot)
+	if rebuilt.get("accepted", false):
+		robot.apply_authoritative_blueprint(rebuilt, str(rebuilt.get("blueprint_hash", "UNSIGNED")))
 	return robot
 
 func _clear_robots() -> void:
@@ -101,27 +105,33 @@ func _update_training_intent() -> void:
 	var steer := clampf(-local_target.x * 2.2, -1.0, 1.0)
 	var facing := clampf(-local_target.z, -1.0, 1.0)
 	var throttle := 0.82 if facing > 0.15 else 0.38
-	training_robot.set_ai_intent(throttle, steer, offset.length() < 3.0)
+	training_robot.set_ai_intent(throttle, steer, offset.length() < 3.2)
 
 func _server_resolve_contact_damage() -> void:
 	var distance := player_robot.global_position.distance_to(training_robot.global_position)
-	if distance > 2.65:
+	if distance > 2.9:
 		return
 	var relative_speed := (player_robot.linear_velocity - training_robot.linear_velocity).length()
-	if relative_speed > 2.2:
-		var impact_damage := clampf((relative_speed - 2.0) * 0.42, 0.0, 4.5)
-		player_robot.server_apply_damage(impact_damage)
-		training_robot.server_apply_damage(impact_damage)
+	if relative_speed > 1.8:
+		var impact_damage := clampf((relative_speed - 1.5) * 0.46, 0.0, 5.2)
+		player_robot.server_apply_damage(impact_damage, "contact shock from %s" % training_robot.machine_name)
+		training_robot.server_apply_damage(impact_damage * 0.9, "contact shock from %s" % player_robot.machine_name)
 	if player_robot.weapon_active:
-		training_robot.server_apply_damage(_weapon_damage(player_robot.machine_key, relative_speed))
+		training_robot.server_apply_damage(_weapon_damage(player_robot, relative_speed), _weapon_cause(player_robot))
 	if training_robot.weapon_active:
-		player_robot.server_apply_damage(_weapon_damage(training_robot.machine_key, relative_speed))
+		player_robot.server_apply_damage(_weapon_damage(training_robot, relative_speed), _weapon_cause(training_robot))
 
-func _weapon_damage(machine: String, relative_speed: float) -> float:
-	match machine:
-		"RIPPER": return 3.4 + relative_speed * 0.18
-		"MAUL": return 6.4 + relative_speed * 0.1
-		_: return 2.2 + relative_speed * 0.24
+func _weapon_damage(robot: RobotBody, relative_speed: float) -> float:
+	var reach := 1.0
+	if robot.build_metrics.has("clearance"):
+		reach += (0.42 - float(robot.build_metrics.clearance)) * 0.7
+	match robot.weapon_kind:
+		"weapon_spinner": return robot.weapon_damage * 0.28 + relative_speed * 0.24 * reach
+		"weapon_hammer": return robot.weapon_damage * 0.36 + relative_speed * 0.12 * reach
+		_: return robot.weapon_damage * 0.2 + relative_speed * 0.26 * reach
+
+func _weapon_cause(robot: RobotBody) -> String:
+	return "%s from %s" % [str(robot.build_metrics.get("weapon_label", "weapon")).to_lower(), robot.machine_name]
 
 func _server_resolve_boundaries() -> void:
 	for robot in [player_robot, training_robot]:
@@ -159,9 +169,27 @@ func _finish_match(winner: RobotBody, reason: String) -> void:
 		"player_health": snappedf(player_robot.health, 0.1),
 		"training_health": snappedf(training_robot.health, 0.1),
 		"elapsed_seconds": snappedf(MATCH_LENGTH_SECONDS - time_remaining, 0.1),
+		"player_damage_log": player_robot.damage_log.duplicate(),
+		"training_damage_log": training_robot.damage_log.duplicate(),
+		"player_metrics": player_robot.build_metrics.duplicate(true),
+		"rebuild_questions": _rebuild_questions(),
 	}
 	_emit_hud()
 	match_finished.emit(last_result)
+
+func _rebuild_questions() -> Array[String]:
+	var questions: Array[String] = []
+	var balance_x := absf(float(player_robot.build_metrics.get("balance_x", 0.0)))
+	var balance_z := absf(float(player_robot.build_metrics.get("balance_z", 0.0)))
+	if balance_x > 0.18 or balance_z > 0.18:
+		questions.append("Move the heavy front or weapon mount closer to the center of mass.")
+	if float(player_robot.build_metrics.get("traction", 0.0)) < 3.5:
+		questions.append("Try four wheels or wide-grip wheels before adding more weapon mass.")
+	if player_robot.damage_log.is_empty():
+		questions.append("Review your approach: the report recorded no incoming damage before the session ended.")
+	else:
+		questions.append("Read the incoming damage entries, then change one physical choice and test again.")
+	return questions
 
 func _emit_hud() -> void:
 	hud_changed.emit(authoritative_snapshot())
@@ -174,6 +202,6 @@ func _training_machine_for(player_machine: String) -> String:
 
 func _training_color(machine: String) -> Color:
 	match machine:
-		"RIPPER": return Color("#3d928c")
-		"MAUL": return Color("#b55c32")
-		_: return Color("#c39a38")
+		"RIPPER": return Color("3d928c")
+		"MAUL": return Color("b55c32")
+		_: return Color("c39a38")
