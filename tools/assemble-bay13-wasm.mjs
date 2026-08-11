@@ -19,6 +19,7 @@ const outputPaths = [
   path.join(repositoryRoot, "public/games/bay-13/index.wasm"),
 ];
 const temporaryPath = `${outputPaths[0]}.assembling`;
+const forceAssembly = process.env.ROBOT_COMBAT_FORCE_WASM_ASSEMBLY === "1";
 
 async function sha256(filePath) {
   const hash = createHash("sha256");
@@ -44,7 +45,7 @@ async function* compressedSource(partNames) {
 
 await Promise.all(outputPaths.map((outputPath) => mkdir(path.dirname(outputPath), { recursive: true })));
 
-if ((await Promise.all(outputPaths.map(hasVerifiedOutput))).every(Boolean)) {
+if (!forceAssembly && (await Promise.all(outputPaths.map(hasVerifiedOutput))).every(Boolean)) {
   console.log("ROBOT_COMBAT_WASM_ASSEMBLY:PASS:existing");
 } else {
   const partNames = (await readdir(partsDirectory))
