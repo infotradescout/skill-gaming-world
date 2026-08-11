@@ -10,6 +10,7 @@ import {
 import type { DemoSelfExclusion, DemoUser } from "./demo-store";
 import { GameServiceError } from "./game-service";
 import { evaluateDemoPlayerAccess } from "./player-access";
+import type { DemoProductMode } from "./player-access";
 
 export type PersistentPlayerAccessTransaction = Parameters<
   Parameters<ReturnType<typeof getDatabase>["transaction"]>[0]
@@ -36,11 +37,12 @@ export async function lockPersistentPlayerAccess(
 export async function assertPersistentPlayerAccess(
   transaction: PersistentPlayerAccessTransaction,
   user: DemoUser,
+  mode: DemoProductMode = "MONETAIRE_PLAY",
 ): Promise<void> {
   const snapshot = await persistentPlayerAccessSnapshot(transaction, user);
   const decision = evaluateDemoPlayerAccess({
     user: snapshot.user,
-    mode: "MONETAIRE_PLAY",
+    mode,
     exclusions: snapshot.exclusions,
     serverAtMs: snapshot.serverAtMs,
   });
@@ -49,7 +51,9 @@ export async function assertPersistentPlayerAccess(
       decision.reasonCodes.includes("SELF_EXCLUDED")
         ? "SELF_EXCLUDED"
         : "ACCOUNT_RESTRICTED",
-      "Account restrictions block Monetaire Play.",
+      mode === "ROBOT_COMBAT_FREE"
+        ? "Account restrictions block Robot Combat."
+        : "Account restrictions block Monetaire Play.",
     );
   }
 }

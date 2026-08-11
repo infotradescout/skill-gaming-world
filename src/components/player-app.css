@@ -36,6 +36,84 @@
   flex: 0 0 auto;
 }
 
+.robot-combat-workshop {
+  align-items: start;
+}
+
+.robot-combat-workshop .dashboard-primary {
+  display: block;
+  min-height: 0;
+  overflow: visible;
+}
+
+.robot-combat-workshop .dashboard-primary .data-list {
+  margin: 1.25rem 0;
+  padding: 0 1rem;
+}
+
+.robot-combat-workshop .dashboard-primary .data-row {
+  grid-template-columns: minmax(0, 1fr) minmax(140px, 220px) auto;
+}
+
+.robot-combat-workshop .data-row > :last-child {
+  text-align: right;
+}
+
+.robot-combat-workshop .data-row > :nth-child(2) {
+  display: block;
+}
+
+.robot-combat-workshop select,
+.robot-combat-workshop input {
+  min-width: 0;
+  width: 100%;
+  border: 1px solid var(--line-strong);
+  border-radius: 0.65rem;
+  background: rgba(5, 7, 11, 0.45);
+  color: var(--foreground);
+  padding: 0.65rem 0.7rem;
+}
+
+.robot-combat-workshop .dashboard-secondary {
+  display: grid;
+  gap: 1rem;
+  align-content: start;
+}
+
+.robot-combat-workshop .dashboard-secondary .surface-soft {
+  padding: 1.1rem;
+}
+
+.workshop-archetype {
+  display: grid;
+  width: 100%;
+  gap: 0.22rem;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+  padding: 0.9rem 0;
+  text-align: left;
+  cursor: pointer;
+}
+
+.workshop-archetype:last-child {
+  border-bottom: 0;
+}
+
+.workshop-archetype strong {
+  color: var(--paper-50);
+}
+
+.workshop-archetype span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.workshop-archetype:hover strong {
+  color: var(--brass-300);
+}
+
 .app-stat-grid {
   margin-top: 1rem;
 }
@@ -1169,6 +1247,14 @@ kbd {
   .dashboard-primary {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .robot-combat-workshop .dashboard-primary .data-row {
+    grid-template-columns: 1fr;
+  }
+
+  .robot-combat-workshop .data-row > :last-child {
+    text-align: left;
   }
 
   .lobby-feature {

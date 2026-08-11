@@ -71,6 +71,13 @@
       "when": 1786312800000,
       "tag": "0009_monetaire_two_account_reality",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1786481464120,
+      "tag": "0010_robot-combat-foundation",
+      "breakpoints": true
     }
   ]
 }

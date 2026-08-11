@@ -62,14 +62,14 @@ export const GAME_TITLE_CATALOG: readonly GameTitleCatalogEntry[] = [
   },
   {
     key: "SGW_ROBOT_COMBAT",
-    workingTitle: "Bay 13: The Scrapyard",
+    workingTitle: "Robot Combat",
     side: "FREE",
     category: "SKILL",
     valueClass: "NO_VALUE",
     legalOfferingClass: "NOT_APPLICABLE",
-    developmentStatus: "ACTIVE",
+    developmentStatus: "IN_DEVELOPMENT",
     publicSummary:
-      "Original 3D robot construction and combat with three starter machines, local training, and a validated modular garage.",
+      "A workshop-first free game where builders assemble a machine, test the consequences, and fight from an inspection-valid revision.",
     matchPlayAvailable: true,
     routes: {
       marketing: "/robot-combat",

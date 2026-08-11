@@ -9,6 +9,7 @@ export * from "./game-engine";
 export * from "./game-titles";
 export * from "./ledger";
 export * from "./product-modes";
+export * from "./robot-combat";
 export * from "./responsible-play";
 export * from "./score-adjustments";
 export * from "./scoring";

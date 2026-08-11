@@ -78,6 +78,14 @@ export const gameSessionStatusEnum = pgEnum("game_session_status", [
   "ABANDONED",
   "BLOCKED",
 ]);
+export const robotCombatMatchPhaseEnum = pgEnum("robot_combat_match_phase", [
+  "WAITING_FOR_OPPONENT",
+  "READY_CHECK",
+  "ACTIVE",
+  "COMPLETED",
+  "CANCELLED",
+  "DISCONNECTED",
+]);
 export const validationStatusEnum = pgEnum("deal_validation_status", [
   "PENDING",
   "VERIFIED_SOLVABLE",
@@ -715,6 +723,152 @@ export const scores = pgTable(
     check(
       "scores_not_self_superseded",
       sql`${table.supersededByScoreId} IS NULL OR ${table.supersededByScoreId} <> ${table.id}`,
+    ),
+  ],
+);
+
+export const robotCombatBuilds = pgTable(
+  "robot_combat_builds",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    buildKey: varchar("build_key", { length: 64 }).notNull(),
+    displayName: varchar("display_name", { length: 80 }).notNull(),
+    latestRevision: integer("latest_revision").default(0).notNull(),
+    createdAt,
+    updatedAt,
+  },
+  (table) => [
+    uniqueIndex("robot_combat_builds_user_key_unique").on(
+      table.userId,
+      table.buildKey,
+    ),
+    index("robot_combat_builds_user_idx").on(table.userId),
+    check("robot_combat_builds_revision_nonnegative", sql`${table.latestRevision} >= 0`),
+  ],
+);
+
+export const robotCombatBuildRevisions = pgTable(
+  "robot_combat_build_revisions",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    buildId: uuid("build_id")
+      .notNull()
+      .references(() => robotCombatBuilds.id, { onDelete: "restrict" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    revision: integer("revision").notNull(),
+    blueprintHash: varchar("blueprint_hash", { length: 64 }).notNull(),
+    blueprint: jsonb("blueprint").$type<Record<string, unknown>>().notNull(),
+    inspection: jsonb("inspection").$type<Record<string, unknown>>().notNull(),
+    createdAt,
+  },
+  (table) => [
+    uniqueIndex("robot_combat_build_revisions_build_revision_unique").on(
+      table.buildId,
+      table.revision,
+    ),
+    uniqueIndex("robot_combat_build_revisions_hash_unique").on(
+      table.buildId,
+      table.blueprintHash,
+    ),
+    index("robot_combat_build_revisions_user_idx").on(table.userId),
+    check("robot_combat_build_revisions_revision_positive", sql`${table.revision} > 0`),
+    check(
+      "robot_combat_build_revisions_hash_sha256",
+      sql`${table.blueprintHash} ~ '^[0-9a-f]{64}$'`,
+    ),
+  ],
+);
+
+export const robotCombatMatches = pgTable(
+  "robot_combat_matches",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    arenaKey: varchar("arena_key", { length: 96 }).notNull(),
+    rulesetVersion: varchar("ruleset_version", { length: 64 }).notNull(),
+    phase: robotCombatMatchPhaseEnum("phase")
+      .default("WAITING_FOR_OPPONENT")
+      .notNull(),
+    playerAId: uuid("player_a_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    playerBId: uuid("player_b_id").references(() => users.id, {
+      onDelete: "restrict",
+    }),
+    stateSnapshot: jsonb("state_snapshot")
+      .$type<Record<string, unknown>>()
+      .notNull(),
+    nextSequence: integer("next_sequence").default(1).notNull(),
+    terminalReason: varchar("terminal_reason", { length: 96 }),
+    startedAt: timestamp("started_at", { withTimezone: true }),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+    createdAt,
+    updatedAt,
+  },
+  (table) => [
+    index("robot_combat_matches_phase_idx").on(table.phase),
+    index("robot_combat_matches_player_a_idx").on(table.playerAId),
+    index("robot_combat_matches_player_b_idx").on(table.playerBId),
+    check("robot_combat_matches_sequence_positive", sql`${table.nextSequence} > 0`),
+    check(
+      "robot_combat_matches_players_distinct",
+      sql`${table.playerBId} IS NULL OR ${table.playerAId} <> ${table.playerBId}`,
+    ),
+  ],
+);
+
+export const robotCombatMatchEvents = pgTable(
+  "robot_combat_match_events",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    matchId: uuid("match_id")
+      .notNull()
+      .references(() => robotCombatMatches.id, { onDelete: "restrict" }),
+    sequence: integer("sequence").notNull(),
+    actionId: varchar("action_id", { length: 128 }).notNull(),
+    playerId: uuid("player_id").references(() => users.id, {
+      onDelete: "restrict",
+    }),
+    commandType: varchar("command_type", { length: 48 }).notNull(),
+    commandPayload: jsonb("command_payload")
+      .$type<Record<string, unknown>>()
+      .notNull(),
+    stateHashBefore: varchar("state_hash_before", { length: 64 }).notNull(),
+    stateHashAfter: varchar("state_hash_after", { length: 64 }).notNull(),
+    accepted: boolean("accepted").notNull(),
+    rejectionCode: varchar("rejection_code", { length: 96 }),
+    createdAt,
+  },
+  (table) => [
+    uniqueIndex("robot_combat_match_events_match_sequence_unique").on(
+      table.matchId,
+      table.sequence,
+    ),
+    uniqueIndex("robot_combat_match_events_match_action_unique").on(
+      table.matchId,
+      table.actionId,
+    ),
+    index("robot_combat_match_events_match_idx").on(table.matchId),
+    check("robot_combat_match_events_sequence_positive", sql`${table.sequence} > 0`),
+    check(
+      "robot_combat_match_events_hash_sha256",
+      sql`${table.stateHashBefore} ~ '^[0-9a-f]{64}$'
+        AND ${table.stateHashAfter} ~ '^[0-9a-f]{64}$'`,
+    ),
+    check(
+      "robot_combat_match_events_rejection_consistent",
+      sql`(
+        ${table.accepted}
+        AND ${table.rejectionCode} IS NULL
+      ) OR (
+        NOT ${table.accepted}
+        AND ${table.rejectionCode} IS NOT NULL
+        AND ${table.stateHashAfter} = ${table.stateHashBefore}
+      )`,
     ),
   ],
 );
