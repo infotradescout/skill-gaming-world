@@ -83,6 +83,33 @@ test("authenticated app exposes the exported 3D runtime with its boundary stated
   await expect(artifact.text()).resolves.toContain("Robot Combat Prototype");
 });
 
+test("authenticated workshop opens a private test bay and records consequences before rebuild", async ({ page }) => {
+  await registerPlayer(page);
+  await page.goto("/app/robot-combat");
+  await page.getByRole("button", { name: "Inspect & save revision" }).click();
+  await expect(page.getByText(/Revision \d+ saved/i)).toBeVisible();
+  await page.getByRole("button", { name: "Enter private test bay" }).click();
+  await expect(page).toHaveURL(/\/app\/robot-combat\/test-bay\//);
+  await expect(page.getByRole("heading", { name: "Private test bay", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Learn what the machine does", exact: true })).toBeVisible();
+
+  await page.getByRole("button", { name: "Drive toward contact gate" }).click();
+  for (let tick = 0; tick < 6; tick += 1) {
+    await page.getByRole("button", { name: "Advance test clock" }).click();
+  }
+  await page.getByRole("button", { name: "Record contact" }).click();
+  await expect(page.getByText("Contact consequence", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Use weapon" }).click();
+  await expect(page.getByText("Weapon consequence", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Reset private test" }).click();
+  await expect(page.getByText("Private test reset. The saved machine is ready for another trial.", { exact: true })).toBeVisible();
+  await expect(page.getByText("No consequence recorded yet", { exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Rebuild this machine", exact: true })).toHaveAttribute(
+    "href",
+    "/app/robot-combat",
+  );
+});
+
 test("two builders can ready, control, damage, and report a match", async ({ page, browser }) => {
   await registerPlayer(page);
   await page.goto("/app/robot-combat");

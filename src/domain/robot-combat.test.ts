@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   applyRobotMatchCommand,
   createRobotMatchState,
+  createRobotTestState,
   createStarterRobotBlueprint,
   inspectRobotBlueprint,
 } from "./robot-combat";
@@ -121,5 +122,52 @@ describe("Robot Combat match authority", () => {
     expect(disconnected.phase).toBe("DISCONNECTED");
     expect(disconnected.players.B?.connected).toBe(false);
     expect(disconnected.terminalReason).toBe("PLAYER_DISCONNECTED");
+  });
+});
+
+describe("Robot Combat private test authority", () => {
+  it("records drive, contact, weapon, reset, and consequence evidence without changing the saved build", () => {
+    let state = createRobotTestState({
+      matchId: "test-bay-1",
+      arenaKey: "bay-13-private-test",
+      player: { playerId: "player-a", displayName: "A" },
+      blueprint: createStarterRobotBlueprint("PUSHER"),
+    });
+    expect(state.mode).toBe("PRIVATE_TEST");
+    expect(state.phase).toBe("ACTIVE");
+    expect(state.robots.A?.position.z).toBe(-3.5);
+
+    state = applyRobotMatchCommand(state, { type: "CONTROL", slot: "A", throttle: 1, steering: 0 }).state;
+    for (let index = 0; index < 3; index += 1) {
+      state = applyRobotMatchCommand(state, { type: "TICK", elapsedMs: 250 }).state;
+    }
+    const contact = applyRobotMatchCommand(state, { type: "TEST_CONTACT", slot: "A" });
+    expect(contact.event.accepted).toBe(true);
+    state = contact.state;
+    expect(state.testReport?.contacts).toBe(1);
+    expect(state.robots.B?.damageLog).toHaveLength(1);
+
+    state = applyRobotMatchCommand(state, { type: "FIRE", slot: "A" }).state;
+    expect(state.testReport?.weaponUses).toBe(1);
+    expect(state.testReport?.consequences).toHaveLength(2);
+
+    state = applyRobotMatchCommand(state, { type: "RESET_TEST", slot: "A" }).state;
+    expect(state.testReport?.resets).toBe(1);
+    expect(state.testReport?.contacts).toBe(0);
+    expect(state.robots.B?.integrity).toBe(100);
+    expect(state.elapsedMs).toBe(0);
+  });
+
+  it("rejects contact until the authority sees forward movement at the gate", () => {
+    const state = createRobotTestState({
+      matchId: "test-bay-2",
+      arenaKey: "bay-13-private-test",
+      player: { playerId: "player-a", displayName: "A" },
+      blueprint: createStarterRobotBlueprint("CONTROL"),
+    });
+    const rejected = applyRobotMatchCommand(state, { type: "TEST_CONTACT", slot: "A" });
+    expect(rejected.event.accepted).toBe(false);
+    expect(rejected.event.message).toMatch(/drive toward/i);
+    expect(rejected.state.testReport?.contacts).toBe(0);
   });
 });

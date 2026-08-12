@@ -648,6 +648,7 @@ export type RobotMatchState = {
   matchId: string;
   rulesetVersion: typeof ROBOT_COMBAT_RULESET_VERSION;
   arenaKey: string;
+  mode?: "MATCH" | "PRIVATE_TEST";
   phase: RobotMatchPhase;
   players: Partial<Record<RobotMatchSlot, RobotMatchPlayer>>;
   robots: Partial<Record<RobotMatchSlot, RobotCombatRobotState>>;
@@ -656,7 +657,25 @@ export type RobotMatchState = {
   winnerSlot?: RobotMatchSlot;
   terminalReason?: string;
   rebuildQuestions: Partial<Record<RobotMatchSlot, string[]>>;
+  testReport?: RobotTestReport;
   lastEvent?: RobotMatchEvent;
+};
+
+export type RobotTestConsequence = {
+  kind: "CONTACT" | "WEAPON";
+  targetComponent: string;
+  damage: number;
+  componentRemaining: number;
+  message: string;
+  elapsedMs: number;
+};
+
+export type RobotTestReport = {
+  controlsAccepted: number;
+  contacts: number;
+  weaponUses: number;
+  resets: number;
+  consequences: RobotTestConsequence[];
 };
 
 export type RobotMatchCommand =
@@ -665,6 +684,8 @@ export type RobotMatchCommand =
   | { type: "READY"; slot: RobotMatchSlot }
   | { type: "CONTROL"; slot: RobotMatchSlot; throttle: number; steering: number }
   | { type: "FIRE"; slot: RobotMatchSlot }
+  | { type: "TEST_CONTACT"; slot: RobotMatchSlot }
+  | { type: "RESET_TEST"; slot: RobotMatchSlot }
   | { type: "TICK"; elapsedMs: number }
   | { type: "DISCONNECT"; slot: RobotMatchSlot; reason: string }
   | { type: "CANCEL"; slot: RobotMatchSlot; reason: string };
@@ -697,6 +718,7 @@ export function createRobotMatchState(input: {
     matchId: input.matchId,
     rulesetVersion: ROBOT_COMBAT_RULESET_VERSION,
     arenaKey: input.arenaKey,
+    mode: "MATCH",
     phase: "WAITING_FOR_OPPONENT",
     players: {
       A: {
@@ -710,6 +732,62 @@ export function createRobotMatchState(input: {
     elapsedMs: 0,
     nextSequence: 1,
     rebuildQuestions: {},
+  };
+}
+
+export function createRobotTestState(input: {
+  matchId: string;
+  arenaKey: string;
+  player: Omit<RobotMatchPlayer, "slot" | "connected" | "ready">;
+  blueprint: RobotBlueprint;
+}): RobotMatchState {
+  const initial = createRobotMatchState({
+    matchId: input.matchId,
+    arenaKey: input.arenaKey,
+    player: input.player,
+  });
+  const submitted = applyRobotMatchCommand(initial, {
+    type: "SUBMIT_BUILD",
+    slot: "A",
+    blueprint: input.blueprint,
+  });
+  if (!submitted.event.accepted) {
+    throw new Error("ROBOT_COMBAT_TEST_BUILD_INVALID");
+  }
+  const testStartEvent: RobotMatchEvent = {
+    sequence: submitted.event.sequence,
+    type: "MATCH_STARTED",
+    slot: "A",
+    accepted: true,
+    message: "Private test bay opened with the saved machine.",
+    atElapsedMs: 0,
+  };
+  return {
+    ...submitted.state,
+    mode: "PRIVATE_TEST",
+    phase: "ACTIVE",
+    players: {
+      ...submitted.state.players,
+      B: {
+        playerId: "robot-combat-training-target",
+        displayName: "Training target",
+        slot: "B",
+        connected: true,
+        ready: true,
+      },
+    },
+    robots: {
+      A: createRobotState({ x: 0, z: -3.5 }),
+      B: createRobotState({ x: 0, z: 0 }),
+    },
+    testReport: {
+      controlsAccepted: 0,
+      contacts: 0,
+      weaponUses: 0,
+      resets: 0,
+      consequences: [],
+    },
+    lastEvent: testStartEvent,
   };
 }
 
@@ -832,7 +910,12 @@ export function applyRobotMatchCommand(
     const robot = state.robots[command.slot] ?? createRobotState();
     const updatedRobot = { ...robot, throttle, steering, lastActionAt: state.elapsedMs };
     const event = matchEvent(state, { type: "CONTROL", slot: command.slot, accepted: true, message: "Control input accepted." });
-    return withEvent(state, event, { robots: { ...state.robots, [command.slot]: updatedRobot } });
+    return withEvent(state, event, {
+      robots: { ...state.robots, [command.slot]: updatedRobot },
+      testReport: state.mode === "PRIVATE_TEST"
+        ? { ...state.testReport!, controlsAccepted: state.testReport!.controlsAccepted + 1 }
+        : state.testReport,
+    });
   }
 
   if (command.type === "FIRE") {
@@ -895,6 +978,109 @@ export function applyRobotMatchCommand(
       winnerSlot: completed ? command.slot : state.winnerSlot,
       terminalReason: completed ? "OPPONENT_DISABLED" : state.terminalReason,
       rebuildQuestions,
+      testReport: state.mode === "PRIVATE_TEST"
+        ? {
+            ...state.testReport!,
+            weaponUses: state.testReport!.weaponUses + 1,
+            consequences: [
+              ...state.testReport!.consequences,
+              {
+                kind: "WEAPON" as const,
+                targetComponent,
+                damage: componentBefore - componentRemaining,
+                componentRemaining,
+                message: `Weapon fire stressed the ${targetComponent} component.`,
+                elapsedMs: state.elapsedMs,
+              },
+            ].slice(-12),
+          }
+        : state.testReport,
+    });
+  }
+
+  if (command.type === "TEST_CONTACT") {
+    if (state.mode !== "PRIVATE_TEST") return rejection(state, command, "Contact trials are only available in the private test bay.");
+    if (state.phase !== "ACTIVE") return rejection(state, command, "The private test bay is not active.");
+    const robot = state.robots[command.slot] ?? createRobotState();
+    if (robot.throttle <= 0 || robot.position.z < -2.5) {
+      return rejection(state, command, "Drive toward the marked contact gate before recording contact.");
+    }
+    const playerInspection = state.players[command.slot]?.inspection;
+    const balanceScore = playerInspection?.metrics.balanceScore ?? 50;
+    const targetComponent = balanceScore < 70 ? "drive" : "frame";
+    const damage = Math.max(6, Math.round(12 + (100 - balanceScore) * 0.12));
+    const target = state.robots.B ?? createRobotState({ x: 0, z: 0 });
+    const componentBefore = target.components[targetComponent] ?? 100;
+    const componentRemaining = Math.max(0, componentBefore - damage);
+    const damageRecord: RobotDamageRecord = {
+      sourceSlot: command.slot,
+      targetComponent,
+      damage: componentBefore - componentRemaining,
+      componentRemaining,
+      elapsedMs: state.elapsedMs,
+    };
+    const updatedTarget = {
+      ...target,
+      components: { ...target.components, [targetComponent]: componentRemaining },
+      integrity: Math.max(0, target.integrity - Math.round(damage * 0.5)),
+      disabledComponents: componentRemaining === 0 && !target.disabledComponents.includes(targetComponent)
+        ? [...target.disabledComponents, targetComponent]
+        : target.disabledComponents,
+      damageLog: [...target.damageLog, damageRecord],
+      lastActionAt: state.elapsedMs,
+    };
+    const event = matchEvent(state, {
+      type: "TEST_CONTACT",
+      slot: command.slot,
+      accepted: true,
+      message: `Contact recorded against the ${targetComponent} path.`,
+      metadata: { targetComponent, damage: componentBefore - componentRemaining, balanceScore },
+    });
+    return withEvent(state, event, {
+      robots: { ...state.robots, B: updatedTarget },
+      testReport: {
+        ...state.testReport!,
+        contacts: state.testReport!.contacts + 1,
+        consequences: [
+          ...state.testReport!.consequences,
+          {
+            kind: "CONTACT" as const,
+            targetComponent,
+            damage: componentBefore - componentRemaining,
+            componentRemaining,
+            message: `Contact stressed the ${targetComponent} path; balance score was ${balanceScore}.`,
+            elapsedMs: state.elapsedMs,
+          },
+        ].slice(-12),
+      },
+    });
+  }
+
+  if (command.type === "RESET_TEST") {
+    if (state.mode !== "PRIVATE_TEST") return rejection(state, command, "Reset is only available in the private test bay.");
+    const event = matchEvent(state, {
+      type: "RESET_TEST",
+      slot: command.slot,
+      accepted: true,
+      message: "Private test reset. The saved machine is ready for another trial.",
+    });
+    return withEvent(state, event, {
+      phase: "ACTIVE",
+      elapsedMs: 0,
+      winnerSlot: undefined,
+      terminalReason: undefined,
+      rebuildQuestions: {},
+      robots: {
+        A: createRobotState({ x: 0, z: -3.5 }),
+        B: createRobotState({ x: 0, z: 0 }),
+      },
+      testReport: {
+        controlsAccepted: 0,
+        contacts: 0,
+        weaponUses: 0,
+        resets: (state.testReport?.resets ?? 0) + 1,
+        consequences: [],
+      },
     });
   }
 
@@ -916,9 +1102,9 @@ export function applyRobotMatchCommand(
   return rejection(state, command, "Unsupported match command.");
 }
 
-function createRobotState(): RobotCombatRobotState {
+function createRobotState(position: { x: number; z: number } = { x: 0, z: 0 }): RobotCombatRobotState {
   return {
-    position: { x: 0, z: 0 },
+    position,
     heading: 0,
     throttle: 0,
     steering: 0,

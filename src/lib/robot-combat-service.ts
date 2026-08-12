@@ -4,6 +4,7 @@ import { and, asc, desc, eq, sql } from "drizzle-orm";
 import {
   applyRobotMatchCommand,
   createRobotMatchState,
+  createRobotTestState,
   hashRobotMatchState,
   inspectRobotBlueprint,
   type RobotBlueprint,
@@ -397,6 +398,105 @@ export async function createRobotMatch(input: {
   });
 }
 
+export async function createRobotTestSession(input: {
+  user: DemoUser;
+  buildId: string;
+  revision?: number;
+}): Promise<RobotMatchState> {
+  const env = getRuntimeEnv();
+  const matchId = randomUUID();
+  const arenaKey = "bay-13-private-test";
+  if (env.DEMO_MODE) {
+    assertDemoAccess(input.user);
+    const selected = memoryRevision(input.user.id, input.buildId, input.revision);
+    const state = createRobotTestState({
+      matchId,
+      arenaKey,
+      player: { playerId: input.user.id, displayName: input.user.displayName },
+      blueprint: selected.revision.blueprint,
+    });
+    memoryMatches.set(matchId, { state, actionIds: new Map() });
+    return state;
+  }
+  return getDatabase().transaction(async (transaction) => {
+    await assertPersistentPlayerAccess(transaction, input.user, "ROBOT_COMBAT_FREE");
+    const selected = await ownedRevision(transaction, input.user, input.buildId, input.revision);
+    const state = createRobotTestState({
+      matchId,
+      arenaKey,
+      player: { playerId: input.user.id, displayName: input.user.displayName },
+      blueprint: selected.revision.blueprint,
+    });
+    const now = new Date();
+    await transaction.insert(robotCombatMatches).values({
+      id: matchId,
+      arenaKey,
+      rulesetVersion: state.rulesetVersion,
+      phase: state.phase,
+      playerAId: input.user.id,
+      stateSnapshot: state as unknown as Record<string, unknown>,
+      nextSequence: state.nextSequence,
+      startedAt: now,
+    });
+    const initial = createRobotMatchState({
+      matchId,
+      arenaKey,
+      player: { playerId: input.user.id, displayName: input.user.displayName },
+    });
+    await transaction.insert(robotCombatMatchEvents).values({
+      matchId,
+      sequence: state.nextSequence - 1,
+      actionId: `create-test:${matchId}`,
+      playerId: input.user.id,
+      commandType: state.lastEvent?.type ?? "MATCH_STARTED",
+      commandPayload: { type: "TEST_SESSION_CREATED", slot: "A", blueprintHash: selected.revision.blueprintHash },
+      stateHashBefore: hashRobotMatchState(initial),
+      stateHashAfter: hashRobotMatchState(state),
+      accepted: true,
+    });
+    return state;
+  });
+}
+
+export async function getRobotTestSession(input: { user: DemoUser; sessionId: string }): Promise<RobotMatchState> {
+  const state = await getRobotMatch({ user: input.user, matchId: input.sessionId });
+  if (state.mode !== "PRIVATE_TEST" || state.arenaKey !== "bay-13-private-test") {
+    throw new RobotCombatServiceError("MATCH_FORBIDDEN", "That session is not a private test bay.");
+  }
+  return state;
+}
+
+export async function commandRobotTestSession(input: {
+  user: DemoUser;
+  sessionId: string;
+  actionId: string;
+  command: RobotMatchCommand;
+}): Promise<{ state: RobotMatchState; event: RobotMatchEvent; idempotentReplay?: boolean }> {
+  await getRobotTestSession({ user: input.user, sessionId: input.sessionId });
+  if (![
+    "CONTROL",
+    "TICK",
+    "FIRE",
+    "TEST_CONTACT",
+    "RESET_TEST",
+  ].includes(input.command.type)) {
+    throw new RobotCombatServiceError("MATCH_COMMAND_REJECTED", "That command is not available in the private test bay.");
+  }
+  if (input.command.type !== "TICK" && input.command.slot !== "A") {
+    throw new RobotCombatServiceError("MATCH_FORBIDDEN", "The private test bay belongs to the active builder.");
+  }
+  const result = await commandRobotMatch({
+    user: input.user,
+    matchId: input.sessionId,
+    actionId: input.actionId,
+    command: input.command,
+  });
+  if (result.state.mode !== "PRIVATE_TEST") {
+    throw new RobotCombatServiceError("MATCH_FORBIDDEN", "That session is not a private test bay.");
+  }
+  return result;
+}
+
 export async function joinRobotMatch(input: {
   user: DemoUser;
   matchId: string;
@@ -594,7 +694,11 @@ export async function commandRobotMatch(input: {
         nextSequence: applied.state.nextSequence,
         terminalReason: applied.state.terminalReason,
         startedAt: applied.state.phase === "ACTIVE" && !record.startedAt ? now : record.startedAt,
-        completedAt: ["COMPLETED", "CANCELLED", "DISCONNECTED"].includes(applied.state.phase) ? now : record.completedAt,
+        completedAt: ["COMPLETED", "CANCELLED", "DISCONNECTED"].includes(applied.state.phase)
+          ? now
+          : applied.state.mode === "PRIVATE_TEST" && applied.event.type === "RESET_TEST"
+            ? null
+            : record.completedAt,
         updatedAt: now,
       })
       .where(eq(robotCombatMatches.id, input.matchId));
