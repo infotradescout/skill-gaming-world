@@ -44,6 +44,10 @@ describe("held-operation route inventory", () => {
         "play-coins/sandbox-purchase",
         "responsible-play/cooldown",
         "responsible-play/self-exclusion",
+        "robot-combat/builds",
+        "robot-combat/matches",
+        "robot-combat/matches/[matchId]/commands",
+        "robot-combat/matches/[matchId]/join",
       ].toSorted(),
     );
 

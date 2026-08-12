@@ -10,11 +10,11 @@ const games = [
     art: "cards",
   },
   {
-    badge: "Playable · Free",
-    title: "Bay 13: The Scrapyard",
-    copy: "Build an original combat machine, test it in the shipyard, and fight a training opponent.",
-    href: "/games/bay-13/index.html",
-    action: "Enter Bay 13",
+    badge: "In development · Free",
+    title: "Robot Combat",
+    copy: "Build an original combat machine, inspect the revision, and enter the arena when the match gate is ready.",
+    href: "/robot-combat",
+    action: "Enter Robot Combat",
     art: "robot",
   },
   {

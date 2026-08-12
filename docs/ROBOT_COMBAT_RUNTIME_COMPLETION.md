@@ -1,4 +1,9 @@
-# Bay 13 Runtime Completion Report
+# Superseded Robot Combat Runtime Report
+
+> This file is retained as historical evidence only. It is **not** a current
+> completion report. The prior local Godot slice was incorrectly described as a
+> complete first-player product. The current truth is in
+> `docs/product-definition/ROBOT_COMBAT_SYSTEM_REALIGNMENT_20260811.md`.
 
 **Candidate date:** 2026-08-09
 
@@ -6,17 +11,17 @@
 
 **Offering:** Free / No Value local training
 
-## Outcome
+## Historical outcome
 
-Bay 13: The Scrapyard now provides the complete first-player loop: launch,
+The prior isolated Godot branch provided a local proof loop: launch,
 choose one of three starter machines, drive and use its action, fight a local
 training opponent, finish or reset the match, rebuild in the garage, see live
 server totals, reject invalid designs, and save/load the exact accepted
 blueprint into the arena.
 
-The web application exposes the release from the public game floor, the public
-Bay 13 page, and the authenticated app shell. The checked-in Godot Web export
-is served at `/games/bay-13/index.html`.
+That proof did not establish the Robot Combat product. It did not include durable
+player revisions, a real two-player session, browser runtime reachability, hosted
+match operations, or an end-to-end SGW journey.
 
 ## Automated evidence
 
@@ -39,7 +44,7 @@ The Godot suite is available through `npm run robot-combat:verify-runtime`.
 The browser artifact is reproduced through `npm run robot-combat:export-web`.
 The complete web gate is `npm run check`.
 
-## Authority and value boundaries
+## Evidence that remains valid
 
 - Clients submit ordered throttle, steer, and weapon intent only.
 - Blueprint mass, power, limits, identity, and reconstruction are calculated by
@@ -49,7 +54,7 @@ The complete web gate is `npm run check`.
 - Money, price, paid entry, wager, payout, prize, redemption, and Legal Play
   fields are rejected from Free-side blueprints.
 - Hosted matchmaking, private rooms, reconnects, spectators, public rankings,
-  and a production match-server fleet are not represented as available.
+  and a production match-server fleet remain unavailable until separately proven.
 
 ## Explicit deferrals
 

@@ -1,13 +1,13 @@
 # Skill Gaming World
 
 Skill Gaming World is the parent experience for skill-based entertainment. It
-currently includes **Monetaire — Competitive Solitaire** and the playable,
-free **Bay 13: The Scrapyard** robot-combat training slice.
+currently includes **Monetaire — Competitive Solitaire** and the free,
+workshop-first **Robot Combat** game in active development.
 
 This repository is intentionally structured around one account and one site
 with two top-level product selectors:
 
-- **Skill Gaming World** — Monetaire Play and Bay 13 local training; prize
+- **Skill Gaming World** — Monetaire Play and Robot Combat; prize
   competition capability remains under a separate legal and technical hold.
 - **Casino** — an unavailable shell identified internally only as
   `CASINO_WORKING_TITLE`; social-casino execution and real-money casino
@@ -15,8 +15,8 @@ with two top-level product selectors:
 
 ## Current boundary
 
-The executable product is limited to **MONETAIRE_PLAY** plus Bay 13's free,
-no-value local training mode:
+The executable product currently includes **MONETAIRE_PLAY** plus the free,
+no-value Robot Combat foundation:
 
 - deterministic Klondike Solitaire, Draw 3;
 - practice and noncash ranked competition;
@@ -24,9 +24,10 @@ no-value local training mode:
 - sandbox-only package simulation;
 - responsible-play controls, auditability, and public fairness information.
 
-Bay 13 adds a browser-playable Godot vertical slice with three starter robots,
-a training opponent, garage customization, validated blueprint save/load, and
-tested authoritative networking primitives. Hosted PvP is not yet offered.
+Robot Combat now has a versioned build/match authority core, account-owned
+revision and match tables, authenticated build and match APIs, and a workshop
+surface that uses server inspection. The Godot branch remains a local visual
+prototype while the full browser runtime and hosted online match are built.
 
 The repository must not expose paid prize entry, valuable prizes, cash payout,
 redeemable currency, casino deposits, casino wagers, casino withdrawals, or
@@ -67,8 +68,9 @@ Start with:
 - [Legal feature gates](docs/LEGAL_FEATURE_GATES.md)
 - [Currency isolation](docs/CURRENCY_ISOLATION.md)
 - [Monetaire fairness contract](docs/MONETAIRE_FAIRNESS_CONTRACT.md)
-- [Bay 13 runtime requirements](docs/NEXT_RUNTIME_BUILD.md)
-- [Bay 13 Godot runtime](games/robot-combat/godot/README.md)
+- [Robot Combat system realignment](docs/product-definition/ROBOT_COMBAT_SYSTEM_REALIGNMENT_20260811.md)
+- [Robot Combat runtime requirements](docs/NEXT_RUNTIME_BUILD.md)
+- [Robot Combat Godot prototype](games/robot-combat/godot/README.md)
 - [Counsel questions](docs/LEGAL_COUNSEL_QUESTIONS.md)
 - [Launch checklist](docs/LAUNCH_CHECKLIST.md)
 - [Work Mode handoff](WORK_MODE_HANDOFF.md)

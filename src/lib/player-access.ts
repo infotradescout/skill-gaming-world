@@ -6,6 +6,7 @@ import type {
 
 export type DemoProductMode =
   | "MONETAIRE_PLAY"
+  | "ROBOT_COMBAT_FREE"
   | "MONETAIRE_PRIZE"
   | "SOCIAL_CASINO"
   | "REAL_MONEY_CASINO";
@@ -47,7 +48,9 @@ function exclusionBlocksMode(
   }
   if (
     exclusion.scope === "SKILL_GAMING_WORLD" &&
-    (mode === "MONETAIRE_PLAY" || mode === "MONETAIRE_PRIZE")
+    (mode === "MONETAIRE_PLAY" ||
+      mode === "ROBOT_COMBAT_FREE" ||
+      mode === "MONETAIRE_PRIZE")
   ) {
     return true;
   }

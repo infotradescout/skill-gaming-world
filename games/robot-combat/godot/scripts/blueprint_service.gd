@@ -1,69 +1,68 @@
 class_name BlueprintService
 extends RefCounted
 
-const RULES_VERSION := "BAY13_BLUEPRINT_RULES_V1"
-const BLUEPRINT_FILE := "user://bay13-blueprint-v1.json"
+const RULES_VERSION := "ROBOT_COMBAT_WORKSHOP_RULES_V1"
+const BLUEPRINT_FILE := "user://robot-combat-last-valid.json"
 const MAX_MASS_KG := 120.0
 const MAX_PARTS := 64
 const MAX_SIZE := Vector3(3.8, 2.4, 3.8)
 
 const FORBIDDEN_VALUE_FIELDS := [
-	"cash",
-	"entry_fee",
-	"legal_play",
-	"paid",
-	"payout",
-	"price",
-	"prize",
-	"purchase",
-	"redeem",
-	"wager",
+	"cash", "entry_fee", "legal_play", "paid", "payout", "price", "prize",
+	"purchase", "redeem", "wager",
 ]
 
+# The catalog is prototype content, not final product canon. The important
+# property is that every physical consequence comes from the same data record
+# used by the workshop preview and the arena rebuild.
 const CATALOG := {
 	"chassis_compact": {
-		"category": "chassis", "mass": 44.0, "draw": 0.0, "supply": 0.0,
-		"size": [2.3, 0.45, 1.55], "active_weapon": false,
+		"category": "chassis", "label": "Compact frame", "mass": 44.0, "draw": 0.0, "supply": 0.0,
+		"size": [2.3, 0.45, 1.55], "armor": 0.86,
 	},
 	"chassis_armored": {
-		"category": "chassis", "mass": 54.0, "draw": 0.0, "supply": 0.0,
-		"size": [2.55, 0.52, 1.72], "active_weapon": false,
+		"category": "chassis", "label": "Armored frame", "mass": 54.0, "draw": 0.0, "supply": 0.0,
+		"size": [2.55, 0.52, 1.72], "armor": 1.08,
 	},
 	"battery_compact": {
-		"category": "battery", "mass": 10.0, "draw": 0.0, "supply": 45.0,
-		"size": [0.58, 0.25, 0.38], "active_weapon": false,
+		"category": "battery", "label": "Compact battery", "mass": 10.0, "draw": 0.0, "supply": 45.0,
+		"size": [0.58, 0.25, 0.38],
 	},
 	"battery_competition": {
-		"category": "battery", "mass": 14.0, "draw": 0.0, "supply": 90.0,
-		"size": [0.68, 0.28, 0.42], "active_weapon": false,
+		"category": "battery", "label": "Competition battery", "mass": 14.0, "draw": 0.0, "supply": 90.0,
+		"size": [0.68, 0.28, 0.42],
 	},
 	"wheel_drive": {
-		"category": "wheel", "mass": 3.0, "draw": 10.0, "supply": 0.0,
-		"size": [0.42, 0.42, 0.22], "active_weapon": false,
+		"category": "wheel", "label": "Drive wheels", "mass": 3.0, "draw": 10.0, "supply": 0.0,
+		"size": [0.42, 0.42, 0.22], "traction": 1.0,
+	},
+	"wheel_grip": {
+		"category": "wheel", "label": "Wide-grip wheels", "mass": 4.0, "draw": 12.0, "supply": 0.0,
+		"size": [0.48, 0.48, 0.26], "traction": 1.25,
 	},
 	"front_wedge": {
-		"category": "front", "mass": 16.0, "draw": 0.0, "supply": 0.0,
-		"size": [1.6, 0.2, 0.7], "active_weapon": false,
+		"category": "front", "label": "Low wedge", "mass": 16.0, "draw": 0.0, "supply": 0.0,
+		"size": [1.6, 0.2, 0.7], "armor": 1.14,
 	},
 	"front_forks": {
-		"category": "front", "mass": 14.0, "draw": 0.0, "supply": 0.0,
-		"size": [1.45, 0.18, 0.75], "active_weapon": false,
+		"category": "front", "label": "Twin forks", "mass": 14.0, "draw": 0.0, "supply": 0.0,
+		"size": [1.45, 0.18, 0.75], "armor": 0.94,
 	},
 	"front_plow": {
-		"category": "front", "mass": 19.0, "draw": 0.0, "supply": 0.0,
-		"size": [1.75, 0.34, 0.68], "active_weapon": false,
+		"category": "front", "label": "Heavy plow", "mass": 19.0, "draw": 0.0, "supply": 0.0,
+		"size": [1.75, 0.34, 0.68], "armor": 1.34,
 	},
 	"weapon_ram": {
-		"category": "weapon", "mass": 8.0, "draw": 8.0, "supply": 0.0,
-		"size": [0.7, 0.24, 0.52], "active_weapon": true,
+		"category": "weapon", "label": "Ram drive", "mass": 8.0, "draw": 8.0, "supply": 0.0,
+		"size": [0.7, 0.24, 0.52], "active_weapon": true, "damage": 9.0,
 	},
 	"weapon_spinner": {
-		"category": "weapon", "mass": 25.0, "draw": 32.0, "supply": 0.0,
-		"size": [0.3, 1.0, 1.0], "active_weapon": true,
+		"category": "weapon", "label": "Vertical spinner", "mass": 25.0, "draw": 32.0, "supply": 0.0,
+		"size": [0.3, 1.0, 1.0], "active_weapon": true, "damage": 16.0,
 	},
 	"weapon_hammer": {
-		"category": "weapon", "mass": 22.0, "draw": 24.0, "supply": 0.0,
-		"size": [0.28, 1.15, 1.55], "active_weapon": true,
+		"category": "weapon", "label": "Overhead hammer", "mass": 22.0, "draw": 24.0, "supply": 0.0,
+		"size": [0.28, 1.15, 1.55], "active_weapon": true, "damage": 20.0,
 	},
 }
 
@@ -71,64 +70,119 @@ static func default_blueprint(machine: String) -> Dictionary:
 	match machine.to_upper():
 		"RIPPER", "KEELCUTTER":
 			return build_blueprint({
-				"name": "Keelcutter",
-				"chassis": "chassis_compact",
-				"battery": "battery_competition",
-				"front": "front_forks",
-				"weapon": "weapon_spinner",
+				"name": "Keelcutter starter",
+				"chassis": "chassis_compact", "wheels": "wheel_grip", "wheel_count": 4,
+				"battery": "battery_competition", "front": "front_forks", "weapon": "weapon_spinner",
 				"paint": "cutter-teal",
 			})
 		"MAUL", "PILEBREAKER":
 			return build_blueprint({
-				"name": "Pilebreaker",
-				"chassis": "chassis_armored",
-				"battery": "battery_competition",
-				"front": "front_wedge",
-				"weapon": "weapon_hammer",
+				"name": "Pilebreaker starter",
+				"chassis": "chassis_armored", "wheels": "wheel_drive", "wheel_count": 2,
+				"battery": "battery_competition", "front": "front_plow", "weapon": "weapon_hammer",
 				"paint": "forge-orange",
 			})
 		_:
 			return build_blueprint({
-				"name": "Yard Mule",
-				"chassis": "chassis_armored",
-				"battery": "battery_competition",
-				"front": "front_wedge",
-				"weapon": "weapon_ram",
+				"name": "Yard Mule starter",
+				"chassis": "chassis_armored", "wheels": "wheel_drive", "wheel_count": 4,
+				"battery": "battery_competition", "front": "front_wedge", "weapon": "weapon_ram",
 				"paint": "yard-yellow",
 			})
 
 static func build_blueprint(selection: Dictionary) -> Dictionary:
+	var wheel_catalog := str(selection.get("wheels", "wheel_drive"))
+	if not CATALOG.has(wheel_catalog) or str(CATALOG[wheel_catalog].get("category", "")) != "wheel":
+		wheel_catalog = "wheel_drive"
+	var wheel_count := int(selection.get("wheel_count", 4))
+	var front_offset := clampf(float(selection.get("front_offset", 0.0)), -0.36, 0.36)
+	var weapon_offset := clampf(float(selection.get("weapon_offset", 0.0)), -0.36, 0.36)
 	var parts: Array = [
-		_part("root", str(selection.get("chassis", "chassis_compact")), ""),
-		_part("battery", str(selection.get("battery", "battery_competition")), "root"),
-		_part("wheel-fl", "wheel_drive", "root", [-0.9, -0.2, -0.62]),
-		_part("wheel-fr", "wheel_drive", "root", [0.9, -0.2, -0.62]),
-		_part("wheel-rl", "wheel_drive", "root", [-0.9, -0.2, 0.62]),
-		_part("wheel-rr", "wheel_drive", "root", [0.9, -0.2, 0.62]),
-		_part("front", str(selection.get("front", "front_wedge")), "root", [0.0, -0.08, -1.02]),
+		_part("root", str(selection.get("chassis", "chassis_compact")), "", [0.0, 0.0, 0.0]),
+		_part("battery", str(selection.get("battery", "battery_competition")), "root", [0.0, 0.38, 0.12]),
 	]
-	var weapon := str(selection.get("weapon", "weapon_ram"))
-	if not weapon.is_empty():
-		parts.append(_part("weapon", weapon, "root", [0.0, 0.36, -0.55]))
+	var wheel_positions := [
+		["wheel-fl", [-0.9, -0.2, -0.62]],
+		["wheel-fr", [0.9, -0.2, -0.62]],
+		["wheel-rl", [-0.9, -0.2, 0.62]],
+		["wheel-rr", [0.9, -0.2, 0.62]],
+	]
+	if wheel_count <= 2:
+		wheel_positions = wheel_positions.slice(0, 2)
+	for wheel_data in wheel_positions:
+		parts.append(_part(str(wheel_data[0]), wheel_catalog, "root", wheel_data[1]))
+	parts.append(_part("front", str(selection.get("front", "front_wedge")), "root", [0.0, -0.08, -1.02 + front_offset]))
+	parts.append(_part("weapon", str(selection.get("weapon", "weapon_ram")), "root", [0.0, 0.36, -0.55 + weapon_offset]))
 	return {
-		"blueprint_version": 1,
+		"blueprint_version": 2,
 		"rules_version": RULES_VERSION,
-		"name": str(selection.get("name", "Untitled Machine")),
+		"name": str(selection.get("name", "Untitled machine")),
 		"paint": str(selection.get("paint", "yard-yellow")),
 		"parts": parts,
 	}
 
-static func _part(instance_id: String, catalog_id: String, parent: String, position: Array = [0.0, 0.0, 0.0]) -> Dictionary:
+static func web_blueprint_to_godot(web_blueprint: Dictionary) -> Dictionary:
+	# The hosted browser authority owns schema v1. The exported Godot runtime
+	# owns the visual schema v2. This adapter copies only build geometry and
+	# identity; it never copies health, position, damage, or result values.
+	var parts: Array = []
+	for value in web_blueprint.get("parts", []):
+		if not value is Dictionary:
+			continue
+		var source: Dictionary = value
+		var catalog_id := _web_catalog_id(str(source.get("partKey", "")))
+		if catalog_id.is_empty():
+			continue
+		var parent_value: Variant = source.get("parentInstanceId", null)
+		var position_value: Variant = source.get("position", {})
+		var position := [0.0, 0.0, 0.0]
+		if position_value is Dictionary:
+			position = [
+				float(position_value.get("x", 0.0)),
+				float(position_value.get("y", 0.0)),
+				float(position_value.get("z", 0.0)),
+			]
+		var parent_id := "" if parent_value == null else str(parent_value)
+		var instance_id := str(source.get("instanceId", "hosted-part-%d" % parts.size()))
+		if instance_id == "frame":
+			instance_id = "root"
+		# The browser schema names the chassis instance "frame"; the local
+		# renderer's normalized root is the literal "root".
+		if parent_id == "frame":
+			parent_id = "root"
+		parts.append({
+			"instance_id": instance_id,
+			"catalog_id": catalog_id,
+			"parent": parent_id,
+			"position": position,
+			"rotation": [0.0, float(source.get("rotationY", 0.0)), 0.0],
+		})
 	return {
-		"instance_id": instance_id,
-		"catalog_id": catalog_id,
-		"parent": parent,
-		"position": position,
-		"rotation": [0.0, 0.0, 0.0],
+		"blueprint_version": 2,
+		"rules_version": RULES_VERSION,
+		"name": str(web_blueprint.get("name", "Hosted machine")),
+		"paint": str(web_blueprint.get("paint", "yard-yellow")),
+		"parts": parts,
 	}
 
-static func validate_blueprint(blueprint: Dictionary) -> Dictionary:
+static func _web_catalog_id(part_key: String) -> String:
+	match part_key:
+		"chassis.light": return "chassis_compact"
+		"chassis.heavy": return "chassis_armored"
+		"drive.wheel": return "wheel_drive"
+		"drive.track": return "wheel_grip"
+		"power.cell": return "battery_compact"
+		"power.twin": return "battery_competition"
+		"armor.wedge": return "front_wedge"
+		"armor.bumper": return "front_plow"
+		"weapon.ram": return "weapon_ram"
+		"weapon.spinner": return "weapon_spinner"
+		"weapon.hammer": return "weapon_hammer"
+		_: return ""
+
+static func inspect_blueprint(blueprint: Dictionary) -> Dictionary:
 	var reasons: Array[String] = []
+	var warnings: Array[String] = []
 	var parts_value: Variant = blueprint.get("parts", [])
 	if not parts_value is Array:
 		reasons.append("Parts must be a data-only list.")
@@ -137,15 +191,23 @@ static func validate_blueprint(blueprint: Dictionary) -> Dictionary:
 	if parts.size() > MAX_PARTS:
 		reasons.append("The build exceeds the 64-part limit.")
 	if parts.is_empty():
-		reasons.append("The build needs one approved chassis.")
+		reasons.append("The build needs one connected chassis.")
 
 	var mass := 0.0
 	var power_draw := 0.0
 	var power_supply := 0.0
+	var weighted_x := 0.0
+	var weighted_z := 0.0
+	var min_x := INF
+	var max_x := -INF
+	var min_z := INF
+	var max_z := -INF
 	var chassis_count := 0
 	var battery_count := 0
 	var powered_wheels := 0
 	var active_weapons := 0
+	var traction := 0.0
+	var armor := 0.0
 	var instances := {}
 	var occupied := {}
 
@@ -161,31 +223,44 @@ static func validate_blueprint(blueprint: Dictionary) -> Dictionary:
 			continue
 		instances[instance_id] = part
 		if not CATALOG.has(catalog_id):
-			reasons.append("Part '%s' is not in the approved catalog." % catalog_id)
+			reasons.append("Part '%s' is not in the approved catalog." % instance_id)
 			continue
 		var catalog: Dictionary = CATALOG[catalog_id]
-		var category := str(catalog.category)
-		mass += float(catalog.mass)
-		power_draw += float(catalog.draw)
-		power_supply += float(catalog.supply)
-		match category:
-			"chassis": chassis_count += 1
-			"battery": battery_count += 1
-			"wheel": powered_wheels += 1
-			"weapon":
-				if bool(catalog.active_weapon):
-					active_weapons += 1
+		var category := str(catalog.get("category", ""))
+		var part_mass := float(catalog.get("mass", 0.0))
+		mass += part_mass
+		power_draw += float(catalog.get("draw", 0.0))
+		power_supply += float(catalog.get("supply", 0.0))
 		var position := _array_to_vector3(part.get("position", [0.0, 0.0, 0.0]))
-		var size := _array_to_vector3(catalog.size)
-		if abs(position.x) + size.x * 0.5 > MAX_SIZE.x * 0.5 \
-			or abs(position.y) + size.y * 0.5 > MAX_SIZE.y * 0.5 \
-			or abs(position.z) + size.z * 0.5 > MAX_SIZE.z * 0.5:
+		var size := _array_to_vector3(catalog.get("size", [1.0, 1.0, 1.0]))
+		weighted_x += position.x * part_mass
+		weighted_z += position.z * part_mass
+		min_x = minf(min_x, position.x - size.x * 0.5)
+		max_x = maxf(max_x, position.x + size.x * 0.5)
+		min_z = minf(min_z, position.z - size.z * 0.5)
+		max_z = maxf(max_z, position.z + size.z * 0.5)
+		var outside_envelope: bool = absf(position.x) + size.x * 0.5 > MAX_SIZE.x * 0.5 or absf(position.y) + size.y * 0.5 > MAX_SIZE.y * 0.5 or absf(position.z) + size.z * 0.5 > MAX_SIZE.z * 0.5
+		if outside_envelope:
 			reasons.append("Part '%s' sits outside the 3.8 × 3.8 × 2.4 meter build envelope." % instance_id)
 		if category in ["front", "weapon", "wheel"]:
 			var cell := "%0.3f:%0.3f:%0.3f" % [position.x, position.y, position.z]
 			if occupied.has(cell):
 				reasons.append("Solid external parts overlap at one placement point.")
 			occupied[cell] = instance_id
+		match category:
+			"chassis":
+				chassis_count += 1
+				armor += float(catalog.get("armor", 1.0)) * part_mass
+			"battery":
+				battery_count += 1
+			"wheel":
+				powered_wheels += 1
+				traction += float(catalog.get("traction", 1.0))
+			"front":
+				armor += float(catalog.get("armor", 1.0)) * part_mass
+			"weapon":
+				if bool(catalog.get("active_weapon", false)):
+					active_weapons += 1
 
 	if chassis_count != 1:
 		reasons.append("A legal build requires exactly one chassis.")
@@ -193,6 +268,8 @@ static func validate_blueprint(blueprint: Dictionary) -> Dictionary:
 		reasons.append("A legal build needs at least one battery.")
 	if powered_wheels < 2:
 		reasons.append("A legal build needs at least two powered wheels.")
+	if active_weapons < 1:
+		reasons.append("An arena-ready build needs one active weapon; the test bay can still inspect a push-only draft.")
 	if active_weapons > 2:
 		reasons.append("A build may use no more than two active weapons.")
 	if mass > MAX_MASS_KG:
@@ -210,19 +287,61 @@ static func validate_blueprint(blueprint: Dictionary) -> Dictionary:
 	for field in forbidden:
 		reasons.append("Value-bearing field '%s' is forbidden in Free play." % field)
 
+	if mass <= 0.0:
+		min_x = 0.0
+		max_x = 0.0
+		min_z = 0.0
+		max_z = 0.0
+	var balance_x := weighted_x / maxf(mass, 1.0)
+	var balance_z := weighted_z / maxf(mass, 1.0)
+	var footprint := Vector2(max_x - min_x, max_z - min_z)
+	var clearance := clampf(0.34 - absf(balance_x) * 0.16 + (powered_wheels - 2) * 0.025, 0.08, 0.42)
+	var connection_count: int = maxi(0, instances.size() - 1)
+	if absf(balance_x) > 0.3 or absf(balance_z) > 0.3:
+		warnings.append("Center of mass is offset; expect slower recovery after a glancing hit.")
+	if powered_wheels == 2:
+		warnings.append("Two-wheel drive saves mass but gives up grip during a turn or recovery.")
+	if footprint.x > 3.4 or footprint.y > 3.4:
+		warnings.append("The footprint is close to the arena clearance envelope.")
+
+	var weapon_label := "unarmed"
+	for value in parts:
+		if value is Dictionary and CATALOG.has(str(value.get("catalog_id", ""))) and str(CATALOG[str(value.get("catalog_id", ""))].get("category", "")) == "weapon":
+			weapon_label = str(CATALOG[str(value.get("catalog_id", ""))].get("label", "weapon"))
+	var force_path := ""
+	if weapon_label == "Ram drive":
+		force_path = "Front contact → chassis → drive wheels; reward a straight approach."
+	elif weapon_label == "Vertical spinner":
+		force_path = "Spinner bite → weapon mount; recoil exposes a light or offset frame."
+	else:
+		force_path = "Hammer strike → top mount; committed timing leaves a recovery window."
+
 	return {
 		"valid": reasons.is_empty(),
 		"reasons": reasons,
+		"warnings": warnings,
 		"mass_kg": snappedf(mass, 0.1),
 		"power_draw": snappedf(power_draw, 0.1),
 		"power_supply": snappedf(power_supply, 0.1),
 		"part_count": parts.size(),
 		"powered_wheels": powered_wheels,
 		"active_weapons": active_weapons,
+		"balance_x": snappedf(balance_x, 0.01),
+		"balance_z": snappedf(balance_z, 0.01),
+		"footprint": footprint,
+		"clearance": snappedf(clearance, 0.01),
+		"connections": connection_count,
+		"traction": snappedf(traction, 0.01),
+		"armor": snappedf(armor, 0.1),
+		"force_path": force_path,
+		"weapon_label": weapon_label,
 	}
 
+static func validate_blueprint(blueprint: Dictionary) -> Dictionary:
+	return inspect_blueprint(blueprint)
+
 static func server_rebuild(blueprint: Dictionary) -> Dictionary:
-	var validation := validate_blueprint(blueprint)
+	var validation := inspect_blueprint(blueprint)
 	if not validation.valid:
 		return {"accepted": false, "validation": validation}
 	var normalized_parts: Array = []
@@ -235,14 +354,14 @@ static func server_rebuild(blueprint: Dictionary) -> Dictionary:
 			"parent": str(part.get("parent", "")),
 			"position": part.get("position", [0.0, 0.0, 0.0]),
 			"rotation": part.get("rotation", [0.0, 0.0, 0.0]),
-			"server_mass_kg": float(catalog.mass),
-			"server_power_draw": float(catalog.draw),
-			"server_power_supply": float(catalog.supply),
+			"server_mass_kg": float(catalog.get("mass", 0.0)),
+			"server_power_draw": float(catalog.get("draw", 0.0)),
+			"server_power_supply": float(catalog.get("supply", 0.0)),
 		})
 	var rebuilt := {
-		"blueprint_version": 1,
+		"blueprint_version": 2,
 		"rules_version": RULES_VERSION,
-		"name": str(blueprint.get("name", "Untitled Machine")),
+		"name": str(blueprint.get("name", "Untitled machine")),
 		"paint": str(blueprint.get("paint", "yard-yellow")),
 		"parts": normalized_parts,
 		"server_totals": {
@@ -250,6 +369,16 @@ static func server_rebuild(blueprint: Dictionary) -> Dictionary:
 			"power_draw": validation.power_draw,
 			"power_supply": validation.power_supply,
 			"part_count": validation.part_count,
+		},
+		"server_metrics": {
+			"balance_x": validation.balance_x,
+			"balance_z": validation.balance_z,
+			"clearance": validation.clearance,
+			"connections": validation.connections,
+			"traction": validation.traction,
+			"armor": validation.armor,
+			"force_path": validation.force_path,
+			"weapon_label": validation.weapon_label,
 		},
 	}
 	return {
@@ -265,20 +394,29 @@ static func save_blueprint(blueprint: Dictionary) -> Dictionary:
 		return rebuilt
 	var file := FileAccess.open(BLUEPRINT_FILE, FileAccess.WRITE)
 	if file == null:
-		return {"accepted": false, "error": "The blueprint save could not be opened."}
+		return {"accepted": false, "error": "The last-valid revision could not be opened for writing."}
 	file.store_string(JSON.stringify(rebuilt.blueprint))
 	return rebuilt
 
 static func load_blueprint() -> Dictionary:
 	if not FileAccess.file_exists(BLUEPRINT_FILE):
-		return {"accepted": false, "error": "No saved blueprint exists on this device."}
+		return {"accepted": false, "error": "No last-valid revision exists on this device."}
 	var file := FileAccess.open(BLUEPRINT_FILE, FileAccess.READ)
 	if file == null:
-		return {"accepted": false, "error": "The blueprint save could not be read."}
+		return {"accepted": false, "error": "The last-valid revision could not be read."}
 	var parsed: Variant = JSON.parse_string(file.get_as_text())
 	if not parsed is Dictionary:
-		return {"accepted": false, "error": "The saved blueprint is invalid."}
+		return {"accepted": false, "error": "The saved revision is invalid."}
 	return server_rebuild(parsed)
+
+static func _part(instance_id: String, catalog_id: String, parent: String, position: Array) -> Dictionary:
+	return {
+		"instance_id": instance_id,
+		"catalog_id": catalog_id,
+		"parent": parent,
+		"position": position,
+		"rotation": [0.0, 0.0, 0.0],
+	}
 
 static func _connects_to_root(instance_id: String, instances: Dictionary) -> bool:
 	var cursor := instance_id

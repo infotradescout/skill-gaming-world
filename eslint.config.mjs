@@ -14,6 +14,7 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     ".tooling/**",
     "public/games/bay-13/**",
+    "public/games/robot-combat/**",
   ]),
 ]);
 

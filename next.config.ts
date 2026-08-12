@@ -6,10 +6,14 @@ const contentSecurityPolicy = [
   "connect-src 'self'",
   "font-src 'self' data:",
   "form-action 'self'",
-  "frame-ancestors 'none'",
+  // The exported Godot runtime is intentionally embedded by the same-origin
+  // authenticated player route. It remains unavailable to cross-origin frames.
+  "frame-ancestors 'self'",
   "img-src 'self' data: blob:",
   "object-src 'none'",
-  "script-src 'self' 'unsafe-inline'",
+  // Godot's WebAssembly loader needs this narrow CSP capability; regular
+  // JavaScript eval remains disabled.
+  "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'",
   "style-src 'self' 'unsafe-inline'",
   "upgrade-insecure-requests",
 ].join("; ");

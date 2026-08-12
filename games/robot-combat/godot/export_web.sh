@@ -4,7 +4,7 @@ set -euo pipefail
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(cd -- "$script_dir/../../.." && pwd)"
 godot_bin="${GODOT_BIN:-$repo_root/.tooling/godot/Godot_v4.7.1-stable_linux.x86_64}"
-output_dir="$repo_root/public/games/bay-13"
+output_dir="$repo_root/public/games/robot-combat"
 parts_dir="$script_dir/web-export"
 
 if [[ ! -x "$godot_bin" ]]; then
@@ -31,6 +31,6 @@ test -s "$output_dir/index.pck"
 test -s "$output_dir/index.wasm"
 test "$(find "$parts_dir" -maxdepth 1 -type f -name 'index.wasm.gz.part-*' | wc -l)" -gt 0
 
-printf 'BAY13_WEB_EXPORT:PASS\n'
+printf 'ROBOT_COMBAT_WEB_EXPORT:PASS\n'
 find "$output_dir" -maxdepth 1 -type f -printf '%f %s bytes\n' | sort
-printf 'BAY13_WASM_SOURCE_PARTS:%s\n' "$(find "$parts_dir" -maxdepth 1 -type f -name 'index.wasm.gz.part-*' | wc -l)"
+printf 'ROBOT_COMBAT_WASM_SOURCE_PARTS:%s\n' "$(find "$parts_dir" -maxdepth 1 -type f -name 'index.wasm.gz.part-*' | wc -l)"

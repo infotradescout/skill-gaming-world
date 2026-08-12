@@ -1,30 +1,29 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+
 import { FeatureCard, PageHero, Section, StatusPill } from "@/components/page-elements";
 import { getGameTitleByKey } from "@/domain/game-titles";
 
 const title = getGameTitleByKey("SGW_ROBOT_COMBAT");
 
 export const metadata: Metadata = {
-  title: "Bay 13: The Scrapyard",
+  title: "Robot Combat · Skill Gaming World",
   description:
-    "Build an original robot and fight a local training opponent in Skill Gaming World's free Bay 13 arena.",
+    "Build, inspect, test, and eventually fight from your own machine revision inside Skill Gaming World.",
 };
 
 export default function RobotCombatMarketingPage() {
-  if (!title) {
-    return null;
-  }
+  if (!title) return null;
 
   return (
     <>
       <PageHero
-        eyebrow="Skill Gaming World · Free side"
-        title={title.workingTitle}
+        eyebrow="Skill Gaming World · Free game in development"
+        title="Build the machine. Learn what it does."
         actions={
           <>
-            <Link className="button button-primary" href="/games/bay-13/index.html">
-              Play Bay 13
+            <Link className="button button-primary" href="/auth/login">
+              Enter the workshop
             </Link>
             <Link className="button button-secondary" href="/">
               Back to game floor
@@ -34,62 +33,51 @@ export default function RobotCombatMarketingPage() {
       >
         <p>{title.publicSummary}</p>
         <p>
-          Choose a starter machine, fight one local training opponent, rebuild the
-          match, and create a server-validated machine in the garage. Hosted
-          player-versus-player matchmaking is not live yet.
+          This is the game behind the Skill Gaming World surface: the workshop and
+          arena are being built as one product, with every machine revision inspected
+          before it can enter a match.
         </p>
       </PageHero>
 
-      <Section eyebrow="Playable release" title="One complete fight-and-build loop.">
+      <Section eyebrow="The real loop" title="Workshop first. Arena second. Evidence after every fight.">
         <div className="grid-3">
           <FeatureCard
             number="01"
-            title="Enter the Scrapyard"
-            status={<StatusPill tone="live">Playable now</StatusPill>}
+            title="Assemble a personal machine"
+            status={<StatusPill tone="live">Building now</StatusPill>}
           >
-            Fight inside Bay 13&apos;s former ship-transfer platform with Yard Mule,
-            Keelcutter, or Pilebreaker. Keyboard, gamepad, and touch controls are included.
+            Change frames, drives, power, armor, and weapons. The server records a
+            revision instead of treating a fixed starter roster as the game.
           </FeatureCard>
           <FeatureCard
             number="02"
-            title="Free means no value"
-            status={<StatusPill tone="live">No value</StatusPill>}
+            title="Understand the consequences"
+            status={<StatusPill tone="live">Inspection wired</StatusPill>}
           >
-            No paid entry, wager, cash prize, redeemable item, purchased performance
-            advantage, or Legal Play operation exists in Bay 13.
+            Mass, power, balance, clearance, connections, and the force path are
+            visible checks. A rejected machine tells you what to rebuild.
           </FeatureCard>
           <FeatureCard
             number="03"
-            title="Build honestly"
-            status={<StatusPill tone="live">Server rebuilt</StatusPill>}
+            title="Fight from a valid revision"
+            status={<StatusPill tone="live">Browser authority proven</StatusPill>}
           >
-            The garage recalculates mass, power, size, attachments, and the final
-            blueprint hash. Client-declared physics, damage, and results are ignored.
+            Match state, ready gates, commands, damage, terminal outcomes, and
+            rebuild questions are playable in the development browser arena. The
+            match-aware 3D mirror now follows that authority in the same session.
           </FeatureCard>
         </div>
       </Section>
 
-      <Section eyebrow="Starter machines" title="Three ways to learn the floor.">
-        <div className="grid-3">
-          <FeatureCard title="Yard Mule · Rammer">
-            Fast four-wheel pusher with a low wedge. Teaches steering, positioning, and
-            wall control without an active weapon.
-          </FeatureCard>
-          <FeatureCard title="Keelcutter · Ripper">
-            Guarded vertical spinner with front forks. Teaches spin-up timing, recoil,
-            and weapon exposure.
-          </FeatureCard>
-          <FeatureCard title="Pilebreaker · Maul">
-            Overhead hammer robot with a front wedge. Teaches controlled striking,
-            target selection, and recovery after a missed swing.
-          </FeatureCard>
-        </div>
+      <Section eyebrow="Truthful status" title="What is available today">
         <div className="play-availability callout">
-          <StatusPill tone="hold">Online PvP next</StatusPill>
+          <StatusPill tone="hold">In active development</StatusPill>
           <p>
-            The WebSocket authority boundary is implemented and locally verified. Hosted
-            matchmaking, private rooms, reconnect handling, and public ranked play remain
-            unavailable until match servers are deployed and tested.
+            The authenticated workshop, free two-player browser authority arena, and
+            exported 3D runtime prototype are available in development, including a
+            match-aware read-only mirror. Render deployment, production persistence,
+            and live concurrency proof are not claimed yet. There is no wagering,
+            deposit, prize, payout, or purchased performance path.
           </p>
         </div>
       </Section>

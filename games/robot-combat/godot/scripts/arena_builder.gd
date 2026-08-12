@@ -24,7 +24,7 @@ static func build(parent: Node3D) -> Dictionary:
 
 static func _build_environment(parent: Node3D) -> void:
 	var world := WorldEnvironment.new()
-	world.name = "Bay13World"
+	world.name = "RobotCombatWorld"
 	var environment := Environment.new()
 	environment.background_mode = Environment.BG_COLOR
 	environment.background_color = Color("#071018")
@@ -71,7 +71,7 @@ static func _build_combat_floor(parent: Node3D) -> void:
 	center.mesh.radial_segments = 64
 	var center_inner := _cylinder(parent, "BearingCenter", 1.75, 0.03, Vector3(0.0, 0.052, 0.0), DARK_STEEL, false)
 	center_inner.mesh.radial_segments = 64
-	_label(parent, "BAY 13", Vector3(0.0, 0.085, 0.0), Vector3(-90.0, 0.0, 0.0), Color("#d9b765"), 0.012, 64)
+	_label(parent, "ROBOT COMBAT", Vector3(0.0, 0.085, 0.0), Vector3(-90.0, 0.0, 0.0), Color("#d9b765"), 0.012, 64)
 
 	_spawn_ring(parent, Vector3(-5.4, 0.04, 0.0), Color("#e0b547"), "YARD MULE")
 	_spawn_ring(parent, Vector3(5.4, 0.04, 0.0), Color("#53aea4"), "TRAINING")

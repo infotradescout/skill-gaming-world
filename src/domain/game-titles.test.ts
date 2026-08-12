@@ -15,15 +15,15 @@ describe("canonical game title catalog", () => {
     expect(new Set(keys).size).toBe(keys.length);
   });
 
-  it("keeps Bay 13 on the Free side with no-value playable status", () => {
+  it("keeps Robot Combat on the Free side with an honest development status", () => {
     const robotCombat = getGameTitleByKey("SGW_ROBOT_COMBAT");
     expect(robotCombat).toMatchObject({
-      workingTitle: "Bay 13: The Scrapyard",
+      workingTitle: "Robot Combat",
       side: "FREE",
       category: "SKILL",
       valueClass: "NO_VALUE",
       legalOfferingClass: "NOT_APPLICABLE",
-      developmentStatus: "ACTIVE",
+      developmentStatus: "IN_DEVELOPMENT",
       matchPlayAvailable: true,
       routes: {
         marketing: "/robot-combat",
@@ -32,8 +32,8 @@ describe("canonical game title catalog", () => {
     });
   });
 
-  it("does not leave the playable title in the development-only catalog", () => {
-    expect(getFreeDevelopmentTitles().map((entry) => entry.key)).not.toContain(
+  it("keeps the unfinished game visible in the development catalog", () => {
+    expect(getFreeDevelopmentTitles().map((entry) => entry.key)).toContain(
       "SGW_ROBOT_COMBAT",
     );
   });
