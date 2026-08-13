@@ -35,7 +35,7 @@ operations. Its correct classification is **local prototype evidence**.
 | Workshop-first builder | Authenticated browser workshop with durable revisions | Richer graph editing, guided teaching journeys, accessibility hardening |
 | Observable construction consequences | Canonical server inspection shared by builds and match authority | More physical consequence types and recorded private-test evidence |
 | Three teaching archetypes | Implemented as editable browser starters | Guided teaching journeys and conversion into personal revisions |
-| Private test bay | Implemented locally | Full test state, restart/recovery truth, recorded test evidence |
+| Private test bay | Browser private-test authority with drive, contact, weapon, reset, and consequence report | Hosted test operations, richer physics/consequence types, and production evidence |
 | Online 1v1 | Demo-mode two-browser lifecycle with join, ready, commands, terminal state, and disconnect outcome | Production database/live concurrency/reconnect proof and match allocation |
 | Localized damage and explanation | Server component damage, event snapshots, terminal report, and rebuild questions | Structural effects, causal timeline UI, and richer weapon/contact rules |
 | Build history | Account-owned revisions, hashes, rollback-ready records, and concurrent-write protection in configured mode | Production migration/deployment proof and richer history UX |
@@ -69,7 +69,7 @@ The completion bar is an observable end-to-end journey:
 
 `SGW entry → authenticated player → workshop → valid revision → private test → opponent wait → both ready → authoritative fight → outcome → damage report → rebuild`
 
-The browser authority journey and match-aware 3D mirror are now reachable and
-verified in demo mode. The product is still not complete: the hosted Render path,
-production persistence and concurrency proof, and browser private-test state remain
-open.
+The browser authority journey, private test bay, and match-aware 3D mirror are
+now reachable and verified in demo mode. The product is still not complete: the
+hosted Render path, production persistence and concurrency proof, richer
+physical consequence rules, and operations evidence remain open.

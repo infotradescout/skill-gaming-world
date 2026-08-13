@@ -48,6 +48,8 @@ describe("held-operation route inventory", () => {
         "robot-combat/matches",
         "robot-combat/matches/[matchId]/commands",
         "robot-combat/matches/[matchId]/join",
+        "robot-combat/test-bay",
+        "robot-combat/test-bay/[sessionId]/commands",
       ].toSorted(),
     );
 

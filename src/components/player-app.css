@@ -519,6 +519,163 @@
   background: #05090b;
 }
 
+.robot-combat-test-bay {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(300px, 0.65fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.robot-test-stage {
+  min-width: 0;
+  padding: clamp(1rem, 3vw, 1.5rem);
+  background:
+    radial-gradient(circle at 50% 45%, rgba(70, 145, 111, 0.18), transparent 38%),
+    linear-gradient(145deg, rgba(11, 28, 24, 0.98), rgba(4, 10, 12, 0.98));
+}
+
+.robot-test-lane {
+  position: relative;
+  min-height: 360px;
+  margin-top: 1rem;
+  overflow: hidden;
+  border: 1px solid rgba(102, 231, 189, 0.22);
+  border-radius: 0.85rem;
+  background: linear-gradient(90deg, rgba(16, 42, 35, 0.95), rgba(9, 24, 27, 0.95));
+}
+
+.robot-test-grid-lines {
+  position: absolute;
+  inset: 0;
+  opacity: 0.35;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+.robot-test-start-label,
+.robot-test-contact-gate,
+.robot-test-target {
+  position: absolute;
+  top: 1rem;
+  color: var(--muted);
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+}
+
+.robot-test-start-label { left: 7%; }
+.robot-test-contact-gate {
+  left: 55%;
+  color: var(--brass-300);
+}
+.robot-test-target {
+  right: 6%;
+  color: #ef8b68;
+}
+
+.robot-test-contact-gate::after {
+  position: absolute;
+  top: 1.7rem;
+  left: 50%;
+  width: 1px;
+  height: 270px;
+  border-left: 1px dashed rgba(238, 194, 78, 0.72);
+  content: "";
+}
+
+.robot-test-robot,
+.robot-test-target-marker {
+  position: absolute;
+  top: 52%;
+  z-index: 1;
+  display: grid;
+  justify-items: center;
+  gap: 0.35rem;
+  transition: left 180ms linear;
+}
+
+.robot-test-robot { transform: translate(-50%, -50%); }
+.robot-test-target-marker { right: 8%; transform: translateY(-50%); }
+
+.robot-test-robot .arena-robot-chassis,
+.robot-test-target-marker .arena-robot-chassis {
+  display: block;
+  position: relative;
+  width: 3.8rem;
+  height: 2.5rem;
+  border: 2px solid #66e7bd;
+  border-radius: 0.55rem;
+  background: linear-gradient(135deg, #1d6e5a, #102d33);
+  box-shadow: 0 0 1.3rem rgba(102, 231, 189, 0.2);
+}
+
+.robot-test-target-marker .arena-robot-chassis {
+  border-color: #ef8b68;
+  background: linear-gradient(135deg, #7b4333, #2d2224);
+  box-shadow: 0 0 1.3rem rgba(239, 139, 104, 0.16);
+}
+
+.robot-test-robot .arena-robot-label,
+.robot-test-target-marker .arena-robot-label {
+  position: static;
+  white-space: nowrap;
+}
+
+.robot-combat-test-sidebar {
+  display: grid;
+  align-content: start;
+  gap: 1rem;
+}
+
+.robot-test-controls,
+.robot-test-report,
+.robot-test-rebuild {
+  padding: 1.05rem;
+}
+
+.robot-test-control-grid {
+  display: grid;
+  gap: 0.55rem;
+  margin-top: 0.8rem;
+}
+
+.robot-test-report h3 {
+  margin: 0.3rem 0 0.7rem;
+  color: var(--paper-50);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.35rem;
+  font-weight: 500;
+}
+
+.robot-test-consequence-list {
+  display: grid;
+  gap: 0.65rem;
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.robot-test-consequence-list li {
+  display: grid;
+  gap: 0.2rem;
+  border-top: 1px solid var(--line);
+  padding-top: 0.65rem;
+  color: var(--muted);
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+
+.robot-test-consequence-list strong { color: var(--paper-50); }
+.robot-test-consequence-list small { color: var(--brass-300); }
+
+.robot-test-rebuild {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.robot-test-rebuild .button { margin-top: 0.25rem; }
+
 .app-stat-grid {
   margin-top: 1rem;
 }
@@ -1616,7 +1773,8 @@ kbd {
 @media (max-width: 900px) {
   .dashboard-grid,
   .lobby-grid,
-  .robot-combat-arena {
+  .robot-combat-arena,
+  .robot-combat-test-bay {
     grid-template-columns: 1fr;
   }
 }
@@ -1662,6 +1820,10 @@ kbd {
 
   .arena-stage {
     min-height: 330px;
+  }
+
+  .robot-test-lane {
+    min-height: 300px;
   }
 
   .arena-stage-header {

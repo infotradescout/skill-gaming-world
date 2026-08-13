@@ -224,6 +224,31 @@ export function RobotCombatWorkshop({ playerId, catalog, starterBlueprints }: Wo
     }
   }
 
+  async function createTestBay() {
+    if (!savedBuild) {
+      setNotice("Save an inspection-valid revision before entering the test bay.");
+      return;
+    }
+    setBusy(true);
+    try {
+      const response = await fetch("/api/robot-combat/test-bay", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ buildId: savedBuild.id, revision: savedBuild.latestRevision }),
+      });
+      const payload = (await response.json()) as { test?: RobotMatchState; error?: { message?: string } };
+      if (!response.ok || !payload.test) {
+        setNotice(payload.error?.message ?? "The private test bay could not be opened.");
+        return;
+      }
+      window.location.assign(`/app/robot-combat/test-bay/${payload.test.matchId}`);
+    } catch {
+      setNotice("The server could not be reached. No private test was opened.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function joinMatch() {
     if (!savedBuild || !joinMatchId.trim()) {
       setNotice("Save a valid revision and enter a match id before joining.");
@@ -355,6 +380,13 @@ export function RobotCombatWorkshop({ playerId, catalog, starterBlueprints }: Wo
           <p className="eyebrow">3D runtime prototype</p>
           <p className="muted small">The exported Godot workshop and arena is real visual/runtime work. Open it from a live match to mirror the hosted authority snapshot; the standalone route remains a local prototype.</p>
           <Link className="button button-secondary" href="/app/robot-combat/runtime">Open 3D prototype</Link>
+        </section>
+        <section className="surface-soft">
+          <p className="eyebrow">Private test bay</p>
+          <p className="muted small">Try the saved machine alone first. Drive to the contact gate, record a consequence, use the weapon, reset, and return to rebuild. This is free practice with no opponent, value, or ranking.</p>
+          <button className="button button-secondary" type="button" disabled={!savedBuild || busy} onClick={() => void createTestBay()}>
+            Enter private test bay
+          </button>
         </section>
         <section className="surface-soft">
           <p className="eyebrow">Arena gate</p>
