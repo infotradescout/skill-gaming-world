@@ -78,7 +78,7 @@ export function RobotCombatWorkshop({ playerId, catalog, starterBlueprints }: Wo
         setNotice("Your latest saved build is loaded.");
       })
       .catch(() => {
-        if (!cancelled) setNotice("Choose a build style to get started.");
+        if (!cancelled) setNotice("Start with a style to get started.");
       });
     return () => {
       cancelled = true;
@@ -333,11 +333,10 @@ export function RobotCombatWorkshop({ playerId, catalog, starterBlueprints }: Wo
           <span className="robot-blueprint-label">BUILD / TEST / FIGHT</span>
         </div>
         <div className="robot-workshop-intro-copy">
-          <p className="eyebrow">Your workshop</p>
-          <h2>Build a machine that teaches you back.</h2>
+          <p className="eyebrow">Robot Combat · Garage</p>
+          <h2>Build your contender.</h2>
           <p>
-            Start with a fighting style, change the parts, then test what your choices
-            do before you face another builder.
+            Pick a style, tune your machine, take it through a private test, then open the arena.
           </p>
           <div className="robot-step-strip" aria-label="Robot Combat flow">
             <span><b>1</b> Build</span>
@@ -348,10 +347,10 @@ export function RobotCombatWorkshop({ playerId, catalog, starterBlueprints }: Wo
       </section>
 
       <div className="robot-workshop-layout">
-        <section className="dashboard-primary surface robot-workshop-builder">
+        <section className="surface robot-workshop-builder">
           <div className="app-section-header">
             <div>
-              <p className="eyebrow">Machine build</p>
+              <p className="eyebrow">Your machine</p>
               <h2>{blueprint.name}</h2>
             </div>
             <span className={inspection?.valid ? "pill pill-live" : "pill pill-hold"}>
@@ -400,8 +399,8 @@ export function RobotCombatWorkshop({ playerId, catalog, starterBlueprints }: Wo
 
         <aside className="robot-workshop-sidebar">
           <section className="surface-soft">
-            <p className="eyebrow">Choose a build style</p>
-            <p className="muted small">Each starting style teaches a different way to move, control space, or commit to a hit.</p>
+            <p className="eyebrow">Start with a style</p>
+            <p className="muted small">Start fast, control the space, or build for impact.</p>
             {archetypes.map((archetype) => (
               <button className="workshop-archetype" type="button" key={archetype.key} onClick={() => chooseArchetype(archetype.key)}>
                 <strong>{archetype.title}</strong>
@@ -411,7 +410,7 @@ export function RobotCombatWorkshop({ playerId, catalog, starterBlueprints }: Wo
           </section>
 
           <section className="surface-soft">
-            <p className="eyebrow">Build readout</p>
+            <p className="eyebrow">What this build does</p>
             {inspection ? (
               <div className="data-list">
                 <div className="data-row"><span>Weight</span><strong>{inspection.metrics.massKg} / {inspection.metrics.maxMassKg} kg</strong></div>
@@ -421,24 +420,24 @@ export function RobotCombatWorkshop({ playerId, catalog, starterBlueprints }: Wo
                 {inspection.errors.length > 0 ? <div className="callout"><p>{inspection.errors[0]?.message}</p></div> : null}
               </div>
             ) : (
-              <p className="muted">Save your build to see its weight, power, balance, and clearance.</p>
+              <p className="muted">Save the build to see how its choices change the machine.</p>
             )}
           </section>
 
           <section className="surface-soft robot-next-step">
-            <p className="eyebrow">Test your machine</p>
-            <h3>Learn what changes before you fight.</h3>
-            <p className="muted small">Take a saved machine into a private test, drive it to the contact gate, use the weapon, and rebuild from what you learn.</p>
+            <p className="eyebrow">Private test</p>
+            <h3>Learn before you fight.</h3>
+            <p className="muted small">Take a saved machine into a private test, drive it, use the weapon, and rebuild from what you learn.</p>
             <button className="button button-secondary" type="button" disabled={!savedBuild || busy} onClick={() => void createTestBay()}>
               Open private test
             </button>
           </section>
 
           <section className="surface-soft robot-next-step">
-            <p className="eyebrow">Fight another builder</p>
-            <p className="muted small">When your build is ready, open a free match or join one with a match code.</p>
+            <p className="eyebrow">Open the arena</p>
+            <p className="muted small">When your build is ready, open a free match or join another builder.</p>
             <button className="button button-primary" type="button" disabled={!savedBuild || busy} onClick={() => void createMatch()}>
-              Create a free match
+              Open a free match
             </button>
 
             {match ? (
@@ -466,7 +465,7 @@ export function RobotCombatWorkshop({ playerId, catalog, starterBlueprints }: Wo
                 ) : null}
               </div>
             ) : (
-              <p className="muted small">Your next match will appear here after you save a build.</p>
+              <p className="muted small">Your next match appears here after you save a build.</p>
             )}
 
             <label className="small" htmlFor="robot-match-id">Join with a match code</label>

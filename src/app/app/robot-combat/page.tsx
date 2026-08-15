@@ -1,6 +1,6 @@
-import { redirect } from "next/navigation";
+import Link from "next/link";
 import { cookies } from "next/headers";
-import { AppPageHeader } from "@/components/app-shell";
+import { redirect } from "next/navigation";
 import { RobotCombatWorkshop } from "@/components/robot-combat-workshop";
 import {
   createStarterRobotBlueprint,
@@ -18,13 +18,11 @@ export default async function RobotCombatDevelopmentPage() {
   if (!title) redirect("/app");
 
   return (
-    <>
-      <AppPageHeader
-        eyebrow="Robot Combat · build / test / fight"
-        title="Build a machine that teaches you back."
-      >
-        <p>Choose a fighting style, tune the parts, test what changes, and take a ready machine into a free match.</p>
-      </AppPageHeader>
+    <div className="game-room robot-room">
+      <div className="room-topline">
+        <Link href="/app">← Lobby</Link>
+        <span>ROBOT COMBAT · WORKSHOP 01</span>
+      </div>
       <RobotCombatWorkshop
         playerId={user.id}
         catalog={getRobotPartCatalog()}
@@ -34,6 +32,6 @@ export default async function RobotCombatDevelopmentPage() {
           STRIKER: createStarterRobotBlueprint("STRIKER"),
         }}
       />
-    </>
+    </div>
   );
 }

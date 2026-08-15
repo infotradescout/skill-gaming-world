@@ -9,7 +9,7 @@ export function BrandMark({ compact = false }: { compact?: boolean }) {
       {!compact && (
         <span className="brand-type">
           <strong>Skill Gaming World</strong>
-          <small>Measured play. Transparent rules.</small>
+          <small>Pick a game. Make the next move.</small>
         </span>
       )}
     </Link>
