@@ -3,7 +3,7 @@ import Link from "next/link";
 import { CardStudy } from "@/components/card-art";
 
 export const metadata: Metadata = {
-  title: "Monetaire · Skill Gaming World",
+  title: "Monetaire",
   description: "Draw 3 solitaire in Skill Gaming World.",
 };
 
