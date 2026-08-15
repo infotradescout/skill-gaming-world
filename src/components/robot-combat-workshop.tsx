@@ -80,7 +80,244 @@ export function RobotCombatWorkshop({ playerId, catalog, starterBlueprints }: Wo
       .catch(() => {
         if (!cancelled) setNotice("Choose a build style to get started.");
       });
-    return (
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const definitions = useMemo(
+    () => new Map(catalog.map((part) => [part.key, part])),
+    [catalog],
+  );
+
+  const mySlot = match
+    ? (Object.entries(match.players).find(([, player]) => player?.playerId === playerId)?.[0] as "A" | "B" | undefined)
+    : undefined;
+  const myPlayer = mySlot ? match?.players[mySlot] : undefined;
+  const opponentSlot = mySlot === "A" ? "B" : mySlot === "B" ? "A" : undefined;
+  
+  useEffect(() => {
+    if (!match?.matchId) return;
+    const matchId = match.matchId;
+    const poll = window.setInterval(() => {
+      void fetch(`/api/robot-combat/matches/${matchId}`, { cache: "no-store" })
+        .then(async (response) => (response.ok ? (await response.json()) as { match: RobotMatchState } : undefined))
+        .then((payload) => {
+          if (payload?.match) setMatch(payload.match);
+        })
+        .catch(() => undefined);
+    }, 1500);
+    return () => window.clearInterval(poll);
+  }, [match?.matchId]);
+
+  function chooseArchetype(archetype: RobotStarterArchetype) {
+    draftTouched.current = true;
+    setBlueprint(cloneBlueprint(starterBlueprints[archetype]));
+    setInspection(undefined);
+    setNotice("Build style loaded. Change the parts, then save when you are ready.");
+  }
+
+  function replacePart(instanceId: string, partKey: string) {
+    draftTouched.current = true;
+    setBlueprint((current) => ({
+      ...current,
+      parts: current.parts.map((part) =>
+        part.instanceId === instanceId ? { ...part, partKey } : part,
+      ),
+    }));
+    setInspection(undefined);
+    setNotice("Your changes are ready to save and test.");
+  }
+
+  function removePart(instanceId: string) {
+    draftTouched.current = true;
+    const removed = new Set([instanceId]);
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (const part of blueprint.parts) {
+        if (part.parentInstanceId && removed.has(part.parentInstanceId) && !removed.has(part.instanceId)) {
+          removed.add(part.instanceId);
+          changed = true;
+        }
+      }
+    }
+    setBlueprint((current) => ({
+      ...current,
+      parts: current.parts.filter((part) => !removed.has(part.instanceId)),
+    }));
+    setInspection(undefined);
+    setNotice("Part removed. Reconnect the build before saving.");
+  }
+
+  function addPart(category: RobotPartCategory) {
+    const frame = blueprint.parts.find((part) => definitions.get(part.partKey)?.category === "CHASSIS");
+    const frameDefinition = frame ? definitions.get(frame.partKey) : undefined;
+    const occupied = new Set(
+      blueprint.parts
+        .filter((part) => part.parentInstanceId === frame?.instanceId)
+        .map((part) => part.socket),
+    );
+    const socket = frameDefinition?.sockets.find(
+      (candidate) => candidate.accepts.includes(category) && !occupied.has(candidate.key),
+    );
+    const definition = catalog.find((part) => part.category === category);
+    if (!frame || !socket || !definition) {
+      setNotice("That slot is already full. Remove a part or choose another build style.");
+      return;
+    }
+    draftTouched.current = true;
+    const suffix = `${Date.now()}-${blueprint.parts.length}`;
+    setBlueprint((current) => ({
+      ...current,
+      parts: [
+        ...current.parts,
+        {
+          instanceId: `custom-${suffix}`,
+          partKey: definition.key,
+          parentInstanceId: frame.instanceId,
+          socket: socket.key,
+          position: { x: 0, y: socket.key.startsWith("top") ? 0.82 : 0.3, z: socket.key.includes("front") ? -0.95 : 0 },
+          rotationY: 0,
+        },
+      ],
+    }));
+    setInspection(undefined);
+    setNotice("Draft changed — save it again to run server inspection.");
+  }
+
+  async function saveRevision() {
+    draftTouched.current = true;
+    setBusy(true);
+    setNotice("Checking your build…");
+    try {
+      const response = await fetch("/api/robot-combat/builds", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ buildKey: "workshop-machine", blueprint }),
+      });
+      const payload = (await response.json()) as { build?: SavedBuild; error?: { message?: string } };
+      if (!response.ok || !payload.build) {
+        setNotice(payload.error?.message ?? "The server rejected this revision.");
+        return;
+      }
+      const latest = payload.build.revisions.at(-1);
+      setSavedBuild(payload.build);
+      if (latest) setInspection(latest.inspection);
+      setNotice("Build saved. Your machine is ready to test.");
+    } catch {
+      setNotice("We could not save the build. Your draft is still here.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function createMatch() {
+    if (!savedBuild) {
+      setNotice("Save the build before opening a match.");
+      return;
+    }
+    setBusy(true);
+    try {
+      const response = await fetch("/api/robot-combat/matches", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ buildId: savedBuild.id, revision: savedBuild.latestRevision }),
+      });
+      const payload = (await response.json()) as { match?: RobotMatchState; error?: { message?: string } };
+      if (!response.ok || !payload.match) {
+        setNotice(payload.error?.message ?? "The match could not be opened.");
+        return;
+      }
+      setMatch(payload.match);
+      setNotice("Match opened. Share the code with another builder.");
+    } catch {
+      setNotice("The server could not be reached. No match was opened.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function createTestBay() {
+    if (!savedBuild) {
+      setNotice("Save the build before opening a private test.");
+      return;
+    }
+    setBusy(true);
+    try {
+      const response = await fetch("/api/robot-combat/test-bay", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ buildId: savedBuild.id, revision: savedBuild.latestRevision }),
+      });
+      const payload = (await response.json()) as { test?: RobotMatchState; error?: { message?: string } };
+      if (!response.ok || !payload.test) {
+        setNotice(payload.error?.message ?? "The private test bay could not be opened.");
+        return;
+      }
+      window.location.assign(`/app/robot-combat/test-bay/${payload.test.matchId}`);
+    } catch {
+      setNotice("We could not open the private test. No state was changed.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function joinMatch() {
+    if (!savedBuild || !joinMatchId.trim()) {
+      setNotice("Save the build and enter a match code before joining.");
+      return;
+    }
+    setBusy(true);
+    try {
+      const response = await fetch(`/api/robot-combat/matches/${joinMatchId.trim()}/join`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ buildId: savedBuild.id, revision: savedBuild.latestRevision }),
+      });
+      const payload = (await response.json()) as { match?: RobotMatchState; error?: { message?: string } };
+      if (!response.ok || !payload.match) {
+        setNotice(payload.error?.message ?? "The match could not be joined.");
+        return;
+      }
+      setMatch(payload.match);
+      setNotice("Match joined. Both builders need to ready their machines.");
+    } catch {
+      setNotice("We could not join that match. No state was changed.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function sendMatchCommand(command: RobotMatchCommand) {
+    if (!match) return;
+    setBusy(true);
+    const actionId = `ui-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+    try {
+      const response = await fetch(`/api/robot-combat/matches/${match.matchId}/commands`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ actionId, command }),
+      });
+      const payload = (await response.json()) as {
+        match?: RobotMatchState;
+        event?: { message?: string };
+        rejection?: { message?: string };
+      };
+      if (payload.match) setMatch(payload.match);
+      setNotice(
+        response.ok
+          ? payload.event?.message ?? "Move accepted."
+          : payload.rejection?.message ?? "That move was not accepted.",
+      );
+    } catch {
+      setNotice("We could not reach the match. No state was changed.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
     <div className="robot-combat-workshop">
       <section className="robot-workshop-intro surface">
         <div className="robot-workshop-visual" aria-hidden="true">
