@@ -1,86 +1,96 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { FeatureCard, PageHero, Section, StatusPill } from "@/components/page-elements";
-import { getGameTitleByKey } from "@/domain/game-titles";
-
-const title = getGameTitleByKey("SGW_ROBOT_COMBAT");
-
 export const metadata: Metadata = {
   title: "Robot Combat · Skill Gaming World",
-  description:
-    "Build, inspect, test, and eventually fight from your own machine revision inside Skill Gaming World.",
+  description: "Build, tune, test, and fight from your own machine.",
 };
 
 export default function RobotCombatMarketingPage() {
-  if (!title) return null;
-
   return (
-    <>
-      <PageHero
-        eyebrow="Skill Gaming World · Free game in development"
-        title="Build the machine. Learn what it does."
-        actions={
-          <>
-            <Link className="button button-primary" href="/auth/login">
+    <div className="public-game-page public-robot-page">
+      <section className="public-game-hero shell">
+        <div className="public-game-copy">
+          <p className="public-kicker">Robot Combat / Workshop game</p>
+          <h1>
+            Build a machine.
+            <br />
+            <em>Put it to the test.</em>
+          </h1>
+          <p className="public-game-lead">
+            Start with a frame, make a few strong choices, and see what your
+            machine becomes when the wheels hit the arena.
+          </p>
+          <div className="public-action-row">
+            <Link className="public-primary-button" href="/auth/register">
               Enter the workshop
             </Link>
-            <Link className="button button-secondary" href="/">
-              Back to game floor
+            <Link className="public-text-link" href="/#games">
+              Back to the game floor <span>↗</span>
             </Link>
-          </>
-        }
-      >
-        <p>{title.publicSummary}</p>
-        <p>
-          This is the game behind the Skill Gaming World surface: the workshop and
-          arena are being built as one product, with every machine revision inspected
-          before it can enter a match.
-        </p>
-      </PageHero>
-
-      <Section eyebrow="The real loop" title="Workshop first. Arena second. Evidence after every fight.">
-        <div className="grid-3">
-          <FeatureCard
-            number="01"
-            title="Assemble a personal machine"
-            status={<StatusPill tone="live">Building now</StatusPill>}
-          >
-            Change frames, drives, power, armor, and weapons. The server records a
-            revision instead of treating a fixed starter roster as the game.
-          </FeatureCard>
-          <FeatureCard
-            number="02"
-            title="Understand the consequences"
-            status={<StatusPill tone="live">Inspection wired</StatusPill>}
-          >
-            Mass, power, balance, clearance, connections, and the force path are
-            visible checks. A rejected machine tells you what to rebuild.
-          </FeatureCard>
-          <FeatureCard
-            number="03"
-            title="Fight from a valid revision"
-            status={<StatusPill tone="live">Browser authority proven</StatusPill>}
-          >
-            Match state, ready gates, commands, damage, terminal outcomes, and
-            rebuild questions are playable in the development browser arena. The
-            match-aware 3D mirror now follows that authority in the same session.
-          </FeatureCard>
-        </div>
-      </Section>
-
-      <Section eyebrow="Truthful status" title="What is available today">
-        <div className="play-availability callout">
-          <StatusPill tone="hold">In active development</StatusPill>
-          <p>
-            The authenticated workshop, free two-player browser authority arena, and
-            exported 3D runtime prototype are available in development, including a
-            match-aware read-only mirror. Render deployment, production persistence,
-            and live concurrency proof are not claimed yet. There is no wagering,
-            deposit, prize, payout, or purchased performance path.
+          </div>
+          <p className="public-small-note">
+            Free arena play. No paid parts, wagering, or bought performance.
           </p>
         </div>
-      </Section>
-    </>
+
+        <div className="public-garage-stage" aria-label="Robot Combat workshop preview">
+          <div className="public-garage-topline">
+            <span>BAY 13 / OPEN</span>
+            <span>BUILD → TEST → ARENA</span>
+          </div>
+          <div className="public-garage-floor">
+            <div className="public-garage-grid" />
+            <div className="public-garage-robot">
+              <div className="public-garage-head"><span /></div>
+              <div className="public-garage-body"><i /><i /><i /></div>
+              <div className="public-garage-wheel public-garage-wheel-one" />
+              <div className="public-garage-wheel public-garage-wheel-two" />
+              <div className="public-garage-weapon" />
+            </div>
+            <span className="public-garage-label public-garage-label-one">FRAME</span>
+            <span className="public-garage-label public-garage-label-two">POWER</span>
+            <span className="public-garage-label public-garage-label-three">IMPACT</span>
+          </div>
+          <div className="public-garage-caption">
+            <span>YOUR MACHINE / REV 01</span>
+            <strong>READY TO BUILD</strong>
+          </div>
+        </div>
+      </section>
+
+      <section className="public-build-loop shell">
+        <div className="public-section-intro">
+          <div>
+            <p className="public-kicker">The garage loop</p>
+            <h2>Every part changes the conversation.</h2>
+          </div>
+          <p>
+            The workshop makes the tradeoffs visible before you take a machine
+            into a test or free match.
+          </p>
+        </div>
+        <div className="public-build-steps">
+          <div><span>01</span><b>Assemble</b><p>Pick a frame, drive, power cell, armor, and weapon.</p></div>
+          <div><span>02</span><b>Test</b><p>See how balance, clearance, and force change together.</p></div>
+          <div><span>03</span><b>Fight</b><p>Take a valid build into the free arena and make the next call.</p></div>
+        </div>
+      </section>
+
+      <section className="public-robot-callout shell">
+        <div>
+          <p className="public-kicker">The point of the game</p>
+          <h2>Make a machine you can explain.</h2>
+        </div>
+        <p>
+          Robot Combat is about the line between a clever build and a lucky
+          button press. You can inspect your choices, save a revision, and
+          learn from what happens next.
+        </p>
+        <Link className="public-outline-button" href="/auth/register">
+          Start building <span>↗</span>
+        </Link>
+      </section>
+    </div>
   );
 }

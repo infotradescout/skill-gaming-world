@@ -1,54 +1,62 @@
 "use client";
 
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { BrandMark } from "./brand";
 
 const publicLinks = [
-  { href: "/", label: "Lobby" },
+  { href: "/", label: "Game floor" },
   { href: "/monetaire", label: "Monetaire" },
-  { href: "/casino", label: "Casino" },
-  { href: "/monetaire/competitions", label: "Challenges" },
-  { href: "/fairness", label: "Fairness" },
+  { href: "/robot-combat", label: "Robot Combat" },
+  { href: "/fairness", label: "Fair play" },
 ];
+
+function linkIsActive(pathname: string, href: string) {
+  if (href === "/") return pathname === "/";
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
 
 export function SiteHeader() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
   return (
-    <header className="site-header">
+    <header className="public-header">
       <a className="skip-link" href="#main-content">
         Skip to content
       </a>
-      <div className="site-header-inner shell">
+      <div className="public-header-inner shell">
         <BrandMark />
-        <nav className={open ? "site-nav site-nav-open" : "site-nav"} aria-label="Primary">
+        <nav
+          id="public-navigation"
+          className={open ? "public-nav public-nav-open" : "public-nav"}
+          aria-label="Primary"
+        >
           {publicLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}
-              className={pathname === link.href ? "nav-active" : ""}
+              className={linkIsActive(pathname, link.href) ? "public-nav-active" : ""}
               onClick={() => setOpen(false)}
             >
               {link.label}
             </Link>
           ))}
         </nav>
-        <div className="site-header-actions">
-          <Link className="product-switch" href="/app">
-            <span>Player hub</span>
-            <small>Open dashboard</small>
-          </Link>
-          <Link className="button button-secondary header-login" href="/auth/login">
+        <div className="public-header-actions">
+          <Link className="public-login-link" href="/auth/login">
             Log in
           </Link>
+          <Link className="public-join-button" href="/auth/register">
+            Join free
+          </Link>
           <button
-            className="menu-button"
+            className="public-menu-button"
             type="button"
             aria-expanded={open}
-            aria-controls="primary-navigation"
+            aria-controls="public-navigation"
             aria-label={open ? "Close menu" : "Open menu"}
             onClick={() => setOpen((value) => !value)}
           >
@@ -63,50 +71,45 @@ export function SiteHeader() {
 
 export function SiteFooter() {
   return (
-    <footer className="site-footer">
-      <div className="shell footer-grid">
-        <div className="footer-brand">
+    <footer className="public-footer">
+      <div className="public-footer-grid shell">
+        <div className="public-footer-brand">
           <BrandMark />
           <p>
-            Competitive play built around disclosed rules, verifiable game state,
-            and player-first controls.
+            Games with clear rules, visible choices, and room to get better.
           </p>
         </div>
-        <div>
-          <strong>Monetaire</strong>
-          <Link href="/monetaire/play">Play</Link>
-          <Link href="/monetaire/competitions">Competitions</Link>
-          <Link href="/fairness">Fairness</Link>
+        <div className="public-footer-column">
+          <strong>Games</strong>
+          <Link href="/monetaire">Monetaire</Link>
+          <Link href="/robot-combat">Robot Combat</Link>
+          <Link href="/fairness">Fair play</Link>
         </div>
-        <div>
-          <strong>Player</strong>
-          <Link href="/responsible-play">Responsible play</Link>
+        <div className="public-footer-column">
+          <strong>Play</strong>
+          <Link href="/monetaire/play">How to play Monetaire</Link>
+          <Link href="/monetaire/how-it-works">How the table works</Link>
+          <Link href="/responsible-play">Play controls</Link>
+        </div>
+        <div className="public-footer-column">
+          <strong>House rules</strong>
           <Link href="/legal/play-coins">Play Coin terms</Link>
-          <Link href="/account/settings">Account controls</Link>
-        </div>
-        <div>
-          <strong>Legal</strong>
           <Link href="/legal/terms">Terms</Link>
           <Link href="/legal/privacy">Privacy</Link>
-          <Link href="/auth/login">Account access</Link>
         </div>
       </div>
-      <div className="shell footer-boundary">
+      <div className="public-footer-boundary shell">
         <p>
-          Play Coins have no cash value and cannot be withdrawn, transferred, sold,
-          or redeemed. Monetaire Play does not award cash or valuable prizes.
+          Play Coins are entertainment points only. They have no cash value and
+          cannot be withdrawn, transferred, sold, or redeemed.
         </p>
-        <p>
-          Prize competitions are unavailable unless separately enabled for an
-          eligible player and jurisdiction. Casino cash wagering is not currently
-          available.
-        </p>
+        <p>Prize and wagering features are not part of the current play experience.</p>
       </div>
     </footer>
   );
 }
 
-export function PublicShell({ children }: { children: React.ReactNode }) {
+export function PublicShell({ children }: { children: ReactNode }) {
   return (
     <div className="public-shell">
       <SiteHeader />
