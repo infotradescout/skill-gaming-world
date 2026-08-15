@@ -180,7 +180,7 @@ export function AppShell({
           <nav aria-label="Player information">
             <Link href="/legal/play-coins">Play Coin rules</Link>
             <Link href="/responsible-play">Play controls</Link>
-            <Link href="/support">Support</Link>
+            <Link href="/app/support">Support</Link>
           </nav>
         </div>
       </footer>
