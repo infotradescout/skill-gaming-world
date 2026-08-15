@@ -1,58 +1,59 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import {
-  FeatureCard,
-  PageHero,
-  Section,
-  TrustDisclosure,
-} from "@/components/page-elements";
 
-export const metadata: Metadata = { title: "How Monetaire Works" };
+export const metadata: Metadata = {
+  title: "How Monetaire Works · Skill Gaming World",
+};
+
+const steps = [
+  ["01", "See the board", "A fresh hand opens with the stock, waste, tableau, and foundations in plain view."],
+  ["02", "Choose a route", "Every legal move changes what becomes possible next. There is no paid hint or easier deal."],
+  ["03", "Finish the hand", "Move each suit from Ace through King, or learn where the line closed."],
+];
 
 export default function HowItWorksPage() {
   return (
-    <>
-      <PageHero
-        eyebrow="How Monetaire works"
-        title={
-          <>
-            From seed to score,
-            <br />
-            <em>without a black box.</em>
-          </>
-        }
-        actions={
-          <Link className="button button-primary" href="/app/monetaire/practice">
-            Try the board
-          </Link>
-        }
-      >
+    <div className="public-info-page">
+      <section className="public-info-hero shell">
+        <p className="public-kicker">Monetaire / How it works</p>
+        <h1>
+          The table stays
+          <br />
+          <em>easy to read.</em>
+        </h1>
         <p>
-          Monetaire separates the deal, player moves, official timing, and ranking
-          into records that can be reproduced and reviewed.
+          Monetaire is Draw 3 solitaire with an intentional pace: the board
+          shows you the problem, and your next move is yours.
         </p>
-      </PageHero>
+        <Link className="public-primary-button" href="/auth/register">
+          Try a practice hand <span>↗</span>
+        </Link>
+      </section>
 
-      <Section eyebrow="The sequence" title="Four steps define a ranked deal.">
-        <div className="process-list">
-          <FeatureCard number="01" title="Commit">
-            <p>A SHA-256 commitment records the chosen deal before play opens.</p>
-          </FeatureCard>
-          <FeatureCard number="02" title="Play">
-            <p>Every entrant receives the identical versioned deal and ruleset.</p>
-          </FeatureCard>
-          <FeatureCard number="03" title="Validate">
-            <p>The server accepts legal moves in sequence and rejects duplicates or replay.</p>
-          </FeatureCard>
-          <FeatureCard number="04" title="Rank">
-            <p>Completion, valid moves, and verified active time determine the result.</p>
-          </FeatureCard>
+      <section className="public-info-steps shell">
+        {steps.map(([number, title, copy]) => (
+          <div key={number}>
+            <span>{number}</span>
+            <h2>{title}</h2>
+            <p>{copy}</p>
+          </div>
+        ))}
+      </section>
+
+      <section className="public-info-note shell">
+        <div>
+          <p className="public-kicker">What counts</p>
+          <h2>Clear play is the whole point.</h2>
         </div>
-      </Section>
-
-      <Section eyebrow="Currency" title="Performance never changes currency boundaries.">
-        <TrustDisclosure />
-      </Section>
-    </>
+        <p>
+          Practice, rank, and achievement records use the same published rules.
+          Performance does not change the Play Coin boundary: these points are
+          for entertainment and cannot be cashed out.
+        </p>
+        <Link className="public-text-link" href="/fairness">
+          Read the fair-play promise <span>↗</span>
+        </Link>
+      </section>
+    </div>
   );
 }

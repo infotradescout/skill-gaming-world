@@ -1,68 +1,66 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import {
-  FeatureCard,
-  PageHero,
-  Section,
-  StatusPill,
-  TrustDisclosure,
-} from "@/components/page-elements";
 
-export const metadata: Metadata = { title: "Play Monetaire" };
+export const metadata: Metadata = {
+  title: "Play Monetaire · Skill Gaming World",
+};
+
+const rules = [
+  ["Build the tableau", "Stack descending ranks in alternating colors. Only face-up cards can move."],
+  ["Open the board", "Turn hidden cards and use the stock when the next route is not visible yet."],
+  ["Complete the suits", "Move each suit from Ace through King into its foundation."],
+];
 
 export default function MonetairePlayPage() {
   return (
-    <>
-      <PageHero
-        eyebrow="Monetaire Play"
-        title={
-          <>
-            Draw, build,
-            <br />
-            <em>finish cleanly.</em>
-          </>
-        }
-        actions={
-          <>
-            <Link className="button button-primary" href="/app/monetaire/practice">
-              Open practice board
-            </Link>
-            <Link className="button button-secondary" href="/auth/register">
-              Create an account
-            </Link>
-          </>
-        }
-        aside={<TrustDisclosure compact />}
-      >
+    <div className="public-info-page public-play-page">
+      <section className="public-info-hero shell">
+        <p className="public-kicker">Monetaire / First hand</p>
+        <h1>
+          Draw, build,
+          <br />
+          <em>finish cleanly.</em>
+        </h1>
         <p>
-          Start with practice. Learn Draw 3 Klondike controls, see valid-move feedback,
-          and understand how a completed game is measured.
+          Practice is the quickest way to learn the controls. Start a hand,
+          make a legal move, and let the board teach you its rhythm.
         </p>
-      </PageHero>
+        <div className="public-action-row">
+          <Link className="public-primary-button" href="/auth/register">
+            Open the practice table
+          </Link>
+          <Link className="public-text-link" href="/monetaire">
+            Back to Monetaire <span>↗</span>
+          </Link>
+        </div>
+      </section>
 
-      <Section eyebrow="First release rules" title="Clear enough to inspect.">
-        <div className="grid-3">
-          <FeatureCard number="1" title="Build the tableau">
-            <p>Stack descending ranks in alternating colors. Only face-up cards can move.</p>
-          </FeatureCard>
-          <FeatureCard number="2" title="Complete foundations">
-            <p>Move each suit from Ace through King into its foundation.</p>
-          </FeatureCard>
-          <FeatureCard number="3" title="Ranked measurement">
-            <p>
-              Completion ranks first, then fewer valid moves, then lower verified
-              active-play duration. Exact ties remain ties.
-            </p>
-          </FeatureCard>
+      <section className="public-rule-list shell">
+        {rules.map(([title, copy], index) => (
+          <div key={title}>
+            <span>0{index + 1}</span>
+            <div>
+              <h2>{title}</h2>
+              <p>{copy}</p>
+            </div>
+          </div>
+        ))}
+      </section>
+
+      <section className="public-info-note shell">
+        <div>
+          <p className="public-kicker">Practice boundary</p>
+          <h2>Learn without buying an advantage.</h2>
         </div>
-        <div className="play-availability callout">
-          <StatusPill tone="live">Practice available</StatusPill>
-          <p>
-            Practice uses Play mode only. It does not award cash, valuable prizes, or
-            casino eligibility.
-          </p>
-        </div>
-      </Section>
-    </>
+        <p>
+          Practice does not award cash or valuable prizes. Play Coins are
+          entertainment points only, and the game never sells easier deals,
+          hints, or extra time.
+        </p>
+        <Link className="public-outline-button" href="/auth/register">
+          Join free <span>↗</span>
+        </Link>
+      </section>
+    </div>
   );
 }

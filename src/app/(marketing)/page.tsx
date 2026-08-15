@@ -1,160 +1,130 @@
 import Link from "next/link";
 
-const games = [
-  {
-    badge: "Flagship",
-    title: "Monetaire",
-    copy: "Competitive solitaire where every player faces the same deal.",
-    href: "/app/monetaire/practice",
-    action: "Play now",
-    art: "cards",
-  },
-  {
-    badge: "In development · Free",
-    title: "Robot Combat",
-    copy: "Build an original combat machine, inspect the revision, and enter the arena when the match gate is ready.",
-    href: "/robot-combat",
-    action: "Enter Robot Combat",
-    art: "robot",
-  },
-  {
-    badge: "On hold",
-    title: "Casino",
-    copy: "Casino games remain unnamed and unavailable while their separate approvals are held.",
-    href: "/casino",
-    action: "View status",
-    art: "dice",
-  },
-  {
-    badge: "Ranked",
-    title: "Daily Deal",
-    copy: "One board. One clock. The cleanest score climbs.",
-    href: "/app/monetaire/competitions",
-    action: "View challenge",
-    art: "crown",
-  },
-];
-
-const standards = [
-  ["Same rules", "The published rules never change mid-game."],
-  ["Visible odds", "Every chance-based game shows how outcomes work."],
-  ["No paid edge", "Coins never buy better odds, easier deals, hints, or time."],
-  ["Verifiable rounds", "Game records make disputed results reviewable."],
-];
-
 export default function HomePage() {
   return (
     <>
-      <section className="world-hero">
-        <div className="world-hero-glow" />
-        <div className="shell world-hero-grid">
-          <div className="world-hero-copy">
-            <div className="live-kicker"><span /> Games are open</div>
-            <p className="eyebrow">Skill Gaming World</p>
-            <h1>Play where <em>fair means provable.</em></h1>
-            <p className="world-lead">
-              Original games. Transparent rules. No bought advantage. Build your
-              record in Monetaire and climb ranked challenges. Casino modes remain
-              unavailable unless their separate legal and operating gates are approved.
+      <section className="public-hero">
+        <div className="public-hero-grid shell">
+          <div className="public-hero-copy">
+            <p className="public-kicker">
+              <span className="public-kicker-dot" />
+              Skill Gaming World
             </p>
-            <div className="button-row">
-              <Link className="button button-primary button-large" href="/auth/register">
-                Create player profile
+            <h1>
+              Pick a game.
+              <br />
+              <em>Make the next move.</em>
+            </h1>
+            <p className="public-hero-lead">
+              A small world of skill games with rules you can understand before
+              you play and choices you can feel while you play.
+            </p>
+            <div className="public-action-row">
+              <Link className="public-primary-button" href="#games">
+                Enter the game floor
               </Link>
-              <Link className="button button-glass button-large" href="#games">
-                Explore games
+              <Link className="public-text-link" href="/fairness">
+                See the fair-play promise <span>↗</span>
               </Link>
             </div>
-            <div className="hero-proof">
-              <span><b>100%</b> player-earned rank</span>
-              <span><b>0</b> paid advantages</span>
-              <span><b>Every</b> result reviewable</span>
+            <div className="public-hero-rhythm" aria-label="What stays true">
+              <span><b>Clear</b> rules</span>
+              <span><b>Free</b> practice</span>
+              <span><b>No</b> paid edge</span>
             </div>
           </div>
 
-          <div className="hero-table" aria-label="Illustrated Monetaire rules preview">
-            <div className="table-topline">
-              <span>Monetaire · Rules preview</span>
-              <span className="table-verified">Illustrated layout</span>
+          <div className="public-hero-mark" aria-hidden="true">
+            <div className="public-hero-orbit public-hero-orbit-one" />
+            <div className="public-hero-orbit public-hero-orbit-two" />
+            <div className="public-hero-token public-hero-token-one">A</div>
+            <div className="public-hero-token public-hero-token-two">⚙</div>
+            <div className="public-hero-token public-hero-token-three">3</div>
+            <div className="public-hero-mark-core">
+              <span>SG</span>
+              <small>PLAY<br />WELL</small>
             </div>
-            <div className="mini-board">
-              <div className="deck-stack"><span>SGW</span></div>
-              <div className="playing-card red-card card-a"><b>A</b><i>♥</i></div>
-              <div className="playing-card card-k"><b>K</b><i>♠</i></div>
-              <div className="playing-card red-card card-q"><b>Q</b><i>♦</i></div>
-              <div className="playing-card card-j"><b>J</b><i>♣</i></div>
-              <div className="foundation-slot">A</div>
-              <div className="foundation-slot">A</div>
-            </div>
-            <div className="table-score">
-              <div><small>Stock rule</small><strong>Draw 3</strong></div>
-              <div><small>Ranked deal</small><strong>Same</strong></div>
-              <div><small>Paid edge</small><strong>None</strong></div>
-            </div>
-            <Link href="/app/monetaire/practice" className="table-play">
-              Start practice <span>→</span>
-            </Link>
           </div>
         </div>
       </section>
 
-      <section className="lobby-section shell" id="games">
-        <div className="section-heading-row">
+      <section className="public-game-floor shell" id="games">
+        <div className="public-section-intro">
           <div>
-            <p className="eyebrow">Game floor</p>
-            <h2>Choose your table.</h2>
+            <p className="public-kicker">The game floor</p>
+            <h2>Two games. Different kinds of focus.</h2>
           </div>
-          <Link href="/fairness">How we prove fair play →</Link>
+          <p>
+            Start with the table, or head to the garage. Both paths are built
+            around the next decision—not a wall of menus.
+          </p>
         </div>
-        <div className="game-grid">
-          {games.map((game) => (
-            <Link className={`game-tile game-${game.art}`} href={game.href} key={game.title}>
-              <div className="game-tile-art" aria-hidden="true">
-                {game.art === "cards" && <><span>A♠</span><span>Q♥</span><span>J♣</span></>}
-                {game.art === "dice" && <><span>⚄</span><span>⚅</span></>}
-                {game.art === "crown" && <span>♛</span>}
-                {game.art === "robot" && <><span>13</span><span>⚙</span></>}
+
+        <div className="public-game-door-grid">
+          <Link className="public-game-door public-monetaire-door" href="/monetaire">
+            <div className="public-door-topline">
+              <span>01 / Table game</span>
+              <span className="public-door-status">Play free</span>
+            </div>
+            <div className="public-door-art public-card-door-art" aria-hidden="true">
+              <span className="public-door-card public-door-card-back" />
+              <span className="public-door-card public-door-card-red">Q<span>♥</span></span>
+              <span className="public-door-card public-door-card-black">K<span>♠</span></span>
+              <span className="public-door-card public-door-card-gold">3<span>♦</span></span>
+            </div>
+            <div className="public-door-copy">
+              <p>Monetaire</p>
+              <h3>Read the board. Build the line.</h3>
+              <span>Draw 3 solitaire with a sharper rhythm <b>↗</b></span>
+            </div>
+          </Link>
+
+          <Link className="public-game-door public-robot-door" href="/robot-combat">
+            <div className="public-door-topline">
+              <span>02 / Workshop game</span>
+              <span className="public-door-status">Try the garage</span>
+            </div>
+            <div className="public-door-art public-robot-door-art" aria-hidden="true">
+              <div className="public-robot-silhouette">
+                <span className="public-robot-eye" />
+                <span className="public-robot-arm public-robot-arm-left" />
+                <span className="public-robot-arm public-robot-arm-right" />
+                <span className="public-robot-wheel public-robot-wheel-left" />
+                <span className="public-robot-wheel public-robot-wheel-right" />
               </div>
-              <div className="game-tile-copy">
-                <small>{game.badge}</small>
-                <h3>{game.title}</h3>
-                <p>{game.copy}</p>
-                <strong>{game.action} <span>→</span></strong>
-              </div>
-            </Link>
-          ))}
+              <span className="public-robot-spark public-robot-spark-one">+</span>
+              <span className="public-robot-spark public-robot-spark-two">×</span>
+            </div>
+            <div className="public-door-copy">
+              <p>Robot Combat</p>
+              <h3>Build a machine. Find its edge.</h3>
+              <span>Assemble, tune, test, then take the arena <b>↗</b></span>
+            </div>
+          </Link>
         </div>
       </section>
 
-      <section className="trust-band">
-        <div className="shell">
-          <div className="trust-band-heading">
-            <p className="eyebrow">The house standard</p>
-            <h2>Trust should be built into the game.</h2>
-            <p>
-              We do not ask players to take fairness on faith. Rules, scoring,
-              timing, and outcome records are part of the product.
-            </p>
+      <section className="public-standard-band">
+        <div className="public-standard-grid shell">
+          <div className="public-standard-lead">
+            <p className="public-kicker">The house standard</p>
+            <h2>Nothing important hides behind the interface.</h2>
           </div>
-          <div className="standards-grid">
-            {standards.map(([title, copy], index) => (
-              <div key={title}>
-                <span>0{index + 1}</span>
-                <h3>{title}</h3>
-                <p>{copy}</p>
-              </div>
-            ))}
+          <div className="public-standard-list">
+            <div><span>01</span><p><b>Rules first.</b> Know what counts before the round begins.</p></div>
+            <div><span>02</span><p><b>Choices matter.</b> Skill changes the route, not the price tag.</p></div>
+            <div><span>03</span><p><b>Controls stay yours.</b> Practice, pause, and play on your terms.</p></div>
           </div>
         </div>
       </section>
 
-      <section className="join-banner shell">
+      <section className="public-join-strip shell">
         <div>
-          <p className="eyebrow">Your record starts here</p>
-          <h2>Find your game. Prove your skill.</h2>
+          <p className="public-kicker">Your turn</p>
+          <h2>Start with a free practice game.</h2>
         </div>
-        <Link className="button button-primary button-large" href="/auth/register">
-          Join Skill Gaming World
+        <Link className="public-primary-button" href="/auth/register">
+          Create a player profile <span>↗</span>
         </Link>
       </section>
     </>
