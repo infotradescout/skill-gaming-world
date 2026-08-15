@@ -212,7 +212,7 @@ export function SolitaireBoard({
   const [session, setSession] = useState<ServerGameSession | null>(initialSession);
   const [selection, setSelection] = useState<Selection | null>(null);
   const [feedback, setFeedback] = useState(
-    "Start or resume a server-authoritative practice session.",
+    "Start a hand or pick up where you left off.",
   );
   const [pending, setPending] = useState(false);
 
@@ -231,12 +231,12 @@ export function SolitaireBoard({
     window.localStorage.setItem(storageKey, body.session.id);
     setSession(body.session);
     setSelection(null);
-    setFeedback("Server session created. Tap the stock to draw.");
+    setFeedback("Your hand is ready. Tap the stock to draw.");
   }
 
   async function openSession() {
     setPending(true);
-    setFeedback("Checking for a server session…");
+    setFeedback("Looking for your saved hand…");
     try {
       const savedId =
         resumeSessionId ?? window.localStorage.getItem(storageKey);
@@ -251,7 +251,7 @@ export function SolitaireBoard({
           setSession(body.session);
           window.localStorage.setItem(storageKey, body.session.id);
           setSelection(null);
-          setFeedback("Server session resumed from its authoritative state.");
+          setFeedback("Your hand is back. Continue where you left off.");
           return;
         }
         window.localStorage.removeItem(storageKey);
@@ -303,13 +303,13 @@ export function SolitaireBoard({
         }
       }
       if (!response.ok || body?.accepted === false) {
-        setFeedback(apiError(body, "The server rejected that move."));
+        setFeedback(apiError(body, "That move is not legal here."));
         return false;
       }
       setFeedback(moveFeedback(intent));
       return true;
     } catch {
-      setFeedback("Move services are not reachable. The board was not changed.");
+      setFeedback("We could not confirm that move. The board was not changed.");
       return false;
     } finally {
       setPending(false);
@@ -333,20 +333,20 @@ export function SolitaireBoard({
   function moveFeedback(intent: MoveIntent) {
     switch (intent.type) {
       case "DRAW_STOCK":
-        return "Stock draw accepted by the server.";
+        return "Stock drawn.";
       case "RECYCLE_WASTE":
-        return "Waste recycle accepted by the server.";
+        return "Waste recycled.";
       case "FLIP_TABLEAU":
-        return "Tableau flip accepted by the server.";
+        return "Card turned over.";
       case "WASTE_TO_TABLEAU":
       case "TABLEAU_TO_TABLEAU":
       case "FOUNDATION_TO_TABLEAU":
-        return "Tableau move accepted by the server.";
+        return "Card moved.";
       case "WASTE_TO_FOUNDATION":
       case "TABLEAU_TO_FOUNDATION":
-        return "Foundation move accepted by the server.";
+        return "Card moved to the foundation.";
       case "ABANDON":
-        return "Session abandoned and recorded by the server.";
+        return "Session ended.";
     }
   }
 
@@ -517,9 +517,9 @@ export function SolitaireBoard({
     return (
       <section className="game-start surface">
         <span className="pill pill-live">
-          Server-authoritative {isPractice ? "practice" : "competition"}
+          {isPractice ? "Free practice" : "Competition table"}
         </span>
-        <h2>Open a Monetaire deal.</h2>
+        <h2>Open the table.</h2>
         <p>
           Build each suit from Ace to King. Move cards in descending order with
           alternating colors, reveal every hidden card, and finish all four
@@ -542,7 +542,7 @@ export function SolitaireBoard({
               ? "Start or resume"
               : "Resume competition"}
         </button>
-        <small>{feedback} Your deal and every accepted move are verified by the server.</small>
+        <small>{feedback} Your hand is recorded as you play.</small>
       </section>
     );
   }
@@ -561,12 +561,11 @@ export function SolitaireBoard({
       <header className="solitaire-toolbar">
         <div>
           <span className="pill pill-live">
-            {isPractice ? "Unranked practice" : "Noncash competition"} · Server
+            {isPractice ? "Practice hand" : "Competition hand"}
           </span>
-          <strong>Authoritative session</strong>
+          <strong>Table open</strong>
           <small>
-            No solvability claim · {session.rulesetVersion} · commitment{" "}
-            {session.dealCommitment.slice(0, 12)}…
+            Draw 3 rules · no cash value
           </small>
         </div>
         <div className="game-metrics">
@@ -618,9 +617,9 @@ export function SolitaireBoard({
       </div>
 
       <div className="ranking-strip" aria-label="Monetaire ranking rules">
-        <span><b>Win first</b><small>Incomplete deals rank below completed deals.</small></span>
-        <span><b>Then fewer moves</b><small>Only server-accepted moves count.</small></span>
-        <span><b>Then less time</b><small>Verified active play breaks the tie.</small></span>
+        <span><b>Win first</b><small>Complete hands rank first.</small></span>
+        <span><b>Then fewer moves</b><small>Only legal moves count.</small></span>
+        <span><b>Then less time</b><small>Active play breaks the tie.</small></span>
       </div>
 
       <div className="solitaire-table">
@@ -756,7 +755,7 @@ export function SolitaireBoard({
 
       <footer className="solitaire-footer">
         <p className="game-feedback" aria-live="polite">
-          {pending ? "Waiting for server confirmation…" : feedback}
+          {pending ? "Checking the move…" : feedback}
         </p>
         <p className="game-shortcuts">
           Tap or drag cards · double-click to foundation · <kbd>D</kbd> draw ·{" "}
@@ -776,8 +775,7 @@ export function SolitaireBoard({
             </span>
             <h2>{completed ? "Foundation complete." : "Session abandoned."}</h2>
             <p>
-              The server recorded {session.validMoveCount} valid moves and{" "}
-              {formattedTime(session.verifiedActivePlayMs)} of verified active time.
+              This hand ended with {session.validMoveCount} legal moves in {formattedTime(session.verifiedActivePlayMs)} of active play.
               This result has no cash or prize value.
             </p>
             {isPractice ? (
@@ -791,8 +789,7 @@ export function SolitaireBoard({
               </button>
             ) : (
               <p className="muted small">
-                This official session is final. Return to the leaderboard for the
-                server-calculated result.
+                This competition result is final. Return to the leaderboard to see your place.
               </p>
             )}
           </div>

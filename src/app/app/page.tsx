@@ -1,8 +1,6 @@
 import { cookies } from "next/headers";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { AppPageHeader } from "@/components/app-shell";
-import { EmptyState, TrustDisclosure } from "@/components/page-elements";
 import { runtimeUserFromToken, SESSION_COOKIE } from "@/lib/auth";
 import { runtimePlayerProjection } from "@/lib/runtime-player-projection";
 
@@ -15,158 +13,130 @@ export default async function PlayerDashboardPage({
   const cookieStore = await cookies();
   const user = await runtimeUserFromToken(cookieStore.get(SESSION_COOKIE)?.value);
   if (!user) redirect("/auth/login");
+
   const projection = await runtimePlayerProjection(user.id);
   const activePractice = projection.recentSessions.find(
     (session) => session.mode === "PRACTICE" && session.status === "ACTIVE",
   );
-
   const monetaireHref = activePractice
     ? "/app/monetaire/practice?session=" + encodeURIComponent(activePractice.id)
     : "/app/monetaire/practice";
+  const achievementCount = projection.achievements.filter((item) => item.awardedAt).length;
 
   return (
-    <>
+    <div className="world-lobby">
       {welcome === "1" ? (
-        <section className="welcome-strip surface-soft" role="status">
-          <div>
-            <p className="eyebrow">Welcome to Skill Gaming World</p>
-            <h2>Play first. Decide what you like.</h2>
-            <p>
-              Start with a free game, see how it feels, and keep your progress in one
-              place. Play Coins are for entertainment only and have no cash value.
-            </p>
-          </div>
-          <Link className="text-link" href="/legal/play-coins">Read the Play Coin terms →</Link>
-        </section>
+        <div className="lobby-welcome" role="status">
+          <span>Welcome in.</span>
+          <p>Your table and workshop are ready when you are.</p>
+        </div>
       ) : null}
 
-      <AppPageHeader eyebrow="Your game world" title="Choose what to play.">
-        <p>
-          Play a hand of Draw 3 solitaire, or build a machine and learn what happens
-          when it reaches the arena.
-        </p>
-      </AppPageHeader>
-
-      <section className="world-launchpad surface">
-        <div className="world-launchpad-heading">
-          <div>
-            <p className="eyebrow">Start here</p>
-            <h2>Two games. One place to play.</h2>
-          </div>
-          <span className="muted small">Free play is available now.</span>
+      <header className="lobby-heading">
+        <div>
+          <p className="eyebrow">The lobby</p>
+          <h1>Pick your next game.</h1>
+          <p>
+            One table game. One build-and-battle game. Start with whichever kind of
+            challenge you want right now.
+          </p>
         </div>
+        <div className="lobby-heading-mark" aria-hidden="true">
+          <span>PLAY</span>
+          <strong>01</strong>
+        </div>
+      </header>
 
-        <div className="app-game-grid">
-          <Link className="app-game-card app-game-card-monetaire" href={monetaireHref}>
-            <div className="app-game-art app-game-art-cards" aria-hidden="true">
-              <span className="game-card game-card-back" />
-              <span className="game-card game-card-front">
-                <b>Q</b>
-                <i>♠</i>
-              </span>
-              <span className="game-card game-card-front game-card-front-offset">
-                <b>3</b>
-                <i>♦</i>
-              </span>
+      <section className="lobby-stage" aria-label="Choose a game">
+        <Link className="lobby-game lobby-game-monetaire" href={monetaireHref}>
+          <div className="lobby-game-topline">
+            <span>01</span>
+            <span>Table game · Draw 3</span>
+          </div>
+          <div className="lobby-game-visual lobby-visual-cards" aria-hidden="true">
+            <span className="lobby-card-shadow" />
+            <span className="lobby-card lobby-card-back"><b>MON</b></span>
+            <span className="lobby-card lobby-card-queen"><b>Q</b><i>♥</i></span>
+            <span className="lobby-card lobby-card-ace"><b>A</b><i>♠</i></span>
+            <span className="lobby-suit-orbit">♠ &nbsp; ♥ &nbsp; ♦ &nbsp; ♣</span>
+          </div>
+          <div className="lobby-game-footer">
+            <div>
+              <span className="lobby-game-kicker">{activePractice ? "Hand waiting" : "Table open"}</span>
+              <h2>Monetaire</h2>
+              <p>Draw three cards, build the foundations, and find the line through the deal.</p>
             </div>
-            <div className="app-game-card-copy">
-              <div className="app-game-card-meta">
-                <span>Monetaire</span>
-                <span>Draw 3</span>
-              </div>
-              <h3>Make the next move.</h3>
+            <span className="lobby-game-cta">{activePractice ? "Resume hand" : "Play Draw 3"} <b>↗</b></span>
+          </div>
+        </Link>
+
+        <Link className="lobby-game lobby-game-robot" href="/app/robot-combat">
+          <div className="lobby-game-topline">
+            <span>02</span>
+            <span>Workshop · Free arena</span>
+          </div>
+          <div className="lobby-game-visual lobby-visual-robot" aria-hidden="true">
+            <span className="lobby-robot-ring lobby-robot-ring-one" />
+            <span className="lobby-robot-ring lobby-robot-ring-two" />
+            <span className="lobby-robot-wheel lobby-robot-wheel-left" />
+            <span className="lobby-robot-wheel lobby-robot-wheel-right" />
+            <span className="lobby-robot-body">
+              <span className="lobby-robot-wedge" />
+              <span className="lobby-robot-weapon" />
+              <span className="lobby-robot-light" />
+            </span>
+            <span className="lobby-robot-label">BAY 13</span>
+          </div>
+          <div className="lobby-game-footer">
+            <div>
+              <span className="lobby-game-kicker">Workshop open</span>
+              <h2>Robot Combat</h2>
+              <p>Choose the build, test the consequence, and put your machine on the line.</p>
+            </div>
+            <span className="lobby-game-cta">Enter workshop <b>↗</b></span>
+          </div>
+        </Link>
+      </section>
+
+      <section className="lobby-bottom">
+        <div className="lobby-continue">
+          <div className="lobby-section-label">
+            <span>Your place</span>
+            <span>Progress stays with you</span>
+          </div>
+          <div className="lobby-continue-row">
+            <div>
+              <strong>{activePractice ? "Continue your Draw 3 hand" : "Your first move is waiting"}</strong>
               <p>
-                Fast, focused solitaire with a clear score and a practice hand ready
-                when you are.
+                {activePractice
+                  ? "Your active hand is saved on this account."
+                  : "Open either game to create your first saved session."}
               </p>
-              <span className="app-game-card-action">
-                {activePractice ? "Resume Draw 3" : "Play Draw 3"} <span>→</span>
-              </span>
             </div>
-          </Link>
+            <Link className="lobby-inline-action" href={monetaireHref}>
+              {activePractice ? "Return to table" : "Start playing"} <span>→</span>
+            </Link>
+          </div>
+        </div>
 
-          <Link className="app-game-card app-game-card-robot" href="/app/robot-combat">
-            <div className="app-game-art app-game-art-robot" aria-hidden="true">
-              <div className="game-robot-visual">
-                <span className="game-robot-wheel game-robot-wheel-left" />
-                <span className="game-robot-wheel game-robot-wheel-right" />
-                <span className="game-robot-body">
-                  <span className="game-robot-wedge" />
-                  <span className="game-robot-weapon" />
-                </span>
-              </div>
-              <span className="game-grid-label">BUILD / TEST / FIGHT</span>
-            </div>
-            <div className="app-game-card-copy">
-              <div className="app-game-card-meta">
-                <span>Robot Combat</span>
-                <span>In development</span>
-              </div>
-              <h3>Build something that hits back.</h3>
-              <p>
-                Choose a fighting style, tune the machine, test the consequences, and
-                take a ready build into a free match.
-              </p>
-              <span className="app-game-card-action">Enter the workshop <span>→</span></span>
-            </div>
-          </Link>
+        <div className="lobby-quick-links">
+          <div className="lobby-section-label">
+            <span>At a glance</span>
+            <span>Account-backed</span>
+          </div>
+          <div className="lobby-stat-row">
+            <span><strong>{projection.completedGames}</strong><small>games</small></span>
+            <span><strong>{achievementCount}</strong><small>achievements</small></span>
+            <span><strong>{projection.playCoinBalanceMinor.toLocaleString()}</strong><small>coins</small></span>
+          </div>
         </div>
       </section>
 
-      <section className="world-lower-grid">
-        <div className="grid-4 app-stat-grid world-stat-grid">
-          <div className="stat surface-soft"><span>Play Coin balance</span><strong>{projection.playCoinBalanceMinor.toLocaleString()}</strong></div>
-          <div className="stat surface-soft"><span>Completed games</span><strong>{projection.completedGames}</strong></div>
-          <div className="stat surface-soft">
-            <span>Current rank</span>
-            <strong>
-              {projection.currentRank
-                ? "#" + projection.currentRank.rank + (projection.currentRank.tied ? " · tied" : "")
-                : "—"}
-            </strong>
-          </div>
-          <div className="stat surface-soft"><span>Achievements</span><strong>{projection.achievements.filter((item) => item.awardedAt).length}</strong></div>
-        </div>
-        <TrustDisclosure compact />
-      </section>
-
-      <section className="app-section world-activity">
-        <div className="app-section-header">
-          <div>
-            <p className="eyebrow">Your progress</p>
-            <h2>Recent sessions</h2>
-          </div>
-        </div>
-        {projection.recentSessions.length ? (
-          <div className="data-list surface-soft">
-            {projection.recentSessions.map((session) => (
-              <div className="data-row" key={session.id}>
-                <div>
-                  <strong>{session.mode === "PRACTICE" ? "Draw 3 practice" : "Noncash competition"}</strong>
-                  <small>{new Date(session.startedAt).toLocaleString()}</small>
-                </div>
-                <span>{session.status}</span>
-                {session.status === "ACTIVE" ? (
-                  <Link
-                    className="button button-quiet"
-                    href={
-                      session.mode === "PRACTICE"
-                        ? "/app/monetaire/practice?session=" + encodeURIComponent(session.id)
-                        : "/app/monetaire/competitions"
-                    }
-                  >
-                    Resume
-                  </Link>
-                ) : null}
-              </div>
-            ))}
-          </div>
-        ) : (
-          <EmptyState symbol="✦" title="Your first game is waiting">
-            <p>Play a practice game and your sessions will appear here.</p>
-          </EmptyState>
-        )}
-      </section>
-    </>
+      <div className="lobby-trust-line">
+        <span>Free play is available now.</span>
+        <span>Play Coins have no cash value.</span>
+        <Link href="/legal/play-coins">Read the rules →</Link>
+      </div>
+    </div>
   );
 }

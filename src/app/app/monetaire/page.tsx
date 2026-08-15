@@ -1,6 +1,4 @@
 import Link from "next/link";
-import { AppPageHeader } from "@/components/app-shell";
-import { StatusPill } from "@/components/page-elements";
 import { competitionView } from "@/lib/competition-snapshot";
 import { runtimeCompetitionSnapshot } from "@/lib/runtime-competition";
 
@@ -10,68 +8,98 @@ export default async function MonetaireLobbyPage() {
   const competitionLabel = competition?.status === "OPEN" ? "Open this week" : "Available";
 
   return (
-    <>
-      <AppPageHeader
-        eyebrow="Monetaire · Draw 3"
-        title="Make the next move."
-        actions={<Link className="button button-primary" href="/app/monetaire/practice">Play Draw 3</Link>}
-      >
-        <p>Focused solitaire, clear scoring, and a practice hand that starts in one tap.</p>
-      </AppPageHeader>
+    <div className="game-room monetaire-room">
+      <div className="room-topline">
+        <Link href="/app">← Lobby</Link>
+        <span>MONETAIRE · DRAW 3</span>
+      </div>
 
-      <div className="monetaire-lobby">
-        <section className="monetaire-feature surface">
-          <div className="monetaire-feature-art" aria-hidden="true">
-            <div className="lobby-card-stack"><span /><span /><span /></div>
-            <div className="monetaire-suit-line"><span>♠</span><b>♥</b><span>♦</span><b>♣</b></div>
-            <span className="monetaire-art-label">DRAW 3</span>
-          </div>
-          <div className="monetaire-feature-copy">
-            <StatusPill tone="live">Ready to play</StatusPill>
-            <p className="eyebrow">Practice table</p>
-            <h2>Play a hand without the pressure.</h2>
-            <p>
-              Try a fresh Draw 3 hand, learn the rhythm, and see your score as you
-              play. Practice is free and does not affect a competition result.
-            </p>
-            <div className="button-row">
-              <Link className="button button-primary" href="/app/monetaire/practice">Play Draw 3</Link>
-              <Link className="text-link" href="/monetaire/how-it-works">How it works →</Link>
-            </div>
-          </div>
-        </section>
+      <header className="room-header">
+        <div>
+          <p className="eyebrow">The table</p>
+          <h1>Deal. Think. Clear the table.</h1>
+          <p>
+            A focused Draw 3 solitaire room with a hand that starts in one tap and
+            rules you can see while you play.
+          </p>
+        </div>
+        <Link className="button button-primary button-large" href="/app/monetaire/practice">
+          Play Draw 3
+        </Link>
+      </header>
 
-        <aside className="monetaire-side">
-          <section className="lobby-competition surface-soft">
+      <section className="monetaire-room-stage">
+        <div className="monetaire-room-art" aria-hidden="true">
+          <div className="monetaire-room-table-mark">
+            <span>MONETAIRE</span>
+            <strong>DRAW 3</strong>
+          </div>
+          <span className="room-card room-card-back"><b>MON</b></span>
+          <span className="room-card room-card-ace"><b>A</b><i>♠</i></span>
+          <span className="room-card room-card-queen"><b>Q</b><i>♥</i></span>
+          <span className="room-card room-card-ten"><b>10</b><i>♦</i></span>
+          <div className="monetaire-room-suits">♠　♥　♦　♣</div>
+        </div>
+
+        <div className="monetaire-room-copy">
+          <span className="room-status room-status-open">Practice table open</span>
+          <p className="eyebrow">Your next move</p>
+          <h2>Start with a clean deal.</h2>
+          <p>
+            Move cards down in alternating colors, reveal the hidden cards, and build
+            each suit from Ace to King. Your progress is saved as you play.
+          </p>
+          <div className="room-action-row">
+            <Link className="button button-primary" href="/app/monetaire/practice">Open the table</Link>
+            <Link className="room-text-action" href="/monetaire/how-it-works">How to play <span>→</span></Link>
+          </div>
+        </div>
+      </section>
+
+      <section className="monetaire-room-lower">
+        <div className="room-path">
+          <div className="room-path-label">The rhythm</div>
+          <div className="room-path-step">
+            <span>01</span>
+            <div><strong>Draw three</strong><small>Read the hand before you commit.</small></div>
+          </div>
+          <div className="room-path-step">
+            <span>02</span>
+            <div><strong>Open the board</strong><small>Build descending runs in alternating colors.</small></div>
+          </div>
+          <div className="room-path-step">
+            <span>03</span>
+            <div><strong>Finish the suits</strong><small>Move from Ace to King and close the deal.</small></div>
+          </div>
+        </div>
+
+        <aside className="room-side-stack">
+          <section className="room-side-block">
+            <span className="room-side-label">Competition board</span>
             {competition ? (
               <>
-                <StatusPill tone="live">Noncash competition</StatusPill>
-                <h2>{competition.name}</h2>
+                <h3>{competition.name}</h3>
                 <p>
-                  {competition.entryCostPlayCoins} Play Coins to enter · no cash or
-                  valuable prizes · {competitionLabel.toLowerCase()}.
+                  {competition.entryCostPlayCoins} Play Coins · no cash or valuable
+                  prizes · {competitionLabel.toLowerCase()}.
                 </p>
-                <Link className="button button-secondary" href="/app/monetaire/competitions">
-                  View leaderboard
-                </Link>
+                <Link className="room-text-action" href="/app/monetaire/competitions">View the board <span>→</span></Link>
               </>
             ) : (
               <>
-                <StatusPill tone="blocked">Not available</StatusPill>
-                <h2>Competition board</h2>
-                <p>
-                  The noncash competition board is not available right now. Practice
-                  is still ready whenever you are.
-                </p>
+                <h3>Practice comes first.</h3>
+                <p>The competition board is not available right now. The free table is ready.</p>
               </>
             )}
           </section>
-          <div className="callout monetaire-disclosure">
+
+          <details className="room-disclosure">
+            <summary>Play Coin rules</summary>
             <p>Play Coins are for entertainment only. They have no cash value and cannot be withdrawn or redeemed.</p>
-            <Link className="text-link" href="/legal/play-coins">Read the Play Coin terms →</Link>
-          </div>
+            <Link href="/legal/play-coins">Read the full terms →</Link>
+          </details>
         </aside>
-      </div>
-    </>
+      </section>
+    </div>
   );
 }

@@ -30,11 +30,10 @@ export function CardCustomization() {
       <div className="card-customizer-heading">
         <div>
           <p className="eyebrow">Your deck</p>
-          <h2 id="card-customizer-title">Choose the front and back independently.</h2>
+          <h2 id="card-customizer-title">Make the deck yours.</h2>
         </div>
         <p>
-          Appearance stays on this device. It never changes the deal, legal moves,
-          score, timer, rank, or another player&apos;s cards.
+          Change the look without changing the deal, scoring, or another player&apos;s cards.
         </p>
       </div>
       <div className="card-customizer-grid">
