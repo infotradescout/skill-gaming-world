@@ -6,7 +6,7 @@ import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { BrandMark } from "./brand";
 
 const primaryLinks = [
-  { href: "/app", label: "Lobby", exact: true },
+  { href: "/app", label: "Games", exact: true },
   { href: "/app/monetaire", label: "Monetaire", exact: false },
   { href: "/app/robot-combat", label: "Robot Combat", exact: false },
 ];
@@ -80,25 +80,22 @@ export function AppShell({
   const initial = user.displayName.trim().charAt(0).toUpperCase() || "P";
 
   return (
-    <div className={"world-shell world-shell-" + tone}>
+    <div className={"launcher-app-shell world-shell world-shell-" + tone}>
       <a className="skip-link" href="#app-content">
         Skip to content
       </a>
 
-      <header className="world-header">
-        <div className="world-header-inner">
-          <div className="world-brand">
-            <BrandMark />
-          </div>
-
-          <nav className="world-primary-nav" aria-label="Main">
+      <header className="launcher-header launcher-auth-header">
+        <div className="launcher-header-inner world-header-inner">
+          <BrandMark />
+          <nav className="launcher-nav launcher-auth-nav" aria-label="Games">
             {primaryLinks.map((link) => {
               const active = isActive(pathname, link);
               return (
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={active ? "world-nav-active" : ""}
+                  className={active ? "launcher-nav-active" : ""}
                   aria-current={active ? "page" : undefined}
                 >
                   {link.label}
@@ -107,34 +104,29 @@ export function AppShell({
             })}
           </nav>
 
-          <div className="world-header-actions">
-            <Link
-              className="world-balance"
-              href="/app/wallet"
-              aria-label={playCoinBalance.toLocaleString() + " Play Coins"}
-            >
-              <span>Coins</span>
+          <div className="launcher-header-actions">
+            <Link className="launcher-coins" href="/app/wallet">
+              <span>PLAY COINS</span>
               <strong>{playCoinBalance.toLocaleString()}</strong>
             </Link>
-
-            <details className="world-account">
+            <details className="launcher-account">
               <summary>
-                <span className="world-avatar" aria-hidden="true">{initial}</span>
-                <span className="world-account-name">{user.displayName || "Player"}</span>
+                <span className="launcher-avatar" aria-hidden="true">{initial}</span>
+                <span className="launcher-account-name">{user.displayName || "Player"}</span>
               </summary>
-              <div className="world-account-popover">
-                <p className="eyebrow">Your place</p>
+              <div className="launcher-account-popover">
+                <span className="launcher-account-label">ACCOUNT</span>
                 <strong>{user.displayName || "Player"}</strong>
-                <span className="world-account-status">
+                <span className="launcher-account-status">
                   {user.status === "ACTIVE" ? "Ready to play" : "Account restricted"}
                 </span>
-                <div className="world-account-links">
+                <div className="launcher-account-links">
                   {accountLinks.map((link) => (
                     <Link key={link.href} href={link.href}>{link.label}</Link>
                   ))}
                 </div>
                 <button
-                  className="world-logout"
+                  className="launcher-logout"
                   disabled={signingOut}
                   type="button"
                   onClick={() => void signOut()}
@@ -147,39 +139,29 @@ export function AppShell({
         </div>
       </header>
 
-      <main id="app-content" className="world-main">
+      <main id="app-content" className="launcher-app-main world-main">
         {children}
       </main>
 
-      <nav className="world-mobile-nav" aria-label="Mobile game navigation">
+      <nav className="launcher-mobile-nav" aria-label="Mobile games">
         {primaryLinks.map((link) => {
           const active = isActive(pathname, link);
           return (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={active ? "world-nav-active" : ""}
-              aria-current={active ? "page" : undefined}
-            >
-              <span aria-hidden="true">
-                {link.label === "Lobby" ? "⌂" : link.label === "Monetaire" ? "♠" : "⚙"}
-              </span>
+            <Link key={link.href} href={link.href} className={active ? "launcher-nav-active" : ""}>
+              <span>{link.label === "Games" ? "◈" : link.label === "Monetaire" ? "♠" : "⚙"}</span>
               <small>{link.label}</small>
             </Link>
           );
         })}
-        <Link href="/app/wallet">
-          <span aria-hidden="true">◌</span>
-          <small>Account</small>
-        </Link>
+        <Link href="/app/wallet"><span>◌</span><small>Account</small></Link>
       </nav>
 
-      <footer className="world-footer">
-        <div className="world-footer-inner">
-          <span>Skill Gaming World</span>
+      <footer className="launcher-footer launcher-auth-footer">
+        <div className="launcher-footer-inner world-footer-inner">
+          <span>FREE PLAY / SKILL GAMING WORLD</span>
           <nav aria-label="Player information">
             <Link href="/legal/play-coins">Play Coin rules</Link>
-            <Link href="/responsible-play">Play controls</Link>
+            <Link href="/app/responsible-play">Play controls</Link>
             <Link href="/app/support">Support</Link>
           </nav>
         </div>

@@ -3,93 +3,46 @@ import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Robot Combat · Skill Gaming World",
-  description: "Build, tune, test, and fight from your own machine.",
+  description: "Build and fight in Bay 13.",
 };
 
 export default function RobotCombatMarketingPage() {
   return (
-    <div className="public-game-page public-robot-page">
-      <section className="public-game-hero shell">
-        <div className="public-game-copy">
-          <p className="public-kicker">Robot Combat / Workshop game</p>
-          <h1>
-            Build a machine.
-            <br />
-            <em>Put it to the test.</em>
-          </h1>
-          <p className="public-game-lead">
-            Start with a frame, make a few strong choices, and see what your
-            machine becomes when the wheels hit the arena.
-          </p>
-          <div className="public-action-row">
-            <Link className="public-primary-button" href="/auth/register">
-              Enter the workshop
-            </Link>
-            <Link className="public-text-link" href="/#games">
-              Back to the game floor <span>↗</span>
-            </Link>
-          </div>
-          <p className="public-small-note">
-            Free arena play. No paid parts, wagering, or bought performance.
-          </p>
-        </div>
-
-        <div className="public-garage-stage" aria-label="Robot Combat workshop preview">
-          <div className="public-garage-topline">
-            <span>BAY 13 / OPEN</span>
-            <span>BUILD → TEST → ARENA</span>
-          </div>
-          <div className="public-garage-floor">
-            <div className="public-garage-grid" />
-            <div className="public-garage-robot">
-              <div className="public-garage-head"><span /></div>
-              <div className="public-garage-body"><i /><i /><i /></div>
-              <div className="public-garage-wheel public-garage-wheel-one" />
-              <div className="public-garage-wheel public-garage-wheel-two" />
-              <div className="public-garage-weapon" />
-            </div>
-            <span className="public-garage-label public-garage-label-one">FRAME</span>
-            <span className="public-garage-label public-garage-label-two">POWER</span>
-            <span className="public-garage-label public-garage-label-three">IMPACT</span>
-          </div>
-          <div className="public-garage-caption">
-            <span>YOUR MACHINE / REV 01</span>
-            <strong>READY TO BUILD</strong>
-          </div>
-        </div>
-      </section>
-
-      <section className="public-build-loop shell">
-        <div className="public-section-intro">
-          <div>
-            <p className="public-kicker">The garage loop</p>
-            <h2>Every part changes the conversation.</h2>
-          </div>
+    <div className="launcher-game-page launcher-robot-page">
+      <section className="launcher-game-hero shell">
+        <div className="launcher-game-copy">
+          <p className="launcher-kicker"><span /> ROBOT COMBAT / BAY 13</p>
+          <h1>Build &amp; fight.</h1>
           <p>
-            The workshop makes the tradeoffs visible before you take a machine
-            into a test or free match.
+            Choose the parts, test the machine, and take your build onto the free arena floor.
           </p>
+          <div className="launcher-action-row">
+            <Link className="launcher-play-button launcher-play-button-large" href="/auth/register">
+              Enter the garage
+            </Link>
+            <Link className="launcher-secondary-link" href="/#games">
+              Back to games <span>↗</span>
+            </Link>
+          </div>
+          <div className="launcher-rule-line">
+            <span>BUILD</span>
+            <span>TEST</span>
+            <span>ARENA</span>
+          </div>
         </div>
-        <div className="public-build-steps">
-          <div><span>01</span><b>Assemble</b><p>Pick a frame, drive, power cell, armor, and weapon.</p></div>
-          <div><span>02</span><b>Test</b><p>See how balance, clearance, and force change together.</p></div>
-          <div><span>03</span><b>Fight</b><p>Take a valid build into the free arena and make the next call.</p></div>
+        <div className="launcher-game-showcase launcher-arena-showcase">
+          <img src="/games/bay-13/index.png" alt="Bay 13 robot combat arena" />
+          <div className="launcher-arena-overlay">
+            <span>BAY 13</span>
+            <strong>THE SCRAPYARD</strong>
+          </div>
         </div>
       </section>
 
-      <section className="public-robot-callout shell">
-        <div>
-          <p className="public-kicker">The point of the game</p>
-          <h2>Make a machine you can explain.</h2>
-        </div>
-        <p>
-          Robot Combat is about the line between a clever build and a lucky
-          button press. You can inspect your choices, save a revision, and
-          learn from what happens next.
-        </p>
-        <Link className="public-outline-button" href="/auth/register">
-          Start building <span>↗</span>
-        </Link>
+      <section className="launcher-game-rail shell">
+        <div><b>01</b><strong>Assemble</strong><span>Frame, drive, power, armor, weapon.</span></div>
+        <div><b>02</b><strong>Inspect</strong><span>See what the build can really do.</span></div>
+        <div><b>03</b><strong>Fight</strong><span>Take a valid machine into the arena.</span></div>
       </section>
     </div>
   );

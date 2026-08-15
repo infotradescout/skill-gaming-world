@@ -7,6 +7,7 @@ import { playCoinBalance } from "@/lib/demo-store";
 import { getRuntimeEnv } from "@/lib/env";
 import { persistentPlayCoinProjection } from "@/lib/persistent-projections";
 import "@/components/player-app.css";
+import "@/components/game-launcher.css";
 
 export const metadata: Metadata = {
   robots: { index: false, follow: false },
