@@ -1018,3 +1018,138 @@
     grid-column: auto;
   }
 }
+
+
+/* Product context realignment */
+.app-product {
+  gap: 0.5rem;
+  margin-top: 1.65rem;
+}
+
+.app-product-kicker {
+  color: var(--muted);
+  font-size: 0.58rem;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.app-product-link,
+.mobile-app-brand {
+  display: flex;
+  gap: 0.65rem;
+  align-items: center;
+  color: var(--paper-50);
+}
+
+.app-product-link:hover,
+.mobile-app-brand:hover {
+  color: var(--paper-50);
+}
+
+.app-product-symbol {
+  display: grid;
+  width: 2.05rem;
+  height: 2.05rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid rgba(227, 201, 138, 0.42);
+  border-radius: 0.6rem;
+  background: rgba(227, 201, 138, 0.07);
+  color: var(--brass-300);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.app-product-symbol-robot {
+  border-color: rgba(102, 231, 189, 0.42);
+  background: rgba(102, 231, 189, 0.08);
+  color: #66e7bd;
+}
+
+.app-product-copy {
+  display: grid;
+  gap: 0.12rem;
+  min-width: 0;
+}
+
+.app-product-copy strong {
+  color: var(--paper-50);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.05rem;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.app-product-copy small {
+  color: var(--muted);
+  font-size: 0.62rem;
+  line-height: 1.2;
+}
+
+.mobile-app-brand {
+  display: none;
+  font-size: 0.8rem;
+  font-weight: 650;
+}
+
+.mobile-app-brand .app-product-symbol {
+  width: 1.8rem;
+  height: 1.8rem;
+}
+
+.mobile-app-brand .app-product-copy {
+  display: grid;
+}
+
+.mobile-app-brand .app-product-copy strong {
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.03em;
+}
+
+.mobile-app-brand .app-product-copy small {
+  font-size: 0.55rem;
+}
+
+.app-topbar-status {
+  font-size: 0.68rem;
+  letter-spacing: 0.02em;
+}
+
+@media (max-width: 960px) {
+  .app-product {
+    width: 3.2rem;
+    margin-top: 1.65rem;
+    align-items: center;
+  }
+
+  .app-product-kicker,
+  .app-product-copy {
+    display: none;
+  }
+
+  .app-product-link {
+    justify-content: center;
+  }
+
+  .app-product-symbol {
+    width: 2.3rem;
+    height: 2.3rem;
+  }
+}
+
+@media (max-width: 760px) {
+  .mobile-app-brand {
+    display: flex;
+  }
+
+  .app-topbar .app-balance {
+    padding-right: 0.65rem;
+  }
+
+  .app-topbar .app-balance span {
+    display: none;
+  }
+}

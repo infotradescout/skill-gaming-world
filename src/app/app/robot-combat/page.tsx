@@ -20,10 +20,10 @@ export default async function RobotCombatDevelopmentPage() {
   return (
     <>
       <AppPageHeader
-        eyebrow="Robot Combat · Workshop first"
-        title={title.workingTitle}
+        eyebrow="Robot Combat · build / test / fight"
+        title="Build a machine that teaches you back."
       >
-        <p>Build a machine, see what the design changes, save the revision, and take it through the free arena gate.</p>
+        <p>Choose a fighting style, tune the parts, test what changes, and take a ready machine into a free match.</p>
       </AppPageHeader>
       <RobotCombatWorkshop
         playerId={user.id}

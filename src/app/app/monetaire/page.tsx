@@ -7,62 +7,70 @@ import { runtimeCompetitionSnapshot } from "@/lib/runtime-competition";
 export default async function MonetaireLobbyPage() {
   const snapshot = await runtimeCompetitionSnapshot().catch(() => null);
   const competition = snapshot ? competitionView(snapshot) : null;
+  const competitionLabel = competition?.status === "OPEN" ? "Open this week" : "Available";
+
   return (
     <>
       <AppPageHeader
-        eyebrow="Game lobby"
-        title="Monetaire"
-        actions={<Link className="button button-primary" href="/app/monetaire/practice">Start practice</Link>}
+        eyebrow="Monetaire · Draw 3"
+        title="Make the next move."
+        actions={<Link className="button button-primary" href="/app/monetaire/practice">Play Draw 3</Link>}
       >
-        <p>Draw 3 Klondike · versioned rules · transparent scoring.</p>
+        <p>Focused solitaire, clear scoring, and a practice hand that starts in one tap.</p>
       </AppPageHeader>
-      <div className="lobby-grid">
-        <section className="lobby-feature surface">
-          <div className="lobby-card-stack" aria-hidden="true"><span /><span /><span /></div>
-          <div>
-            <StatusPill tone="live">Available</StatusPill>
-            <h2>Practice deal</h2>
+
+      <div className="monetaire-lobby">
+        <section className="monetaire-feature surface">
+          <div className="monetaire-feature-art" aria-hidden="true">
+            <div className="lobby-card-stack"><span /><span /><span /></div>
+            <div className="monetaire-suit-line"><span>♠</span><b>♥</b><span>♦</span><b>♣</b></div>
+            <span className="monetaire-art-label">DRAW 3</span>
+          </div>
+          <div className="monetaire-feature-copy">
+            <StatusPill tone="live">Ready to play</StatusPill>
+            <p className="eyebrow">Practice table</p>
+            <h2>Play a hand without the pressure.</h2>
             <p>
-              A fresh server-created, unranked deal for learning the controls. It is
-              not represented as a published ranked deal or a source of prizes.
+              Try a fresh Draw 3 hand, learn the rhythm, and see your score as you
+              play. Practice is free and does not affect a competition result.
             </p>
-            <Link className="button button-primary" href="/app/monetaire/practice">Open board</Link>
+            <div className="button-row">
+              <Link className="button button-primary" href="/app/monetaire/practice">Play Draw 3</Link>
+              <Link className="text-link" href="/monetaire/how-it-works">How it works →</Link>
+            </div>
           </div>
         </section>
-        <section className="lobby-side">
-          <div className="lobby-competition surface-soft">
+
+        <aside className="monetaire-side">
+          <section className="lobby-competition surface-soft">
             {competition ? (
               <>
-                <StatusPill tone="live">Noncash · {competition.status}</StatusPill>
+                <StatusPill tone="live">Noncash competition</StatusPill>
                 <h2>{competition.name}</h2>
                 <p>
-                  {competition.entryCostPlayCoins} Play Coin entry · no valuable
-                  prize
-                  {competition.entryCount === null
-                    ? " · entries recorded server-side"
-                    : ` · ${competition.entryCount} actual ${
-                        competition.entryCount === 1 ? "entry" : "entries"
-                      }`}
+                  {competition.entryCostPlayCoins} Play Coins to enter · no cash or
+                  valuable prizes · {competitionLabel.toLowerCase()}.
                 </p>
                 <Link className="button button-secondary" href="/app/monetaire/competitions">
-                  Inspect competition
+                  View leaderboard
                 </Link>
               </>
             ) : (
               <>
-                <StatusPill tone="blocked">Unavailable</StatusPill>
-                <h2>No ranked publication loaded</h2>
+                <StatusPill tone="blocked">Not available</StatusPill>
+                <h2>Competition board</h2>
                 <p>
-                  Ranked entry fails closed when the active publication source
-                  is unavailable.
+                  The noncash competition board is not available right now. Practice
+                  is still ready whenever you are.
                 </p>
               </>
             )}
+          </section>
+          <div className="callout monetaire-disclosure">
+            <p>Play Coins are for entertainment only. They have no cash value and cannot be withdrawn or redeemed.</p>
+            <Link className="text-link" href="/legal/play-coins">Read the Play Coin terms →</Link>
           </div>
-          <div className="callout">
-            <p>Prize competition access is server-disabled for every player and jurisdiction.</p>
-          </div>
-        </section>
+        </aside>
       </div>
     </>
   );
