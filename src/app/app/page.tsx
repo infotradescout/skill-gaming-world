@@ -1,15 +1,11 @@
 import { cookies } from "next/headers";
 import Link from "next/link";
+import { CardStudy } from "@/components/card-art";
 import { redirect } from "next/navigation";
 import { runtimeUserFromToken, SESSION_COOKIE } from "@/lib/auth";
 import { runtimePlayerProjection } from "@/lib/runtime-player-projection";
 
-export default async function PlayerDashboardPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ welcome?: string }>;
-}) {
-  const { welcome } = await searchParams;
+export default async function PlayerDashboardPage() {
   const cookieStore = await cookies();
   const user = await runtimeUserFromToken(cookieStore.get(SESSION_COOKIE)?.value);
   if (!user) redirect("/auth/login");
@@ -21,122 +17,62 @@ export default async function PlayerDashboardPage({
   const monetaireHref = activePractice
     ? "/app/monetaire/practice?session=" + encodeURIComponent(activePractice.id)
     : "/app/monetaire/practice";
-  const achievementCount = projection.achievements.filter((item) => item.awardedAt).length;
 
   return (
-    <div className="world-lobby">
-      {welcome === "1" ? (
-        <div className="lobby-welcome" role="status">
-          <span>Welcome in.</span>
-          <p>Your table and workshop are ready when you are.</p>
-        </div>
-      ) : null}
-
-      <header className="lobby-heading">
+    <div className="app-launcher">
+      <section className="app-launcher-intro">
         <div>
-          <p className="eyebrow">The lobby</p>
-          <h1>Pick your next game.</h1>
-          <p>
-            One table game. One build-and-battle game. Start with whichever kind of
-            challenge you want right now.
-          </p>
+          <p className="launcher-kicker"><span /> GAME SELECT</p>
+          <h1>Choose your game.</h1>
+          <p>Pick up where you left off, or start a new table.</p>
         </div>
-        <div className="lobby-heading-mark" aria-hidden="true">
-          <span>PLAY</span>
-          <strong>01</strong>
-        </div>
-      </header>
+        <span className="app-launcher-account">{user.displayName || "PLAYER"}</span>
+      </section>
 
-      <section className="lobby-stage" aria-label="Choose a game">
-        <Link className="lobby-game lobby-game-monetaire" href={monetaireHref}>
-          <div className="lobby-game-topline">
-            <span>01</span>
-            <span>Table game · Draw 3</span>
+      <section className="launcher-game-grid launcher-game-grid-auth" aria-label="Choose a game">
+        <Link className="launcher-game-tile launcher-monetaire-tile" href={monetaireHref}>
+          <div className="launcher-tile-meta">
+            <span>01 / TABLE</span>
+            <span className="launcher-tile-live">OPEN</span>
           </div>
-          <div className="lobby-game-visual lobby-visual-cards" aria-hidden="true">
-            <span className="lobby-card-shadow" />
-            <span className="lobby-card lobby-card-back"><b>MON</b></span>
-            <span className="lobby-card lobby-card-queen"><b>Q</b><i>♥</i></span>
-            <span className="lobby-card lobby-card-ace"><b>A</b><i>♠</i></span>
-            <span className="lobby-suit-orbit">♠ &nbsp; ♥ &nbsp; ♦ &nbsp; ♣</span>
+          <div className="launcher-card-art">
+            <CardStudy />
           </div>
-          <div className="lobby-game-footer">
+          <div className="launcher-tile-footer">
             <div>
-              <span className="lobby-game-kicker">{activePractice ? "Hand waiting" : "Table open"}</span>
-              <h2>Monetaire</h2>
-              <p>Draw three cards, build the foundations, and find the line through the deal.</p>
+              <span className="launcher-tile-kicker">MONETAIRE</span>
+              <h2>{activePractice ? "Resume Draw 3" : "Draw 3"}</h2>
+              <p>{activePractice ? "Your hand is waiting." : "Read the deal. Build the line."}</p>
             </div>
-            <span className="lobby-game-cta">{activePractice ? "Resume hand" : "Play Draw 3"} <b>↗</b></span>
+            <span className="launcher-tile-action">{activePractice ? "RESUME" : "PLAY"} <b>↗</b></span>
           </div>
         </Link>
 
-        <Link className="lobby-game lobby-game-robot" href="/app/robot-combat">
-          <div className="lobby-game-topline">
-            <span>02</span>
-            <span>Workshop · Free arena</span>
+        <Link className="launcher-game-tile launcher-robot-tile" href="/app/robot-combat">
+          <div className="launcher-tile-meta">
+            <span>02 / ARENA</span>
+            <span className="launcher-tile-live">OPEN</span>
           </div>
-          <div className="lobby-game-visual lobby-visual-robot" aria-hidden="true">
-            <span className="lobby-robot-ring lobby-robot-ring-one" />
-            <span className="lobby-robot-ring lobby-robot-ring-two" />
-            <span className="lobby-robot-wheel lobby-robot-wheel-left" />
-            <span className="lobby-robot-wheel lobby-robot-wheel-right" />
-            <span className="lobby-robot-body">
-              <span className="lobby-robot-wedge" />
-              <span className="lobby-robot-weapon" />
-              <span className="lobby-robot-light" />
-            </span>
-            <span className="lobby-robot-label">BAY 13</span>
+          <div className="launcher-image-art">
+            <img src="/games/bay-13/index.png" alt="Bay 13 robot combat arena" />
+            <span className="launcher-image-tag">BAY 13</span>
           </div>
-          <div className="lobby-game-footer">
+          <div className="launcher-tile-footer">
             <div>
-              <span className="lobby-game-kicker">Workshop open</span>
-              <h2>Robot Combat</h2>
-              <p>Choose the build, test the consequence, and put your machine on the line.</p>
+              <span className="launcher-tile-kicker">ROBOT COMBAT</span>
+              <h2>Build &amp; fight</h2>
+              <p>Assemble a machine. Take it through the gate.</p>
             </div>
-            <span className="lobby-game-cta">Enter workshop <b>↗</b></span>
+            <span className="launcher-tile-action">ENTER <b>↗</b></span>
           </div>
         </Link>
       </section>
 
-      <section className="lobby-bottom">
-        <div className="lobby-continue">
-          <div className="lobby-section-label">
-            <span>Your place</span>
-            <span>Progress stays with you</span>
-          </div>
-          <div className="lobby-continue-row">
-            <div>
-              <strong>{activePractice ? "Continue your Draw 3 hand" : "Your first move is waiting"}</strong>
-              <p>
-                {activePractice
-                  ? "Your active hand is saved on this account."
-                  : "Open either game to create your first saved session."}
-              </p>
-            </div>
-            <Link className="lobby-inline-action" href={monetaireHref}>
-              {activePractice ? "Return to table" : "Start playing"} <span>→</span>
-            </Link>
-          </div>
-        </div>
-
-        <div className="lobby-quick-links">
-          <div className="lobby-section-label">
-            <span>At a glance</span>
-            <span>Account-backed</span>
-          </div>
-          <div className="lobby-stat-row">
-            <span><strong>{projection.completedGames}</strong><small>games</small></span>
-            <span><strong>{achievementCount}</strong><small>achievements</small></span>
-            <span><strong>{projection.playCoinBalanceMinor.toLocaleString()}</strong><small>coins</small></span>
-          </div>
-        </div>
+      <section className="app-launcher-bottom">
+        <span>FREE PLAY</span>
+        <span>PLAY COINS {projection.playCoinBalanceMinor.toLocaleString()}</span>
+        <Link href="/app/wallet">Account &amp; play controls <span>↗</span></Link>
       </section>
-
-      <div className="lobby-trust-line">
-        <span>Free play is available now.</span>
-        <span>Play Coins have no cash value.</span>
-        <Link href="/legal/play-coins">Read the rules →</Link>
-      </div>
     </div>
   );
 }

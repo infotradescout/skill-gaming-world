@@ -1,104 +1,56 @@
 import Link from "next/link";
+import { CardStudy } from "@/components/card-art";
 import { competitionView } from "@/lib/competition-snapshot";
 import { runtimeCompetitionSnapshot } from "@/lib/runtime-competition";
 
 export default async function MonetaireLobbyPage() {
   const snapshot = await runtimeCompetitionSnapshot().catch(() => null);
   const competition = snapshot ? competitionView(snapshot) : null;
-  const competitionLabel = competition?.status === "OPEN" ? "Open this week" : "Available";
 
   return (
-    <div className="game-room monetaire-room">
-      <div className="room-topline">
-        <Link href="/app">← Lobby</Link>
-        <span>MONETAIRE · DRAW 3</span>
+    <div className="app-game-room app-monetaire-room">
+      <div className="app-room-topline">
+        <Link href="/app">← Games</Link>
+        <span>MONETAIRE / DRAW 3</span>
       </div>
 
-      <header className="room-header">
-        <div>
-          <p className="eyebrow">The table</p>
-          <h1>Deal. Think. Clear the table.</h1>
-          <p>
-            A focused Draw 3 solitaire room with a hand that starts in one tap and
-            rules you can see while you play.
-          </p>
-        </div>
-        <Link className="button button-primary button-large" href="/app/monetaire/practice">
-          Play Draw 3
-        </Link>
-      </header>
-
-      <section className="monetaire-room-stage">
-        <div className="monetaire-room-art" aria-hidden="true">
-          <div className="monetaire-room-table-mark">
-            <span>MONETAIRE</span>
-            <strong>DRAW 3</strong>
+      <section className="app-room-hero">
+        <div className="app-room-copy">
+          <p className="launcher-kicker"><span /> TABLE 01</p>
+          <h1>Draw three.</h1>
+          <p>Every card changes the route. Open the table and find the cleanest line through the deal.</p>
+          <div className="launcher-action-row">
+            <Link className="launcher-play-button launcher-play-button-large" href="/app/monetaire/practice">
+              Start a hand
+            </Link>
+            <Link className="launcher-secondary-link" href="/monetaire/how-it-works">
+              Rules <span>↗</span>
+            </Link>
           </div>
-          <span className="room-card room-card-back"><b>MON</b></span>
-          <span className="room-card room-card-ace"><b>A</b><i>♠</i></span>
-          <span className="room-card room-card-queen"><b>Q</b><i>♥</i></span>
-          <span className="room-card room-card-ten"><b>10</b><i>♦</i></span>
-          <div className="monetaire-room-suits">♠　♥　♦　♣</div>
         </div>
-
-        <div className="monetaire-room-copy">
-          <span className="room-status room-status-open">Practice table open</span>
-          <p className="eyebrow">Your next move</p>
-          <h2>Start with a clean deal.</h2>
-          <p>
-            Move cards down in alternating colors, reveal the hidden cards, and build
-            each suit from Ace to King. Your progress is saved as you play.
-          </p>
-          <div className="room-action-row">
-            <Link className="button button-primary" href="/app/monetaire/practice">Open the table</Link>
-            <Link className="room-text-action" href="/monetaire/how-it-works">How to play <span>→</span></Link>
-          </div>
+        <div className="app-room-visual app-card-visual">
+          <CardStudy />
+          <span>MONETAIRE / FREE TABLE</span>
         </div>
       </section>
 
-      <section className="monetaire-room-lower">
-        <div className="room-path">
-          <div className="room-path-label">The rhythm</div>
-          <div className="room-path-step">
-            <span>01</span>
-            <div><strong>Draw three</strong><small>Read the hand before you commit.</small></div>
-          </div>
-          <div className="room-path-step">
-            <span>02</span>
-            <div><strong>Open the board</strong><small>Build descending runs in alternating colors.</small></div>
-          </div>
-          <div className="room-path-step">
-            <span>03</span>
-            <div><strong>Finish the suits</strong><small>Move from Ace to King and close the deal.</small></div>
-          </div>
+      <section className="app-room-rail">
+        <div><b>DRAW 3</b><span>Top waste card only.</span></div>
+        <div><b>ACE → KING</b><span>Complete every foundation.</span></div>
+        <div><b>YOUR MOVE</b><span>Practice is saved to your account.</span></div>
+      </section>
+
+      <section className="app-room-side">
+        <div>
+          <span className="app-side-label">Competition</span>
+          <strong>{competition?.name ?? "Practice first"}</strong>
+          <p>{competition ? "Noncash ranking is available from the competition board." : "The free practice table is ready."}</p>
+          {competition ? <Link href="/app/monetaire/competitions">Open board <span>↗</span></Link> : null}
         </div>
-
-        <aside className="room-side-stack">
-          <section className="room-side-block">
-            <span className="room-side-label">Competition board</span>
-            {competition ? (
-              <>
-                <h3>{competition.name}</h3>
-                <p>
-                  {competition.entryCostPlayCoins} Play Coins · no cash or valuable
-                  prizes · {competitionLabel.toLowerCase()}.
-                </p>
-                <Link className="room-text-action" href="/app/monetaire/competitions">View the board <span>→</span></Link>
-              </>
-            ) : (
-              <>
-                <h3>Practice comes first.</h3>
-                <p>The competition board is not available right now. The free table is ready.</p>
-              </>
-            )}
-          </section>
-
-          <details className="room-disclosure">
-            <summary>Play Coin rules</summary>
-            <p>Play Coins are for entertainment only. They have no cash value and cannot be withdrawn or redeemed.</p>
-            <Link href="/legal/play-coins">Read the full terms →</Link>
-          </details>
-        </aside>
+        <div>
+          <span className="app-side-label">Play Coin boundary</span>
+          <p>Play Coins are entertainment points only. They do not change the deal or buy an advantage.</p>
+        </div>
       </section>
     </div>
   );
