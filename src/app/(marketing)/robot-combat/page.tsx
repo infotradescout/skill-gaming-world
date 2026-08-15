@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Robot Combat · Skill Gaming World",
+  title: "Robot Combat",
   description: "Build and fight in Bay 13.",
 };
 
@@ -20,7 +20,7 @@ export default function RobotCombatMarketingPage() {
             <Link className="launcher-play-button launcher-play-button-large" href="/auth/register">
               Enter the garage
             </Link>
-            <Link className="launcher-secondary-link" href="/#games">
+            <Link className="launcher-secondary-link" href="/">
               Back to games <span>↗</span>
             </Link>
           </div>
