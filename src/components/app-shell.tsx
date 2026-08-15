@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
-import { BrandMark, MonetaireMark } from "./brand";
+import { BrandMark } from "./brand";
 
 const appLinks = [
   { href: "/app", label: "Overview", symbol: "⌂" },
@@ -17,6 +17,71 @@ const appLinks = [
   { href: "/app/responsible-play", label: "Player controls", symbol: "◷" },
 ];
 
+type ActiveProduct = {
+  key: "hub" | "monetaire" | "robot";
+  name: string;
+  detail: string;
+  href: string;
+  symbol: string;
+};
+
+function activeProductForPath(pathname: string): ActiveProduct {
+  if (pathname.startsWith("/app/robot-combat")) {
+    return {
+      key: "robot",
+      name: "Robot Combat",
+      detail: "Build · test · fight",
+      href: "/app/robot-combat",
+      symbol: "R",
+    };
+  }
+
+  if (pathname.startsWith("/app/monetaire")) {
+    return {
+      key: "monetaire",
+      name: "Monetaire",
+      detail: "Draw 3 solitaire",
+      href: "/app/monetaire",
+      symbol: "M",
+    };
+  }
+
+  return {
+    key: "hub",
+    name: "Skill Gaming World",
+    detail: "Choose a game",
+    href: "/app",
+    symbol: "SG",
+  };
+}
+
+function ProductIdentity({
+  product,
+  mobile = false,
+}: {
+  product: ActiveProduct;
+  mobile?: boolean;
+}) {
+  return (
+    <Link
+      href={product.href}
+      className={mobile ? "mobile-app-brand" : "app-product-link"}
+      aria-label={product.name}
+    >
+      <span
+        className={"app-product-symbol app-product-symbol-" + product.key}
+        aria-hidden="true"
+      >
+        {product.symbol}
+      </span>
+      <span className="app-product-copy">
+        <strong>{product.name}</strong>
+        <small>{product.detail}</small>
+      </span>
+    </Link>
+  );
+}
+
 export function AppShell({
   children,
   user,
@@ -28,6 +93,7 @@ export function AppShell({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const activeProduct = activeProductForPath(pathname);
   const [playCoinBalance, setPlayCoinBalance] = useState(initialPlayCoinBalance);
   const [signingOut, setSigningOut] = useState(false);
   const loadBalance = useCallback(async () => {
@@ -69,9 +135,9 @@ export function AppShell({
       </a>
       <aside className="app-sidebar">
         <BrandMark compact />
-        <div className="app-product">
-          <span>Now playing</span>
-          <MonetaireMark />
+        <div className={"app-product app-product-" + activeProduct.key}>
+          <span className="app-product-kicker">Current game</span>
+          <ProductIdentity product={activeProduct} />
         </div>
         <nav className="app-nav" aria-label="Player app">
           {appLinks.map((link) => {
@@ -95,21 +161,17 @@ export function AppShell({
       </aside>
       <div className="app-body">
         <header className="app-topbar">
-          <Link href="/app/monetaire" className="mobile-app-brand">
-            <MonetaireMark />
-          </Link>
+          <ProductIdentity product={activeProduct} mobile />
           <div className="app-topbar-status">
             <span
               className={user.status === "ACTIVE" ? "status-dot" : "status-dot status-dot-restricted"}
               aria-hidden="true"
             />
-            <span>{user.status === "ACTIVE" ? "Monetaire Play" : "Account restricted"}</span>
+            <span>{user.status === "ACTIVE" ? activeProduct.detail : "Account restricted"}</span>
           </div>
           <div className="app-balance" aria-label="Play Coin balance unavailable">
             <span>Play Coins</span>
-            <strong>
-              {playCoinBalance.toLocaleString()}
-            </strong>
+            <strong>{playCoinBalance.toLocaleString()}</strong>
           </div>
           <button
             className="app-sign-out"

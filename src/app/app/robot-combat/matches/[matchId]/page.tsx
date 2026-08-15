@@ -28,8 +28,8 @@ export default async function RobotCombatArenaPage({
 
   return (
     <>
-      <AppPageHeader eyebrow="Robot Combat · live authority" title="Authority arena">
-        <p>This browser surface is the development harness for the real match state: controls, damage, terminal results, and rebuild questions are server-recorded.</p>
+      <AppPageHeader eyebrow="Robot Combat · live match" title="The arena">
+        <p>Ready your machine, drive, turn, and fire. The match keeps the result and damage report so your next rebuild has something useful to work from.</p>
       </AppPageHeader>
       <RobotCombatArena
         playerId={user.id}

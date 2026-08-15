@@ -11,27 +11,27 @@ export default async function RobotCombatRuntimePage({
   const matchId = typeof query.matchId === "string" ? query.matchId.trim() : "";
   const slot = query.slot === "A" || query.slot === "B" ? query.slot : "";
   const runtimeSrc = matchId
-    ? `/games/robot-combat/index.html?matchId=${encodeURIComponent(matchId)}${slot ? `&slot=${slot}` : ""}`
+    ? "/games/robot-combat/index.html?matchId=" + encodeURIComponent(matchId) + (slot ? "&slot=" + slot : "")
     : "/games/robot-combat/index.html";
   const liveMirror = Boolean(matchId);
 
   return (
     <>
-      <AppPageHeader eyebrow="Robot Combat · 3D runtime" title={liveMirror ? "Live authority mirror" : "Workshop and arena prototype"}>
+      <AppPageHeader eyebrow="Robot Combat · visual arena" title={liveMirror ? "Live arena view" : "Workshop preview"}>
         <p>
           {liveMirror
-            ? `This 3D view is reading match ${matchId} from the same authenticated authority as the browser arena. It renders the server snapshot; it does not become a second rules engine.`
-            : "This is the exported Godot visual runtime. It is a real local build/test/fight/rebuild prototype. Open it from a live match to mirror hosted authority state."}
+            ? "Watch this match in the same state as the browser arena. Use the main match page for ready, drive, turn, and fire controls."
+            : "Preview the visual build and arena view. Build, test, and fight from the main Robot Combat workshop."}
         </p>
       </AppPageHeader>
       <section className="robot-combat-runtime surface">
         <div className="robot-combat-runtime-toolbar">
           <div>
-            <p className="eyebrow">{liveMirror ? "Hosted match · read-only renderer" : "Local runtime boundary"}</p>
+            <p className="eyebrow">{liveMirror ? "Live match" : "Visual preview"}</p>
             <p className="muted small">
               {liveMirror
-                ? "Use the browser authority arena for ready, drive, fire, and clock commands. This surface follows the resulting positions, integrity, and rebuild state."
-                : "Use the workshop and authority arena for the hosted flow. This standalone view remains a local build/test/fight/rebuild fixture until a match is supplied."}
+                ? "This view follows the live match state while the browser match page handles the controls."
+                : "This view is a visual preview of the Robot Combat world and remains separate from the match controls."}
             </p>
           </div>
           <a className="button button-secondary" href={runtimeSrc} target="_blank" rel="noreferrer">
@@ -40,7 +40,7 @@ export default async function RobotCombatRuntimePage({
         </div>
         <iframe
           className="robot-combat-runtime-frame"
-          title="Robot Combat 3D runtime prototype"
+          title="Robot Combat visual arena"
           src={runtimeSrc}
           allow="autoplay"
         />

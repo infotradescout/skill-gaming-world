@@ -20,12 +20,12 @@ type RobotCombatArenaProps = {
 const damageComponents = ["frame", "drive", "weapon", "power"] as const;
 
 const phaseCopy: Record<RobotMatchState["phase"], string> = {
-  WAITING_FOR_OPPONENT: "Share the match id with another builder.",
-  READY_CHECK: "Both builders must confirm the inspected machine before the clock starts.",
-  ACTIVE: "The server is accepting control, weapon, and clock commands.",
-  COMPLETED: "The match is terminal. Read the damage report before rebuilding.",
-  CANCELLED: "This match was cancelled before a winner was declared.",
-  DISCONNECTED: "The match ended because a player disconnected.",
+  WAITING_FOR_OPPONENT: "Share the match code with another builder.",
+  READY_CHECK: "Both builders need to ready their machines before the match starts.",
+  ACTIVE: "Drive, turn, and fire when the match is live.",
+  COMPLETED: "The match is over. Read what happened before rebuilding.",
+  CANCELLED: "This match ended before a winner was declared.",
+  DISCONNECTED: "The match ended because a player left.",
 };
 
 function clampPercent(value: number): number {
@@ -184,11 +184,11 @@ export function RobotCombatArena({ playerId, initialMatch, catalog }: RobotComba
       if (payload.match) setMatch(payload.match);
       setNotice(
         response.ok
-          ? payload.event?.message ?? "Command accepted by the match authority."
-          : payload.rejection?.message ?? "The match authority rejected that command.",
+          ? payload.event?.message ?? "Move accepted."
+          : payload.rejection?.message ?? "That move was not accepted.",
       );
     } catch {
-      setNotice("The match authority could not be reached. No state change was recorded.");
+      setNotice("The match could not be reached. No move was recorded.");
     } finally {
       setBusy(false);
     }
@@ -199,16 +199,16 @@ export function RobotCombatArena({ playerId, initialMatch, catalog }: RobotComba
       <section className="robot-combat-arena-stage surface">
         <div className="arena-stage-header">
           <div>
-            <p className="eyebrow">Authority test arena · {match.arenaKey}</p>
-            <h2>{match.phase.replaceAll("_", " ")}</h2>
+            <p className="eyebrow">Match · {match.arenaKey}</p>
+            <h2>{match.phase.replaceAll("_", " ").toLowerCase()}</h2>
           </div>
-          <div className="arena-clock" aria-label="Authoritative match clock">
+          <div className="arena-clock" aria-label="Match clock">
             <span>Clock</span>
             <strong>{(match.elapsedMs / 1000).toFixed(1)}s</strong>
           </div>
         </div>
         <p className="muted arena-notice" role="status">{notice}</p>
-        <div className="arena-stage" aria-label="Robot Combat top-down authority arena">
+        <div className="arena-stage" aria-label="Robot Combat arena">
           <div className="arena-grid-lines" aria-hidden="true" />
           <div className="arena-center-mark" aria-hidden="true" />
           {(["A", "B"] as const).map((slot) => {
@@ -234,7 +234,7 @@ export function RobotCombatArena({ playerId, initialMatch, catalog }: RobotComba
         <div className="arena-legend" aria-label="Arena legend">
           <span><i className="legend-dot legend-dot-self" /> Your machine</span>
           <span><i className="legend-dot legend-dot-opponent" /> Opponent machine</span>
-          <span>Ruleset {match.rulesetVersion}</span>
+          <span>Rules {match.rulesetVersion}</span>
         </div>
       </section>
 
@@ -243,10 +243,10 @@ export function RobotCombatArena({ playerId, initialMatch, catalog }: RobotComba
         <RobotStatusCard slot="B" player={match.players.B} robot={match.robots.B} self={mySlot === "B"} definitions={definitions} />
 
         <section className="surface-soft arena-controls">
-          <p className="eyebrow">Operator controls</p>
+          <p className="eyebrow">Match controls</p>
           {mySlot && myPlayer && match.phase === "READY_CHECK" ? (
             <button className="button button-primary" type="button" disabled={busy || myPlayer.ready || !myPlayer.inspection?.valid} onClick={() => void sendMatchCommand({ type: "READY", slot: mySlot })}>
-              {myPlayer.ready ? "Ready confirmed" : "Ready this machine"}
+              {myPlayer.ready ? "Ready confirmed" : "Ready my machine"}
             </button>
           ) : null}
           {mySlot && match.phase === "ACTIVE" ? (
@@ -261,8 +261,8 @@ export function RobotCombatArena({ playerId, initialMatch, catalog }: RobotComba
           {match.phase === "WAITING_FOR_OPPONENT" ? (
             <div className="callout"><strong>Share this match id</strong><p className="small">{match.matchId}</p><p className="muted small">The other builder joins from their own workshop.</p></div>
           ) : null}
-          {match.phase === "READY_CHECK" && !myPlayer?.inspection?.valid ? <p className="muted small">This player still needs an inspection-valid build.</p> : null}
-          {match.phase === "ACTIVE" ? <p className="muted small">The clock advances automatically from this browser while the match is active.</p> : null}
+          {match.phase === "READY_CHECK" && !myPlayer?.inspection?.valid ? <p className="muted small">This player still needs a ready-to-test build.</p> : null}
+          {match.phase === "ACTIVE" ? <p className="muted small">The clock advances while this match is active.</p> : null}
         </section>
 
         {terminal ? (
@@ -279,7 +279,7 @@ export function RobotCombatArena({ playerId, initialMatch, catalog }: RobotComba
                 <ul>{match.rebuildQuestions[mySlot]?.map((question) => <li key={question}>{question}</li>)}</ul>
               </>
             ) : null}
-            <Link className="button button-secondary" href="/app/robot-combat">Rebuild in workshop</Link>
+            <Link className="button button-secondary" href="/app/robot-combat">Rebuild this machine</Link>
           </section>
         ) : null}
 
@@ -289,7 +289,7 @@ export function RobotCombatArena({ playerId, initialMatch, catalog }: RobotComba
           target="_blank"
           rel="noreferrer"
         >
-          Open the live 3D authority mirror
+          Open the 3D match view
         </Link>
         <Link className="text-link" href="/app/robot-combat">Back to workshop</Link>
       </aside>
