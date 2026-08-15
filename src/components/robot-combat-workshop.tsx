@@ -183,7 +183,7 @@ export function RobotCombatWorkshop({ playerId, catalog, starterBlueprints }: Wo
       ],
     }));
     setInspection(undefined);
-    setNotice("Draft changed — save it again to run server inspection.");
+    setNotice("Your changes are ready to save and test.");
   }
 
   async function saveRevision() {
@@ -198,7 +198,7 @@ export function RobotCombatWorkshop({ playerId, catalog, starterBlueprints }: Wo
       });
       const payload = (await response.json()) as { build?: SavedBuild; error?: { message?: string } };
       if (!response.ok || !payload.build) {
-        setNotice(payload.error?.message ?? "The server rejected this revision.");
+        setNotice(payload.error?.message ?? "We could not save that build.");
         return;
       }
       const latest = payload.build.revisions.at(-1);
@@ -232,7 +232,7 @@ export function RobotCombatWorkshop({ playerId, catalog, starterBlueprints }: Wo
       setMatch(payload.match);
       setNotice("Match opened. Share the code with another builder.");
     } catch {
-      setNotice("The server could not be reached. No match was opened.");
+      setNotice("We could not open that match. No state was changed.");
     } finally {
       setBusy(false);
     }

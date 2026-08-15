@@ -261,7 +261,7 @@ export function RobotCombatArena({ playerId, initialMatch, catalog }: RobotComba
           {match.phase === "WAITING_FOR_OPPONENT" ? (
             <div className="callout"><strong>Share this match id</strong><p className="small">{match.matchId}</p><p className="muted small">The other builder joins from their own workshop.</p></div>
           ) : null}
-          {match.phase === "READY_CHECK" && !myPlayer?.inspection?.valid ? <p className="muted small">This player still needs an inspection-valid build.</p> : null}
+          {match.phase === "READY_CHECK" && !myPlayer?.inspection?.valid ? <p className="muted small">This player still needs a ready-to-test build.</p> : null}
           {match.phase === "ACTIVE" ? <p className="muted small">The clock advances while this match is active.</p> : null}
         </section>
 
