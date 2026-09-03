@@ -89,8 +89,8 @@ async function buildInstaller() {
     await mkdir(workerDirectory, { recursive: true });
     await run("tar", ["-xzf", join(packaging, workerPackage), "--strip-components=1", "-C", workerDirectory]);
 
-    await run("npm", ["test"], { cwd: project, env: { NODE_ENV: "test", P47_LOCAL_RUNTIME: "1" } });
     await run("npm", ["run", "build"], { cwd: project });
+    await run("npm", ["test"], { cwd: project, env: { NODE_ENV: "test", P47_LOCAL_RUNTIME: "1" } });
     await run(
       "npx",
       [
