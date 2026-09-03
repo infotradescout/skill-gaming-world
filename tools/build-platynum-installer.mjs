@@ -66,7 +66,7 @@ async function buildInstaller() {
     const project = join(work, "platynum-47");
     const packaging = join(project, ".packaging");
 
-    await run("npm", ["ci", "--no-audit", "--no-fund"], { cwd: project });
+    await run("npm", ["ci", "--include=dev", "--no-audit", "--no-fund"], { cwd: project });
 
     await mkdir(packaging, { recursive: true });
     await run("npm", ["pack", "npm@11.9.0", "--pack-destination", packaging], { cwd: project });
