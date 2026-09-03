@@ -8,7 +8,10 @@ import { tmpdir } from "node:os";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const version = "0.2.0";
-const installerName = `Platynum-47-Setup-${version}.exe`;
+// This is a self-contained Windows desktop application. A portable target is
+// deliberate: the existing Linux service can build it without trying to run a
+// Windows installer under Wine, and the owner can simply download and run it.
+const desktopAppName = `Platynum-47-${version}.exe`;
 const encryptedSource = resolve(root, ".platynum-release", "platynum-47-source.enc");
 const artifactDirectory = resolve(root, ".platynum-artifacts");
 const sourceKey = process.env.P47_SOURCE_KEY;
@@ -97,13 +100,13 @@ async function buildInstaller() {
         "--yes",
         "electron-builder@26.15.7",
         "--win",
-        "nsis",
+        "portable",
         "--x64",
         "--publish",
         "never",
-        "--config.toolsets.wine=1.0.1",
         "--config.toolsets.nsis=1.2.1",
         "--config.win.signExecutable=false",
+        `--config.portable.artifactName=${desktopAppName}`,
         "--config.electronVersion=43.5.1",
       ],
       { cwd: project, env: { CSC_IDENTITY_AUTO_DISCOVERY: "false" } },
@@ -113,15 +116,15 @@ async function buildInstaller() {
     const worker = join(unpacked, "app.asar.unpacked", "node_modules", "@openai", "codex-win32-x64", "vendor", "x86_64-pc-windows-msvc", "bin", "codex.exe");
     const npmCli = join(unpacked, "project-runner", "npm", "bin", "npm-cli.js");
     const nodeShim = join(unpacked, "project-runner", "node.cmd");
-    const installer = join(project, "release", installerName);
-    for (const required of [worker, npmCli, nodeShim, installer]) {
+    const desktopApp = join(project, "release", desktopAppName);
+    for (const required of [worker, npmCli, nodeShim, desktopApp]) {
       if (!existsSync(required)) throw new Error(`Packaged Platynum file is missing: ${basename(required)}`);
     }
 
     await mkdir(artifactDirectory, { recursive: true });
-    await copyFile(installer, join(artifactDirectory, installerName));
-    await writeFile(join(artifactDirectory, `${installerName}.sha256`), `${await sha256(installer)}  ${installerName}\n`);
-    console.log(`Verified Windows installer prepared: ${installerName}`);
+    await copyFile(desktopApp, join(artifactDirectory, desktopAppName));
+    await writeFile(join(artifactDirectory, `${desktopAppName}.sha256`), `${await sha256(desktopApp)}  ${desktopAppName}\n`);
+    console.log(`Verified Windows desktop app prepared: ${desktopAppName}`);
   } finally {
     await rm(work, { recursive: true, force: true });
   }

@@ -26,8 +26,8 @@ export default async function PlatynumCompanionPage() {
       <section className="surface admin-section">
         <h2>Get Platynum for Windows</h2>
         <p>
-          Download and run the installer. It adds Platynum-47 to your Start menu and desktop, then keeps
-          your project folders on this computer.
+          Download and run the Windows app. It opens Platynum-47 directly and keeps your project folders
+          on this computer.
         </p>
         <a className="button button-primary" href="/admin/platynum/download">
           Download Platynum for Windows
