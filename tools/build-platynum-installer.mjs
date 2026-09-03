@@ -21,7 +21,7 @@ const sourceKey = process.env.P47_SOURCE_KEY;
 // can start a child process.
 delete process.env.P47_SOURCE_KEY;
 
-function run(command, args, { cwd, env } = {}) {
+function run(command, args, { cwd, env, heartbeat } = {}) {
   return new Promise((resolveRun, rejectRun) => {
     const child = spawn(command, args, {
       cwd,
@@ -29,8 +29,16 @@ function run(command, args, { cwd, env } = {}) {
       shell: false,
       stdio: "inherit",
     });
-    child.once("error", rejectRun);
+    const heartbeatTimer = heartbeat
+      ? setInterval(() => console.log(`${heartbeat} is still running.`), 25000)
+      : undefined;
+    const stopHeartbeat = () => heartbeatTimer && clearInterval(heartbeatTimer);
+    child.once("error", (error) => {
+      stopHeartbeat();
+      rejectRun(error);
+    });
     child.once("exit", (code, signal) => {
+      stopHeartbeat();
       if (code === 0) resolveRun();
       else rejectRun(new Error(`${command} failed with ${signal ?? `exit code ${code ?? "unknown"}`}.`));
     });
@@ -109,7 +117,11 @@ async function buildInstaller() {
         `--config.portable.artifactName=${desktopAppName}`,
         "--config.electronVersion=43.5.1",
       ],
-      { cwd: project, env: { CSC_IDENTITY_AUTO_DISCOVERY: "false" } },
+      {
+        cwd: project,
+        env: { CSC_IDENTITY_AUTO_DISCOVERY: "false" },
+        heartbeat: "Packaging the Windows desktop app",
+      },
     );
 
     const unpacked = join(project, "release", "win-unpacked", "resources");
