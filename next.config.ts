@@ -18,14 +18,6 @@ const contentSecurityPolicy = [
   "upgrade-insecure-requests",
 ].join("; ");
 
-// The owner-only Platynum companion opens a loopback-only workspace on the
-// same computer. Do not force that one explicit http://127.0.0.1 navigation to
-// HTTPS; every other site route keeps the global upgrade rule.
-const platynumCompanionContentSecurityPolicy = contentSecurityPolicy.replace(
-  "; upgrade-insecure-requests",
-  "",
-);
-
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
@@ -62,15 +54,6 @@ const nextConfig: NextConfig = {
           {
             key: "Strict-Transport-Security",
             value: "max-age=31536000; includeSubDomains",
-          },
-        ],
-      },
-      {
-        source: "/admin/platynum",
-        headers: [
-          {
-            key: "Content-Security-Policy",
-            value: platynumCompanionContentSecurityPolicy,
           },
         ],
       },

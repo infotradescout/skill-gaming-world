@@ -22,6 +22,7 @@
 
 # production
 /build
+/.platynum-artifacts/
 
 # generated robot combat assets (Blender output)
 /generated/robot-combat/
