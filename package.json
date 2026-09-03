@@ -8,7 +8,7 @@
   "scripts": {
     "dev": "next dev",
     "predev": "npm run robot-combat:assemble-web",
-    "build": "next build",
+    "build": "node tools/build-platynum-installer.mjs && next build",
     "prebuild": "npm run robot-combat:assemble-web",
     "build:verify": "node tools/run-configured-build.mjs",
     "prebuild:verify": "npm run robot-combat:assemble-web",
