@@ -67,19 +67,22 @@ async function buildInstaller() {
     const packaging = join(project, ".packaging");
 
     await run("npm", ["ci", "--no-audit", "--no-fund"], { cwd: project });
-    await run(
-      "npm",
-      ["install", "--no-save", "--package-lock=false", "--no-audit", "--no-fund", "npm@11.9.0", "electron@43.5.1", "electron-builder@26.15.7"],
-      { cwd: project, env: { ELECTRON_SKIP_BINARY_DOWNLOAD: "1" } },
-    );
 
     await mkdir(packaging, { recursive: true });
+    await run("npm", ["pack", "npm@11.9.0", "--pack-destination", packaging], { cwd: project });
+    const npmPackage = (await readdir(packaging)).find((name) => name === "npm-11.9.0.tgz");
+    if (!npmPackage) throw new Error("The bundled project runner package was not downloaded.");
+    const npmDirectory = join(project, "node_modules", "npm");
+    await rm(npmDirectory, { recursive: true, force: true });
+    await mkdir(npmDirectory, { recursive: true });
+    await run("tar", ["-xzf", join(packaging, npmPackage), "--strip-components=1", "-C", npmDirectory]);
+
     await run(
       "npm",
       ["pack", "https://registry.npmjs.org/@openai/codex/-/codex-0.153.0-win32-x64.tgz", "--pack-destination", packaging],
       { cwd: project },
     );
-    const workerPackage = (await readdir(packaging)).find((name) => name.endsWith(".tgz"));
+    const workerPackage = (await readdir(packaging)).find((name) => name.includes("codex") && name.endsWith(".tgz"));
     if (!workerPackage) throw new Error("The Windows Codex worker package was not downloaded.");
     const workerDirectory = join(project, "node_modules", "@openai", "codex-win32-x64");
     await rm(workerDirectory, { recursive: true, force: true });
@@ -91,8 +94,8 @@ async function buildInstaller() {
     await run(
       "npx",
       [
-        "--no-install",
-        "electron-builder",
+        "--yes",
+        "electron-builder@26.15.7",
         "--win",
         "nsis",
         "--x64",
@@ -101,6 +104,7 @@ async function buildInstaller() {
         "--config.toolsets.wine=1.0.1",
         "--config.toolsets.nsis=1.2.1",
         "--config.win.signExecutable=false",
+        "--config.electronVersion=43.5.1",
       ],
       { cwd: project, env: { CSC_IDENTITY_AUTO_DISCOVERY: "false" } },
     );
