@@ -11,6 +11,12 @@ const version = "0.2.0";
 const installerName = `Platynum-47-Setup-${version}.exe`;
 const encryptedSource = resolve(root, ".platynum-release", "platynum-47-source.enc");
 const artifactDirectory = resolve(root, ".platynum-artifacts");
+const sourceKey = process.env.P47_SOURCE_KEY;
+
+// The release key is needed only by OpenSSL. Remove it from the inherited
+// process environment before any package manager, test, or packaging command
+// can start a child process.
+delete process.env.P47_SOURCE_KEY;
 
 function run(command, args, { cwd, env } = {}) {
   return new Promise((resolveRun, rejectRun) => {
@@ -40,7 +46,7 @@ async function buildInstaller() {
     return;
   }
 
-  const key = process.env.P47_SOURCE_KEY;
+  const key = sourceKey;
   const expectedArchiveHash = process.env.P47_SOURCE_ARCHIVE_SHA256;
   if (!key || !expectedArchiveHash) throw new Error("The private Platynum release source is not configured.");
   if (!existsSync(encryptedSource)) throw new Error("The encrypted Platynum release source is missing.");

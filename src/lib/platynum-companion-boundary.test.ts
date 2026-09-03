@@ -19,6 +19,7 @@ const downloadRoute = resolve(
   "download",
   "route.ts",
 );
+const releaseBuilder = resolve(process.cwd(), "tools", "build-platynum-installer.mjs");
 
 describe("Platynum companion boundary", () => {
   it("requires the owner role and never turns the game service into a remote work engine", () => {
@@ -32,5 +33,13 @@ describe("Platynum companion boundary", () => {
     expect(downloadSource).toContain('requireAdminRoles(["SUPER_ADMIN"])');
     expect(downloadSource).toContain('Platynum-47-Setup-0.2.0.exe');
     expect(downloadSource).not.toMatch(/searchParams|params|\[\.\.\./i);
+  });
+
+  it("keeps the release decryption key out of package and packaging child processes", () => {
+    const source = readFileSync(releaseBuilder, "utf8");
+
+    expect(source).toContain("const sourceKey = process.env.P47_SOURCE_KEY;");
+    expect(source).toContain("delete process.env.P47_SOURCE_KEY;");
+    expect(source).toContain("{ env: { P47_ARCHIVE_KEY: key } }");
   });
 });
