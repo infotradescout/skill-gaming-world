@@ -1,0 +1,131 @@
+name: Build Platynum for Windows
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".platynum-release/**"
+      - ".github/workflows/platynum-windows-release.yml"
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: platynum-windows-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  windows-installer:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: .platynum-release/platynum-47
+    permissions:
+      contents: read
+    outputs:
+      release_tag: ${{ steps.version.outputs.tag }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22.23.2
+          cache: npm
+          cache-dependency-path: .platynum-release/platynum-47/package-lock.json
+
+      - name: Install Platynum
+        run: npm ci --no-audit --no-fund
+
+      - name: Install release-only packager and project runner
+        run: npm install --no-save --package-lock=false --no-audit --no-fund npm@11.9.0 electron@43.5.1 electron-builder@26.15.7
+
+      - name: Run Platynum checks
+        run: npm test
+
+      - name: Build the local workspace
+        run: npm run build
+
+      - name: Verify the bundled Windows worker
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "node_modules/@openai/codex-win32-x64/vendor/x86_64-pc-windows-msvc/bin/codex.exe")) { throw "The Windows Codex worker was not installed." }
+          if (-not (Test-Path "node_modules/npm/bin/npm-cli.js")) { throw "The built-in project runner was not installed." }
+
+      - name: Build the Windows installer
+        run: npx --no-install electron-builder --win nsis --x64 --publish never
+
+      - name: Verify packaged app and record its checksum
+        shell: pwsh
+        run: |
+          $worker = "release/win-unpacked/resources/app.asar.unpacked/node_modules/@openai/codex-win32-x64/vendor/x86_64-pc-windows-msvc/bin/codex.exe"
+          if (-not (Test-Path $worker)) { throw "The packaged Windows worker is missing." }
+          $npmCli = "release/win-unpacked/resources/project-runner/npm/bin/npm-cli.js"
+          if (-not (Test-Path $npmCli)) { throw "The packaged project runner is missing." }
+          $nodeShim = "release/win-unpacked/resources/project-runner/node.cmd"
+          if (-not (Test-Path $nodeShim)) { throw "The packaged project runner shim is missing." }
+          $desktopNode = Get-ChildItem "release/win-unpacked" -File -Filter "Platynum-47.exe" | Select-Object -First 1
+          if (!$desktopNode) { throw "The packaged Platynum executable is missing." }
+          $fixture = Join-Path $env:RUNNER_TEMP "platynum-project-runner-fixture"
+          New-Item -ItemType Directory -Force -Path $fixture | Out-Null
+          '{"scripts":{"check":"node -p process.versions.node"}}' | Set-Content (Join-Path $fixture "package.json")
+          $previousPath = $env:Path
+          $previousElectron = $env:ELECTRON_RUN_AS_NODE
+          $previousExecutable = $env:P47_ELECTRON_EXECUTABLE
+          try {
+            $env:ELECTRON_RUN_AS_NODE = "1"
+            $env:P47_ELECTRON_EXECUTABLE = $desktopNode.FullName
+            $env:Path = "$($nodeShim.DirectoryName);$env:Path"
+            Push-Location $fixture
+            & $desktopNode.FullName $npmCli run check
+            if ($LASTEXITCODE -ne 0) { throw "The packaged project runner could not start a project script." }
+          } finally {
+            Pop-Location
+            $env:Path = $previousPath
+            $env:ELECTRON_RUN_AS_NODE = $previousElectron
+            $env:P47_ELECTRON_EXECUTABLE = $previousExecutable
+          }
+          $installer = Get-ChildItem release -File -Filter "Platynum-47-Setup-*.exe" | Select-Object -First 1
+          if (!$installer) { throw "The Windows installer was not created." }
+          $hash = (Get-FileHash $installer.FullName -Algorithm SHA256).Hash.ToLower()
+          "$hash  $($installer.Name)" | Set-Content "$($installer.FullName).sha256"
+
+      - name: Record this app version
+        id: version
+        shell: pwsh
+        run: |
+          $version = node -p "require('./package.json').version"
+          "tag=platynum-47-v$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: Platynum-47-Windows
+          path: |
+            .platynum-release/platynum-47/release/Platynum-47-Setup-*.exe
+            .platynum-release/platynum-47/release/Platynum-47-Setup-*.exe.sha256
+          if-no-files-found: error
+
+  publish-installer:
+    needs: windows-installer
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: Platynum-47-Windows
+          path: release
+
+      - name: Publish the installer for a new app version
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.windows-installer.outputs.release_tag }}
+        run: |
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release $TAG already exists. The installer was still verified."
+            exit 0
+          fi
+          gh release create "$TAG" release/Platynum-47-Setup-*.exe release/Platynum-47-Setup-*.exe.sha256 --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "Platynum-47 $TAG" --generate-notes

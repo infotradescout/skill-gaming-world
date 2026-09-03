@@ -1,0 +1,92 @@
+{
+  "name": "platynum-47",
+  "private": true,
+  "version": "0.2.0",
+  "type": "module",
+  "main": "desktop/main.cjs",
+  "description": "Platynum-47 starts with your idea and helps turn it into a finished product.",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "test": "vitest run",
+    "preview": "vite preview --host",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@openai/codex": "0.153.0",
+    "@codemirror/lang-css": "^6.3.1",
+    "@codemirror/lang-html": "^6.4.9",
+    "@codemirror/lang-javascript": "^6.2.4",
+    "@codemirror/theme-one-dark": "^6.1.3",
+    "codemirror": "^6.0.2",
+    "express": "^5.1.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^7.0.0",
+    "@testing-library/react": "^16.3.2",
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.1",
+    "@vitejs/plugin-react": "^5.1.0",
+    "jsdom": "^29.1.1",
+    "typescript": "^5.9.3",
+    "vite": "^7.1.9",
+    "vitest": "^4.1.10"
+  },
+  "build": {
+    "appId": "com.infotradescout.platynum47",
+    "productName": "Platynum-47",
+    "asar": true,
+    "npmRebuild": false,
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**",
+      "server.js",
+      "runtime-server.js",
+      "package.json",
+      "desktop/**",
+      "!src/**",
+      "!**/*.test.*",
+      "!**/test/**",
+      "!**/tests/**",
+      "!start-platynum-47.cmd",
+      "!render.yaml"
+    ],
+    "asarUnpack": [
+      "node_modules/@openai/codex-win32-x64/**"
+    ],
+    "extraResources": [
+      {
+        "from": "node_modules/npm",
+        "to": "project-runner/npm"
+      },
+      {
+        "from": "desktop/node.cmd",
+        "to": "project-runner/node.cmd"
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "Platynum-47-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Platynum-47",
+      "deleteAppDataOnUninstall": false
+    }
+  }
+}
