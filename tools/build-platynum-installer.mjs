@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { createReadStream, existsSync } from "node:fs";
-import { copyFile, mkdir, mkdtemp, readdir, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readdir, rename, rm, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { basename, dirname, join, resolve } from "node:path";
 import { spawn } from "node:child_process";
@@ -8,13 +8,16 @@ import { tmpdir } from "node:os";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const version = "0.2.0";
-// This is a self-contained Windows desktop application. A portable target is
-// deliberate: the existing Linux service can build it without trying to run a
-// Windows installer under Wine, and the owner can simply download and run it.
-const desktopAppName = `Platynum-47-${version}.exe`;
+// The existing Linux service cannot reliably create an NSIS installer because
+// that requires a Windows-compatible installer stage. Build the actual Windows
+// desktop app directory instead, then deliver it in one normal ZIP file.
+const desktopArchiveName = `Platynum-47-${version}-windows-x64.zip`;
+const desktopDirectoryName = "Platynum-47";
+const desktopExecutableName = "Platynum-47.exe";
 const encryptedSource = resolve(root, ".platynum-release", "platynum-47-source.enc");
 const artifactDirectory = resolve(root, ".platynum-artifacts");
 const sourceKey = process.env.P47_SOURCE_KEY;
+let activeWorkDirectory;
 
 // The release key is needed only by OpenSSL. Remove it from the inherited
 // process environment before any package manager, test, or packaging command
@@ -45,6 +48,23 @@ function run(command, args, { cwd, env, heartbeat } = {}) {
   });
 }
 
+async function cleanActiveWorkDirectory() {
+  if (!activeWorkDirectory) return;
+  const work = activeWorkDirectory;
+  activeWorkDirectory = undefined;
+  await rm(work, { recursive: true, force: true });
+}
+
+function cleanUpAfterTermination(exitCode) {
+  void cleanActiveWorkDirectory().finally(() => process.exit(exitCode));
+}
+
+// A hosted build can be stopped while the private source is being packaged.
+// Handle graceful termination so the decrypted release workspace is removed
+// before this process exits. A forced SIGKILL cannot be intercepted.
+process.once("SIGINT", () => cleanUpAfterTermination(130));
+process.once("SIGTERM", () => cleanUpAfterTermination(143));
+
 async function sha256(file) {
   const hash = createHash("sha256");
   for await (const chunk of createReadStream(file)) hash.update(chunk);
@@ -61,8 +81,11 @@ async function buildInstaller() {
   const expectedArchiveHash = process.env.P47_SOURCE_ARCHIVE_SHA256;
   if (!key || !expectedArchiveHash) throw new Error("The private Platynum release source is not configured.");
   if (!existsSync(encryptedSource)) throw new Error("The encrypted Platynum release source is missing.");
+  await run("zip", ["-v"]);
+  await run("unzip", ["-v"]);
 
   const work = await mkdtemp(join(tmpdir(), "platynum-47-"));
+  activeWorkDirectory = work;
   const archive = join(work, "source.tar.gz");
 
   try {
@@ -108,17 +131,11 @@ async function buildInstaller() {
         "--yes",
         "electron-builder@26.15.7",
         "--win",
-        "portable",
         "--x64",
+        "--dir",
         "--publish",
         "never",
-        "--config.toolsets.nsis=1.2.1",
-        // The Render build worker has a hard resource ceiling. Storing the
-        // portable payload avoids an expensive high-compression pass while
-        // keeping the result a single self-contained Windows application.
-        "--config.compression=store",
         "--config.win.signExecutable=false",
-        `--config.portable.artifactName=${desktopAppName}`,
         "--config.electronVersion=43.5.1",
       ],
       {
@@ -128,21 +145,44 @@ async function buildInstaller() {
       },
     );
 
-    const unpacked = join(project, "release", "win-unpacked", "resources");
+    const releaseDirectory = join(project, "release");
+    const unpackedRoot = join(releaseDirectory, "win-unpacked");
+    const packagedRoot = join(releaseDirectory, desktopDirectoryName);
+    await rename(unpackedRoot, packagedRoot);
+
+    const unpacked = join(packagedRoot, "resources");
+    const appAsar = join(unpacked, "app.asar");
     const worker = join(unpacked, "app.asar.unpacked", "node_modules", "@openai", "codex-win32-x64", "vendor", "x86_64-pc-windows-msvc", "bin", "codex.exe");
     const npmCli = join(unpacked, "project-runner", "npm", "bin", "npm-cli.js");
     const nodeShim = join(unpacked, "project-runner", "node.cmd");
-    const desktopApp = join(project, "release", desktopAppName);
-    for (const required of [worker, npmCli, nodeShim, desktopApp]) {
+    const desktopApp = join(packagedRoot, desktopExecutableName);
+    for (const required of [appAsar, worker, npmCli, nodeShim, desktopApp]) {
       if (!existsSync(required)) throw new Error(`Packaged Platynum file is missing: ${basename(required)}`);
     }
 
     await mkdir(artifactDirectory, { recursive: true });
-    await copyFile(desktopApp, join(artifactDirectory, desktopAppName));
-    await writeFile(join(artifactDirectory, `${desktopAppName}.sha256`), `${await sha256(desktopApp)}  ${desktopAppName}\n`);
-    console.log(`Verified Windows desktop app prepared: ${desktopAppName}`);
+    const desktopArchive = join(artifactDirectory, desktopArchiveName);
+    await rm(desktopArchive, { force: true });
+    await run(
+      "zip",
+      ["-q", "-r", "-1", desktopArchive, desktopDirectoryName],
+      { cwd: releaseDirectory, heartbeat: "Archiving the Windows desktop app" },
+    );
+    if (!existsSync(desktopArchive)) throw new Error(`Packaged Platynum archive is missing: ${desktopArchiveName}`);
+    await run("unzip", ["-tq", desktopArchive]);
+    await run("unzip", [
+      "-tq",
+      desktopArchive,
+      `${desktopDirectoryName}/${desktopExecutableName}`,
+      `${desktopDirectoryName}/resources/app.asar`,
+      `${desktopDirectoryName}/resources/app.asar.unpacked/node_modules/@openai/codex-win32-x64/vendor/x86_64-pc-windows-msvc/bin/codex.exe`,
+      `${desktopDirectoryName}/resources/project-runner/npm/bin/npm-cli.js`,
+      `${desktopDirectoryName}/resources/project-runner/node.cmd`,
+    ]);
+    await writeFile(join(artifactDirectory, `${desktopArchiveName}.sha256`), `${await sha256(desktopArchive)}  ${desktopArchiveName}\n`);
+    console.log(`Verified Windows desktop app bundle prepared: ${desktopArchiveName}`);
   } finally {
-    await rm(work, { recursive: true, force: true });
+    await cleanActiveWorkDirectory();
   }
 }
 

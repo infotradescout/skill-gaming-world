@@ -26,17 +26,21 @@ export default async function PlatynumCompanionPage() {
       <section className="surface admin-section">
         <h2>Get Platynum for Windows</h2>
         <p>
-          Download and run the Windows app. It opens Platynum-47 directly and keeps your project folders
-          on this computer.
+          Download the Windows app, choose Extract All, open the Platynum-47 folder, then double-click
+          Platynum-47.exe. It opens directly and keeps your project folders on this computer.
         </p>
         <a className="button button-primary" href="/admin/platynum/download">
-          Download Platynum for Windows
+          Download Platynum-47 for Windows
         </a>
+        <p>
+          Windows may ask you to confirm the first run because this private app is not code-signed yet.
+          Only continue with the file downloaded from this page.
+        </p>
       </section>
 
       <section className="callout admin-callout">
         <p>
-          This page is limited to the account owner. It is an entry point only: it does not share game data,
+          This page is limited to Super Admins. It is an entry point only: it does not share game data,
           account access, project files, or sign-in details with Platynum.
         </p>
       </section>

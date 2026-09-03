@@ -38,9 +38,10 @@ describe("Platynum Windows app download", () => {
     expect(mocks.requireAdminRoles).toHaveBeenCalledWith(["SUPER_ADMIN"]);
     expect(mocks.createReadStream).toHaveBeenCalledTimes(1);
     expect(response.headers.get("content-disposition")).toBe(
-      'attachment; filename="Platynum-47-0.2.0.exe"',
+      'attachment; filename="Platynum-47-0.2.0-windows-x64.zip"',
     );
     expect(response.headers.get("cache-control")).toBe("private, no-store");
     expect(response.headers.get("content-length")).toBe("42");
+    expect(response.headers.get("content-type")).toBe("application/zip");
   });
 });

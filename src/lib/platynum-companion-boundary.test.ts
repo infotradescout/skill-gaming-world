@@ -31,7 +31,7 @@ describe("Platynum companion boundary", () => {
     expect(source).toContain('robots: { index: false, follow: false }');
     expect(source).not.toMatch(/<iframe|fetch\(|\/api\/(runtime|model|pair)|github\/oauth|archive\//i);
     expect(downloadSource).toContain('requireAdminRoles(["SUPER_ADMIN"])');
-    expect(downloadSource).toContain('Platynum-47-0.2.0.exe');
+    expect(downloadSource).toContain('Platynum-47-0.2.0-windows-x64.zip');
     expect(downloadSource).not.toMatch(/searchParams|params|\[\.\.\./i);
   });
 
@@ -41,10 +41,15 @@ describe("Platynum companion boundary", () => {
     expect(source).toContain("const sourceKey = process.env.P47_SOURCE_KEY;");
     expect(source).toContain("delete process.env.P47_SOURCE_KEY;");
     expect(source).toContain("{ env: { P47_ARCHIVE_KEY: key } }");
-    expect(source).toContain('"portable"');
-    expect(source).toContain('const desktopAppName = `Platynum-47-${version}.exe`;');
-    expect(source).not.toContain("--config.toolsets.wine=1.0.1");
+    expect(source).toContain('"--dir"');
+    expect(source).not.toContain('"portable"');
+    expect(source).toContain('const desktopArchiveName = `Platynum-47-${version}-windows-x64.zip`;');
+    expect(source).toContain('["-q", "-r", "-1", desktopArchive, desktopDirectoryName]');
+    expect(source).toContain('await run("unzip", ["-tq", desktopArchive]);');
+    expect(source).toContain('`${desktopDirectoryName}/${desktopExecutableName}`');
     expect(source).toContain('heartbeat: "Packaging the Windows desktop app"');
-    expect(source).toContain('"--config.compression=store"');
+    expect(source).toContain('heartbeat: "Archiving the Windows desktop app"');
+    expect(source).toContain('process.once("SIGTERM"');
+    expect(source).toContain("await cleanActiveWorkDirectory();");
   });
 });
