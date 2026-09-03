@@ -113,6 +113,10 @@ async function buildInstaller() {
         "--publish",
         "never",
         "--config.toolsets.nsis=1.2.1",
+        // The Render build worker has a hard resource ceiling. Storing the
+        // portable payload avoids an expensive high-compression pass while
+        // keeping the result a single self-contained Windows application.
+        "--config.compression=store",
         "--config.win.signExecutable=false",
         `--config.portable.artifactName=${desktopAppName}`,
         "--config.electronVersion=43.5.1",

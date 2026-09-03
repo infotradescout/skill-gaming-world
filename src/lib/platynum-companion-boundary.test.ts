@@ -45,5 +45,6 @@ describe("Platynum companion boundary", () => {
     expect(source).toContain('const desktopAppName = `Platynum-47-${version}.exe`;');
     expect(source).not.toContain("--config.toolsets.wine=1.0.1");
     expect(source).toContain('heartbeat: "Packaging the Windows desktop app"');
+    expect(source).toContain('"--config.compression=store"');
   });
 });
