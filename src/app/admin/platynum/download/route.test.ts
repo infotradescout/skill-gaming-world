@@ -12,9 +12,31 @@ vi.mock("node:fs", () => ({ createReadStream: mocks.createReadStream }));
 vi.mock("node:fs/promises", () => ({ stat: mocks.stat }));
 vi.mock("node:stream", () => ({ Readable: { toWeb: mocks.toWeb } }));
 
-import { GET } from "./route";
+import { GET, HEAD, POST } from "./route";
 
 const directToken = "a".repeat(64);
+
+function directRequest(method: "GET" | "HEAD" = "GET", token = directToken) {
+  return new Request(
+    `http://localhost/admin/platynum/download?access=${token}`,
+    { method },
+  );
+}
+
+async function confirmationTicket(response: Response) {
+  const html = await response.text();
+  const match = html.match(/name="ticket" value="([A-Za-z0-9_-]+)"/);
+  if (!match) throw new Error("The confirmation page did not contain a ticket.");
+  return match[1];
+}
+
+function postTicket(ticket: string) {
+  return new Request("http://localhost/admin/platynum/download", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({ ticket }),
+  });
+}
 
 describe("Platynum Windows app download", () => {
   beforeEach(() => {
@@ -29,50 +51,76 @@ describe("Platynum Windows app download", () => {
     delete process.env.P47_DOWNLOAD_TOKEN;
   });
 
-  it("requires the owner gate when no direct access token is supplied", async () => {
+  it("requires the owner gate when no private token is supplied", async () => {
     mocks.requireAdminRoles.mockRejectedValue(new Error("redirect:/auth/login"));
 
     await expect(GET()).rejects.toThrow("redirect:/auth/login");
     expect(mocks.stat).not.toHaveBeenCalled();
+    expect(mocks.createReadStream).not.toHaveBeenCalled();
   });
 
-  it("does not accept an incorrect direct access token", async () => {
-    mocks.requireAdminRoles.mockRejectedValue(new Error("redirect:/auth/login"));
-    const request = new Request(
-      `http://localhost/admin/platynum/download?access=${"b".repeat(64)}`,
-    );
+  it("rejects an incorrect private link without opening the archive", async () => {
+    const response = await GET(directRequest("GET", "b".repeat(64)));
 
-    await expect(GET(request)).rejects.toThrow("redirect:/auth/login");
+    expect(response.status).toBe(404);
+    expect(mocks.requireAdminRoles).not.toHaveBeenCalled();
     expect(mocks.stat).not.toHaveBeenCalled();
+    expect(mocks.createReadStream).not.toHaveBeenCalled();
   });
 
-  it("accepts the private direct access token without sending the owner through login", async () => {
+  it("answers repeated link-preview HEAD checks without streaming the ZIP", async () => {
+    const first = await HEAD(directRequest("HEAD"));
+    const second = await HEAD(directRequest("HEAD"));
+
+    expect(first.status).toBe(204);
+    expect(second.status).toBe(204);
+    expect(mocks.stat).not.toHaveBeenCalled();
+    expect(mocks.createReadStream).not.toHaveBeenCalled();
+  });
+
+  it("turns a valid private GET into a confirmation page instead of a download", async () => {
+    const response = await GET(directRequest());
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toBe("text/html; charset=utf-8");
+    expect(response.headers.get("content-disposition")).toBeNull();
+    expect(await response.text()).toContain("Download Platynum-47 once");
+    expect(mocks.stat).not.toHaveBeenCalled();
+    expect(mocks.createReadStream).not.toHaveBeenCalled();
+  });
+
+  it("streams exactly one ZIP after the confirmation button is submitted", async () => {
     mocks.stat.mockResolvedValue({ isFile: () => true, size: 42 });
     mocks.createReadStream.mockReturnValue({ stream: true });
-    const request = new Request(
-      `http://localhost/admin/platynum/download?access=${directToken}`,
-    );
+    const ticket = await confirmationTicket(await GET(directRequest()));
 
-    const response = await GET(request);
+    const first = await POST(postTicket(ticket));
+    const repeated = await POST(postTicket(ticket));
 
-    expect(mocks.requireAdminRoles).not.toHaveBeenCalled();
-    expect(mocks.createReadStream).toHaveBeenCalledTimes(1);
-    expect(response.headers.get("content-disposition")).toBe(
+    expect(first.status).toBe(200);
+    expect(first.headers.get("content-disposition")).toBe(
       'attachment; filename="Platynum-47-0.2.0-windows-x64.zip"',
     );
-    expect(response.headers.get("cache-control")).toBe("private, no-store");
-    expect(response.headers.get("content-length")).toBe("42");
-    expect(response.headers.get("content-type")).toBe("application/zip");
-    expect(response.headers.get("referrer-policy")).toBe("no-referrer");
+    expect(first.headers.get("content-length")).toBe("42");
+    expect(first.headers.get("content-type")).toBe("application/zip");
+    expect(repeated.status).toBe(409);
+    expect(mocks.stat).toHaveBeenCalledTimes(1);
+    expect(mocks.createReadStream).toHaveBeenCalledTimes(1);
   });
 
-  it("keeps the Super Admin download path working without a direct token", async () => {
-    mocks.stat.mockResolvedValue({ isFile: () => true, size: 42 });
-    mocks.createReadStream.mockReturnValue({ stream: true });
-
+  it("keeps the Super Admin path but also requires explicit confirmation", async () => {
     const response = await GET();
 
     expect(mocks.requireAdminRoles).toHaveBeenCalledWith(["SUPER_ADMIN"]);
-    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toBe("text/html; charset=utf-8");
+    expect(mocks.createReadStream).not.toHaveBeenCalled();
+  });
+
+  it("rejects a POST that was not issued by the confirmation page", async () => {
+    const response = await POST(postTicket("not-a-real-ticket"));
+
+    expect(response.status).toBe(409);
+    expect(mocks.stat).not.toHaveBeenCalled();
+    expect(mocks.createReadStream).not.toHaveBeenCalled();
   });
 });
