@@ -1,6 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import { readBrowserStorage, writeBrowserStorage } from "./browser-storage";
 
 export const CARD_FRONT_OPTIONS = ["classic", "midnight", "parchment"] as const;
 export const CARD_BACK_OPTIONS = ["monetaire", "shipyard", "blueprint"] as const;
@@ -23,6 +24,7 @@ const CHANGE_EVENT = "monetaire:card-appearance-changed";
 
 let cachedRaw: string | null | undefined;
 let cachedPreferences = DEFAULT_CARD_PREFERENCES;
+let memoryOnlyPreference = false;
 
 export function sanitizeCardPreferences(value: unknown): CardPreferences {
   if (!value || typeof value !== "object") return DEFAULT_CARD_PREFERENCES;
@@ -48,7 +50,10 @@ export function mergeCardPreferences(
 
 function readCardPreferences(): CardPreferences {
   if (typeof window === "undefined") return DEFAULT_CARD_PREFERENCES;
-  const raw = window.localStorage.getItem(STORAGE_KEY);
+  if (memoryOnlyPreference) return cachedPreferences;
+  const stored = readBrowserStorage("localStorage", STORAGE_KEY);
+  if (!stored.available) return cachedPreferences;
+  const raw = stored.value;
   if (raw === cachedRaw) return cachedPreferences;
   cachedRaw = raw;
   try {
@@ -60,10 +65,16 @@ function readCardPreferences(): CardPreferences {
 }
 
 function subscribeToCardPreferences(callback: () => void) {
-  window.addEventListener("storage", callback);
+  function onStorage(event: StorageEvent) {
+    if (event.key !== null && event.key !== STORAGE_KEY) return;
+    memoryOnlyPreference = false;
+    cachedRaw = undefined;
+    callback();
+  }
+  window.addEventListener("storage", onStorage);
   window.addEventListener(CHANGE_EVENT, callback);
   return () => {
-    window.removeEventListener("storage", callback);
+    window.removeEventListener("storage", onStorage);
     window.removeEventListener(CHANGE_EVENT, callback);
   };
 }
@@ -79,8 +90,8 @@ export function useCardPreferences(): CardPreferences {
 export function saveCardPreferences(preferences: CardPreferences): void {
   const normalized = sanitizeCardPreferences(preferences);
   const raw = JSON.stringify(normalized);
-  window.localStorage.setItem(STORAGE_KEY, raw);
   cachedRaw = raw;
   cachedPreferences = normalized;
-  window.dispatchEvent(new Event(CHANGE_EVENT));
+  memoryOnlyPreference = !writeBrowserStorage("localStorage", STORAGE_KEY, raw);
+  if (typeof window !== "undefined") window.dispatchEvent(new Event(CHANGE_EVENT));
 }

@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { sql } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
+import { hasRequiredMigrationHistory } from "@/lib/migration-readiness";
+import { ROBOT_FOUNDATION_READY_SQL } from "@/lib/robot-foundation-readiness";
 import {
   configuredDatabaseFingerprint,
   getRuntimeEnv,
@@ -11,7 +13,7 @@ import {
 export const dynamic = "force-dynamic";
 
 const REQUIRED_CORE_TABLE_COUNT = 10;
-const REQUIRED_MIGRATION_COUNT = 10;
+
 
 export async function GET() {
   let env: RuntimeEnv;
@@ -28,11 +30,13 @@ export async function GET() {
           configuration: "unavailable",
           database: "unavailable",
           schema: "unavailable",
+          robotCombatSchema: "unavailable",
           jurisdiction: "unavailable",
           previewOwner: "unavailable",
         },
         operations: {
           monetairePlay: false,
+          robotCombatFree: false,
           monetairePrize: false,
           socialCasino: false,
           realMoneyCasino: false,
@@ -44,6 +48,9 @@ export async function GET() {
   }
   let database: "not-required" | "ready" | "unavailable" = "not-required";
   let schema: "not-required" | "ready" | "unavailable" = "not-required";
+  let robotCombatSchema: "not-required" | "ready" | "unavailable" = env.DEMO_MODE
+    ? "not-required"
+    : "unavailable";
   if (!env.DEMO_MODE) {
     try {
       const connection = getDatabase();
@@ -67,7 +74,8 @@ export async function GET() {
           count(*) filter (
             where table_schema = 'drizzle'
               and table_name = '__drizzle_migrations'
-          )::integer as "journalTableCount"
+          )::integer as "journalTableCount",
+          ${sql.raw(ROBOT_FOUNDATION_READY_SQL)} as "robotSchemaReady"
         from information_schema.tables
       `);
       database = "ready";
@@ -76,6 +84,7 @@ export async function GET() {
         | {
             coreTableCount?: number | string;
             journalTableCount?: number | string;
+            robotSchemaReady?: boolean;
           }
         | undefined;
       if (
@@ -83,12 +92,12 @@ export async function GET() {
         Number(tableStatus?.journalTableCount) === 1
       ) {
         const migrationResult = await connection.execute(sql`
-          select count(*)::integer as "migrationCount"
+          select created_at as "createdAt", hash
           from drizzle.__drizzle_migrations
         `);
-        const migrationStatus = migrationResult[0] as
-          | { migrationCount?: number | string }
-          | undefined;
+        const migrationReceipts = migrationResult as Array<{
+          createdAt?: number | string; hash?: string;
+        }>;
         const truthResult = await connection.execute(sql`
           select
             (
@@ -355,7 +364,7 @@ export async function GET() {
             }
           | undefined;
         schema =
-          Number(migrationStatus?.migrationCount) >= REQUIRED_MIGRATION_COUNT &&
+          hasRequiredMigrationHistory(migrationReceipts, "0009_monetaire_two_account_reality") &&
           Number(truthStatus?.correctRulesetCount) === 1 &&
           Number(truthStatus?.untrackedMistakeCount) === 0 &&
           Number(truthStatus?.activeSupersededCompetitionCount) === 0 &&
@@ -363,6 +372,11 @@ export async function GET() {
           Number(truthStatus?.terminalSessionMissingScoreCount) === 0 &&
           Number(truthStatus?.auditChainInvalidCount) === 0 &&
           Number(truthStatus?.stageTwoInvariantCount) === 13
+            ? "ready"
+            : "unavailable";
+        robotCombatSchema =
+          schema === "ready" && tableStatus?.robotSchemaReady === true &&
+          hasRequiredMigrationHistory(migrationReceipts, "0010_robot-combat-foundation")
             ? "ready"
             : "unavailable";
       } else {
@@ -386,8 +400,9 @@ export async function GET() {
     env.DEMO_MODE || Boolean(env.PREVIEW_OWNER_EMAIL);
   const monetairePlayReady =
     ready && jurisdictionReady && previewOwnerReady;
-  const serviceReady =
-    ready && jurisdictionReady && previewOwnerReady;
+  const robotCombatFreeReady =
+    ready && robotCombatSchema !== "unavailable" && jurisdictionReady && previewOwnerReady;
+  const serviceReady = monetairePlayReady && robotCombatFreeReady;
   return NextResponse.json({
     status: serviceReady ? "ok" : "not-ready",
     service: "skill-gaming-world",
@@ -403,11 +418,13 @@ export async function GET() {
       configuration: "ready",
       database,
       schema,
+      robotCombatSchema,
       jurisdiction: jurisdictionReady ? "ready" : "unavailable",
       previewOwner: previewOwnerReady ? "ready" : "unavailable",
     },
     operations: {
       monetairePlay: monetairePlayReady,
+      robotCombatFree: robotCombatFreeReady,
       monetairePrize: false,
       socialCasino: false,
       realMoneyCasino: false,

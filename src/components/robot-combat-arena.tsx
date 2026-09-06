@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { newerRobotMatchSnapshot } from "@/lib/robot-match-snapshot";
 import type {
   RobotCombatRobotState,
   RobotMatchCommand,
@@ -113,6 +114,16 @@ export function RobotCombatArena({ playerId, initialMatch, catalog }: RobotComba
   const [match, setMatch] = useState(initialMatch);
   const [notice, setNotice] = useState(phaseCopy[initialMatch.phase]);
   const [busy, setBusy] = useState(false);
+  const latestMatch = useRef(initialMatch);
+  const commandInFlight = useRef(false);
+  const acceptSnapshot = useCallback((incoming: RobotMatchState) => {
+    const previous = latestMatch.current;
+    const next = newerRobotMatchSnapshot(previous, incoming);
+    if (next === previous) return;
+    latestMatch.current = next;
+    setMatch(next);
+    if (next.phase !== previous.phase) setNotice(phaseCopy[next.phase]);
+  }, []);
   const definitions = useMemo(
     () => new Map(catalog.map((part) => [part.key, part])),
     [catalog],
@@ -131,8 +142,7 @@ export function RobotCombatArena({ playerId, initialMatch, catalog }: RobotComba
         .then(async (response) => (response.ok ? await response.json() as { match: RobotMatchState } : undefined))
         .then((payload) => {
           if (!cancelled && payload?.match) {
-            setMatch(payload.match);
-            setNotice(phaseCopy[payload.match.phase]);
+            acceptSnapshot(payload.match);
           }
         })
         .catch(() => undefined);
@@ -142,7 +152,7 @@ export function RobotCombatArena({ playerId, initialMatch, catalog }: RobotComba
       cancelled = true;
       window.clearInterval(timer);
     };
-  }, [match.matchId]);
+  }, [match.matchId, acceptSnapshot]);
 
   useEffect(() => {
     if (match.phase !== "ACTIVE") return;
@@ -152,11 +162,11 @@ export function RobotCombatArena({ playerId, initialMatch, catalog }: RobotComba
       void fetch(`/api/robot-combat/matches/${match.matchId}/commands`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ actionId, command: { type: "TICK", elapsedMs: 120 } }),
+        body: JSON.stringify({ actionId, command: { type: "TICK", elapsedMs: 0 } }),
       })
         .then(async (response) => (response.ok ? await response.json() as { match?: RobotMatchState } : undefined))
         .then((payload) => {
-          if (!cancelled && payload?.match) setMatch(payload.match);
+          if (!cancelled && payload?.match) acceptSnapshot(payload.match);
         })
         .catch(() => undefined);
     }, 600);
@@ -164,10 +174,11 @@ export function RobotCombatArena({ playerId, initialMatch, catalog }: RobotComba
       cancelled = true;
       window.clearInterval(timer);
     };
-  }, [match.phase, match.matchId]);
+  }, [match.phase, match.matchId, acceptSnapshot]);
 
   async function sendMatchCommand(command: RobotMatchCommand) {
-    if (!mySlot && command.type !== "TICK") return;
+    if ((!mySlot && command.type !== "TICK") || commandInFlight.current) return;
+    commandInFlight.current = true;
     setBusy(true);
     const actionId = `arena-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
     try {
@@ -181,15 +192,16 @@ export function RobotCombatArena({ playerId, initialMatch, catalog }: RobotComba
         event?: { message?: string };
         rejection?: { message?: string };
       };
-      if (payload.match) setMatch(payload.match);
+      if (payload.match) acceptSnapshot(payload.match);
       setNotice(
         response.ok
           ? payload.event?.message ?? "Move accepted."
           : payload.rejection?.message ?? "That move was not accepted.",
       );
     } catch {
-      setNotice("The match could not be reached. No move was recorded.");
+      setNotice("The reply was lost. The match will refresh to show the latest confirmed state.");
     } finally {
+      commandInFlight.current = false;
       setBusy(false);
     }
   }

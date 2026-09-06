@@ -1,7 +1,9 @@
 import { createHash } from "node:crypto";
 
 export const ROBOT_COMBAT_GAME_KEY = "SGW_ROBOT_COMBAT" as const;
-export const ROBOT_COMBAT_RULESET_VERSION = "ROBOT_COMBAT_RULES_V1" as const;
+// V1 snapshots remain historical records. New matches use the repaired referee.
+export const ROBOT_COMBAT_RULESET_VERSION = "ROBOT_COMBAT_RULES_V2" as const;
+export type RobotCombatRulesetVersion = "ROBOT_COMBAT_RULES_V1" | typeof ROBOT_COMBAT_RULESET_VERSION;
 
 export const ROBOT_COMBAT_PART_CATEGORIES = [
   "CHASSIS",
@@ -634,6 +636,9 @@ export type RobotCombatRobotState = {
   disabledComponents: string[];
   damageLog: RobotDamageRecord[];
   lastActionAt: number;
+  weaponReadyAtMs?: number;
+  inContact?: boolean;
+  contactPending?: boolean;
 };
 
 export type RobotDamageRecord = {
@@ -646,13 +651,15 @@ export type RobotDamageRecord = {
 
 export type RobotMatchState = {
   matchId: string;
-  rulesetVersion: typeof ROBOT_COMBAT_RULESET_VERSION;
+  rulesetVersion: RobotCombatRulesetVersion;
   arenaKey: string;
   mode?: "MATCH" | "PRIVATE_TEST";
   phase: RobotMatchPhase;
   players: Partial<Record<RobotMatchSlot, RobotMatchPlayer>>;
   robots: Partial<Record<RobotMatchSlot, RobotCombatRobotState>>;
   elapsedMs: number;
+  // Assigned by the service, never by a request payload. Persisted with the state.
+  serverClock?: { startedAtMs: number };
   nextSequence: number;
   winnerSlot?: RobotMatchSlot;
   terminalReason?: string;
@@ -827,6 +834,13 @@ export function applyRobotMatchCommand(
   state: RobotMatchState,
   command: RobotMatchCommand,
 ): { state: RobotMatchState; event: RobotMatchEvent } {
+  if (state.rulesetVersion !== ROBOT_COMBAT_RULESET_VERSION) {
+    return rejection(state, command, "This earlier match is read-only. Start a new match with your saved machine.");
+  }
+  if (["COMPLETED", "CANCELLED", "DISCONNECTED"].includes(state.phase)
+    && !(command.type === "RESET_TEST" && state.mode === "PRIVATE_TEST")) {
+    return rejection(state, command, "The match is already terminal.");
+  }
   if (command.type === "JOIN") {
     if (state.phase !== "WAITING_FOR_OPPONENT") return rejection(state, command, "This match is no longer accepting an opponent.");
     const slot = command.slot ?? (state.players.A ? "B" : "A");
@@ -849,23 +863,21 @@ export function applyRobotMatchCommand(
 
   if (command.type === "TICK") {
     if (state.phase !== "ACTIVE") return rejection(state, command, "The match clock is not active.");
-    const elapsedMs = Math.max(0, Math.min(command.elapsedMs, 250));
-    const robots = { ...state.robots };
-    for (const slot of ["A", "B"] as const) {
-      const robot = robots[slot];
-      if (!robot) continue;
-      const nextHeading = robot.heading + robot.steering * elapsedMs * 0.002;
-      robots[slot] = {
-        ...robot,
-        heading: nextHeading,
-        position: {
-          x: Math.max(-7.5, Math.min(7.5, robot.position.x + Math.sin(nextHeading) * robot.throttle * elapsedMs * 0.002)),
-          z: Math.max(-5.5, Math.min(5.5, robot.position.z + Math.cos(nextHeading) * robot.throttle * elapsedMs * 0.002)),
-        },
-      };
+    if (!Number.isSafeInteger(command.elapsedMs) || command.elapsedMs < 0 || command.elapsedMs > 250) {
+      return rejection(state, command, "The simulation step is invalid.");
     }
-    const event = matchEvent(state, { type: "TICK", accepted: true, message: "Authoritative clock advanced." });
-    return withEvent(state, event, { elapsedMs: state.elapsedMs + elapsedMs, robots });
+    // This pure reducer accepts simulation deltas only from the server clock.
+    // The request service does not forward a browser's elapsedMs here.
+    let robots = state.robots;
+    let remaining = command.elapsedMs;
+    while (remaining > 0) {
+      const step = Math.min(50, remaining);
+      robots = moveRobots(state, robots, step);
+      remaining -= step;
+    }
+    const elapsedMs = state.elapsedMs + command.elapsedMs;
+    const event = { ...matchEvent(state, { type: "TICK", accepted: true, message: "Match state refreshed." }), atElapsedMs: elapsedMs };
+    return withEvent(state, event, { elapsedMs, robots });
   }
 
   const player = "slot" in command ? readyPlayer(state, command.slot) : undefined;
@@ -890,8 +902,8 @@ export function applyRobotMatchCommand(
     const nextPhase: RobotMatchPhase = bothReady ? "ACTIVE" : "READY_CHECK";
     const nextRobots = bothReady
       ? {
-          A: createRobotState(),
-          B: createRobotState(),
+          A: createRobotState({ x: 0, z: -3.5 }),
+          B: { ...createRobotState({ x: 0, z: 3.5 }), heading: Math.PI },
         }
       : state.robots;
     const event = matchEvent(state, {
@@ -905,6 +917,15 @@ export function applyRobotMatchCommand(
 
   if (command.type === "CONTROL") {
     if (state.phase !== "ACTIVE") return rejection(state, command, "Controls are only accepted during an active match.");
+    if (!Number.isFinite(command.throttle) || !Number.isFinite(command.steering)) {
+      return rejection(state, command, "The drive input is invalid.");
+    }
+    const currentRobot = state.robots[command.slot];
+    if (!currentRobot) return rejection(state, command, "The machine is not present.");
+    if ((!componentUsable(currentRobot, "drive") || !componentUsable(currentRobot, "power") || !componentUsable(currentRobot, "frame"))
+      && (command.throttle !== 0 || command.steering !== 0)) {
+      return rejection(state, command, "This machine cannot drive while its drive, power, or frame is disabled.");
+    }
     const throttle = Math.max(-1, Math.min(1, command.throttle));
     const steering = Math.max(-1, Math.min(1, command.steering));
     const robot = state.robots[command.slot] ?? createRobotState();
@@ -922,12 +943,38 @@ export function applyRobotMatchCommand(
     if (state.phase !== "ACTIVE") return rejection(state, command, "Weapons are only accepted during an active match.");
     const opponentSlot: RobotMatchSlot = command.slot === "A" ? "B" : "A";
     const attacker = player.inspection;
+    const attackerRobot = state.robots[command.slot];
+    const opponentRobot = state.robots[opponentSlot];
+    if (!attackerRobot || !opponentRobot) return rejection(state, command, "Both machines must be present.");
+    if (!["frame", "power", "weapon"].every((component) => componentUsable(attackerRobot, component))) {
+      return rejection(state, command, "This machine cannot fire while its weapon, power, or frame is disabled.");
+    }
     const weapon = player.blueprint?.parts
       .map((part) => getRobotPartDefinition(part.partKey))
       .find((part) => part?.category === "WEAPON");
     if (!attacker || !weapon) return rejection(state, command, "The submitted machine has no usable weapon.");
-    const damage = Number(weapon.attributes.damage ?? 0);
-    const opponentRobot = state.robots[opponentSlot] ?? createRobotState();
+    const reach = Number(weapon.attributes.reach);
+    const cooldownMs = Number(weapon.attributes.cooldownMs);
+    const baseDamage = Number(weapon.attributes.damage);
+    if (![reach, cooldownMs, baseDamage].every((value) => Number.isFinite(value) && value > 0)) {
+      return rejection(state, command, "This weapon has no valid combat configuration.");
+    }
+    if (state.elapsedMs < (attackerRobot.weaponReadyAtMs ?? 0)) {
+      return rejection(state, command, "The weapon is recovering from its last strike.");
+    }
+    const dx = opponentRobot.position.x - attackerRobot.position.x;
+    const dz = opponentRobot.position.z - attackerRobot.position.z;
+    const distance = Math.hypot(dx, dz);
+    const reachLimit = robotBodyRadius(state.players[command.slot]) + robotBodyRadius(state.players[opponentSlot]) + reach;
+    if (!Number.isFinite(distance) || distance > reachLimit) {
+      return rejection(state, command, "Move closer. The opponent is outside this weapon's reach.");
+    }
+    if (dx * Math.sin(attackerRobot.heading) + dz * Math.cos(attackerRobot.heading) <= 0) {
+      return rejection(state, command, "Face the opponent before striking.");
+    }
+    const armor = playerParts(state.players[opponentSlot], "ARMOR");
+    const protection = Math.max(1, ...armor.map((part) => Number(part.attributes.protection ?? 1)));
+    const damage = Math.max(1, Math.round(baseDamage / protection));
     const targetComponent = weaponKeyTarget(
       player.blueprint?.parts.find((part) => getRobotPartDefinition(part.partKey)?.category === "WEAPON")?.partKey,
     );
@@ -973,7 +1020,13 @@ export function applyRobotMatchCommand(
       },
     });
     return withEvent(state, event, {
-      robots: { ...state.robots, [opponentSlot]: opponent },
+      robots: {
+        ...state.robots,
+        [command.slot]: { ...attackerRobot, weaponReadyAtMs: state.elapsedMs + cooldownMs, lastActionAt: state.elapsedMs },
+        [opponentSlot]: (!componentUsable(opponent, "drive") || !componentUsable(opponent, "power") || !componentUsable(opponent, "frame"))
+          ? { ...opponent, throttle: 0, steering: 0 }
+          : opponent,
+      },
       phase: completed ? "COMPLETED" : state.phase,
       winnerSlot: completed ? command.slot : state.winnerSlot,
       terminalReason: completed ? "OPPONENT_DISABLED" : state.terminalReason,
@@ -1002,8 +1055,9 @@ export function applyRobotMatchCommand(
     if (state.mode !== "PRIVATE_TEST") return rejection(state, command, "Contact trials are only available in the private test bay.");
     if (state.phase !== "ACTIVE") return rejection(state, command, "The private test bay is not active.");
     const robot = state.robots[command.slot] ?? createRobotState();
-    if (robot.throttle <= 0 || robot.position.z < -2.5) {
-      return rejection(state, command, "Drive toward the marked contact gate before recording contact.");
+    if (!robot.contactPending || robot.throttle <= 0
+      || !["frame", "drive", "power"].every((component) => componentUsable(robot, component))) {
+      return rejection(state, command, "Drive into the target before recording a new contact.");
     }
     const playerInspection = state.players[command.slot]?.inspection;
     const balanceScore = playerInspection?.metrics.balanceScore ?? 50;
@@ -1037,7 +1091,7 @@ export function applyRobotMatchCommand(
       metadata: { targetComponent, damage: componentBefore - componentRemaining, balanceScore },
     });
     return withEvent(state, event, {
-      robots: { ...state.robots, B: updatedTarget },
+      robots: { ...state.robots, [command.slot]: { ...robot, contactPending: false }, B: updatedTarget },
       testReport: {
         ...state.testReport!,
         contacts: state.testReport!.contacts + 1,
@@ -1113,7 +1167,68 @@ function createRobotState(position: { x: number; z: number } = { x: 0, z: 0 }): 
     disabledComponents: [],
     damageLog: [],
     lastActionAt: 0,
+    weaponReadyAtMs: 0,
+    inContact: false,
+    contactPending: false,
   };
+}
+
+function componentUsable(robot: RobotCombatRobotState, component: string): boolean {
+  return robot.integrity > 0 && Number.isFinite(robot.components[component])
+    && robot.components[component] > 0 && !robot.disabledComponents.includes(component);
+}
+
+function playerParts(player: RobotMatchPlayer | undefined, category: RobotPartCategory): RobotPartDefinition[] {
+  return (player?.blueprint?.parts ?? [])
+    .map((part) => getRobotPartDefinition(part.partKey))
+    .filter((part): part is RobotPartDefinition => part?.category === category);
+}
+
+function robotBodyRadius(player: RobotMatchPlayer | undefined): number {
+  const chassis = playerParts(player, "CHASSIS")[0];
+  // Conservative 2D body envelope, not a claim of per-part 3D collision physics.
+  return chassis ? Math.hypot(chassis.size.x, chassis.size.z) / 2 : 0.5;
+}
+
+function moveRobots(state: RobotMatchState, previous: RobotMatchState["robots"], elapsedMs: number): RobotMatchState["robots"] {
+  const robots = { ...previous };
+  for (const slot of ["A", "B"] as const) {
+    const robot = previous[slot];
+    if (!robot) continue;
+    const drives = playerParts(state.players[slot], "DRIVE");
+    const canMove = drives.length >= 2 && ["frame", "drive", "power"].every((component) => componentUsable(robot, component));
+    const average = (key: string) => drives.reduce((total, drive) => total + Number(drive.attributes[key] ?? 1), 0) / Math.max(1, drives.length);
+    const throttle = canMove ? robot.throttle : 0;
+    const steering = canMove ? robot.steering : 0;
+    const heading = robot.heading + steering * elapsedMs * 0.002 * average("steering");
+    const distance = throttle * elapsedMs * 0.002 * average("topSpeed");
+    const radius = robotBodyRadius(state.players[slot]);
+    robots[slot] = {
+      ...robot,
+      throttle,
+      steering,
+      heading,
+      position: {
+        x: Math.max(-7.5 + radius, Math.min(7.5 - radius, robot.position.x + Math.sin(heading) * distance)),
+        z: Math.max(-5.5 + radius, Math.min(5.5 - radius, robot.position.z + Math.cos(heading) * distance)),
+      },
+    };
+  }
+  const a = robots.A;
+  const b = robots.B;
+  if (a && b && previous.A && previous.B) {
+    const minimum = robotBodyRadius(state.players.A) + robotBodyRadius(state.players.B);
+    const distance = Math.hypot(a.position.x - b.position.x, a.position.z - b.position.z);
+    const oldDistance = Math.hypot(previous.A.position.x - previous.B.position.x, previous.A.position.z - previous.B.position.z);
+    const contact = distance <= minimum && distance <= oldDistance;
+    // Stop penetration symmetrically. Momentum, lifting and per-part contacts
+    // remain separate gameplay work; no fabricated collision damage is added.
+    robots.A = { ...a, position: contact ? previous.A.position : a.position, inContact: contact,
+      contactPending: contact && !previous.A.inContact ? true : contact ? a.contactPending : false };
+    robots.B = { ...b, position: contact ? previous.B.position : b.position, inContact: contact,
+      contactPending: contact && !previous.B.inContact ? true : contact ? b.contactPending : false };
+  }
+  return robots;
 }
 
 function weaponKeyTarget(partKey: string | undefined): string {
