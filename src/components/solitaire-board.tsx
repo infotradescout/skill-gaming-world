@@ -1,72 +1,24 @@
 "use client";
 
-import { useState, type DragEvent } from "react";
+import { useEffect, useRef, useState, type DragEvent } from "react";
+import { readBrowserStorage, writeBrowserStorage } from "./browser-storage";
+import { MonetaireLiveTime } from "./monetaire-live-time";
+import { isCardSelectionClick, isDrawShortcut } from "./monetaire-input";
+import {
+  MonetaireMoveClient, gameReplyMessage, requestGameJson, type MoveResolution,
+} from "./monetaire-move-client";
+import {
+  canAdoptGameSnapshot, isRecord, isServerGameSession,
+  type Suit, type Rank, type ServerCard, type PositionedCard,
+  type ServerGameSession, type MoveIntent,
+} from "./monetaire-session-types";
+export type { ServerGameSession } from "./monetaire-session-types";
 import { useCardPreferences } from "./card-preferences";
-
-type Suit = "CLUBS" | "DIAMONDS" | "HEARTS" | "SPADES";
-type Rank =
-  | "ACE"
-  | "TWO"
-  | "THREE"
-  | "FOUR"
-  | "FIVE"
-  | "SIX"
-  | "SEVEN"
-  | "EIGHT"
-  | "NINE"
-  | "TEN"
-  | "JACK"
-  | "QUEEN"
-  | "KING";
-
-type ServerCard = {
-  id: string;
-  suit: Suit;
-  rank: Rank;
-};
-
-type PositionedCard =
-  | (ServerCard & { faceUp: true })
-  | { id: null; suit: null; rank: null; faceUp: false };
-
-export type ServerGameSession = {
-  id: string;
-  mode: "PRACTICE" | "NONCASH_COMPETITION";
-  rulesetVersion: string;
-  dealGeneratorVersion: string;
-  dealCommitment: string;
-  stateHash: string;
-  status: "ACTIVE" | "WON" | "ABANDONED";
-  sequence: number;
-  validMoveCount: number;
-  verifiedActivePlayMs: number;
-  stock: { remaining: number };
-  waste: { count: number; top: ServerCard | null };
-  tableau: PositionedCard[][];
-  foundations: Record<Suit, { count: number; top: ServerCard | null }>;
-  serverAuthoritative: true;
-};
 
 type Selection =
   | { source: "waste" }
   | { source: "tableau"; column: number; index: number }
   | { source: "foundation"; suit: Suit };
-
-type MoveIntent =
-  | { type: "DRAW_STOCK" }
-  | { type: "RECYCLE_WASTE" }
-  | { type: "FLIP_TABLEAU"; column: number }
-  | { type: "WASTE_TO_TABLEAU"; toColumn: number }
-  | { type: "WASTE_TO_FOUNDATION" }
-  | {
-      type: "TABLEAU_TO_TABLEAU";
-      fromColumn: number;
-      startIndex: number;
-      toColumn: number;
-    }
-  | { type: "TABLEAU_TO_FOUNDATION"; fromColumn: number }
-  | { type: "FOUNDATION_TO_TABLEAU"; suit: Suit; toColumn: number }
-  | { type: "ABANDON" };
 
 const SUITS: Suit[] = ["SPADES", "HEARTS", "DIAMONDS", "CLUBS"];
 const PRACTICE_STORAGE_KEY = "monetaire.practice.session-id";
@@ -169,7 +121,7 @@ function sessionHint(session: ServerGameSession) {
     }
   }
 
-  if (session.stock.remaining > 0) return "Draw the next card from the stock.";
+  if (session.stock.remaining > 0) return "Draw the next three cards from the stock.";
   if (session.waste.count > 0) return "Recycle the waste pile back into the stock.";
   return "No simple move is visible. Try moving a face-up tableau run.";
 }
@@ -179,20 +131,6 @@ function formattedTime(milliseconds: number) {
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
   return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-}
-
-function apiError(body: unknown, fallback: string) {
-  if (!body || typeof body !== "object") return fallback;
-  const candidate = body as {
-    error?: string | { message?: string };
-    rejection?: { message?: string };
-  };
-  if (candidate.rejection?.message) return candidate.rejection.message;
-  if (typeof candidate.error === "object" && candidate.error?.message) {
-    return candidate.error.message;
-  }
-  if (typeof candidate.error === "string") return candidate.error;
-  return fallback;
 }
 
 export function SolitaireBoard({
@@ -215,118 +153,181 @@ export function SolitaireBoard({
     "Start a hand or pick up where you left off.",
   );
   const [pending, setPending] = useState(false);
+  const [recoveryNeeded, setRecoveryNeeded] = useState(false);
+  const [moveClient] = useState(() => new MonetaireMoveClient());
+  const actionBusy = useRef(false);
+  const sessionRef = useRef(initialSession);
+  const mounted = useRef(true);
+  const sessionRequest = useRef<AbortController | null>(null);
+  const autoFoundationTarget = useRef<string | null>(null);
+
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      sessionRequest.current?.abort();
+      moveClient.dispose();
+    };
+  }, [moveClient]);
+
+  useEffect(() => {
+    if (initialSession) setRecoveryNeeded(Boolean(moveClient.restore(initialSession.id)));
+  }, [moveClient, initialSession]);
+
+  function adoptSession(next: ServerGameSession, allowSwitch = false): boolean {
+    if (!mounted.current || !isServerGameSession(next) || next.mode !== mode) return false;
+    const previous = sessionRef.current;
+    if (previous && (!allowSwitch || previous.id === next.id) &&
+        !canAdoptGameSnapshot(previous, next)) return false;
+    sessionRef.current = next;
+    setSession(next);
+    setSelection(null);
+    autoFoundationTarget.current = null;
+    // The server session is adopted before attempting optional browser storage.
+    writeBrowserStorage("localStorage", storageKey, next.id);
+    setRecoveryNeeded(Boolean(moveClient.restore(next.id)));
+    if (previous?.id === next.id && previous.status === "ACTIVE" && next.status !== "ACTIVE") {
+      onSessionTerminal?.();
+    }
+    return true;
+  }
 
   async function createPracticeSession() {
-    const response = await fetch("/api/game/sessions", {
+    if (!mounted.current) return;
+    const reply = await requestGameJson("/api/game/sessions", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ mode: "PRACTICE" }),
-    });
-    const body = (await response.json().catch(() => null)) as
-      | { session?: ServerGameSession; error?: string | { message?: string } }
-      | null;
-    if (!response.ok || !body?.session) {
-      throw new Error(apiError(body, "A practice session could not be created."));
+    }, { signal: sessionRequest.current?.signal });
+    if (!mounted.current) return;
+    const next = isRecord(reply.body) ? reply.body.session : null;
+    if (!reply.ok || !isServerGameSession(next) || !adoptSession(next, true)) {
+      throw new Error(gameReplyMessage(reply.body,
+        "We could not confirm the new hand. Check your saved hands before trying again."));
     }
-    window.localStorage.setItem(storageKey, body.session.id);
-    setSession(body.session);
-    setSelection(null);
     setFeedback("Your hand is ready. Tap the stock to draw.");
   }
 
   async function openSession() {
+    if (actionBusy.current) return;
+    actionBusy.current = true;
+    sessionRequest.current = new AbortController();
     setPending(true);
     setFeedback("Looking for your saved hand…");
     try {
-      const savedId =
-        resumeSessionId ?? window.localStorage.getItem(storageKey);
+      const savedId = resumeSessionId ?? readBrowserStorage("localStorage", storageKey).value;
       if (savedId) {
-        const response = await fetch(`/api/game/sessions/${savedId}`, {
+        const reply = await requestGameJson(`/api/game/sessions/${encodeURIComponent(savedId)}`, {
           cache: "no-store",
-        });
-        const body = (await response.json().catch(() => null)) as
-          | { session?: ServerGameSession }
-          | null;
-        if (response.ok && body?.session && body.session.mode === mode) {
-          setSession(body.session);
-          window.localStorage.setItem(storageKey, body.session.id);
-          setSelection(null);
-          setFeedback("Your hand is back. Continue where you left off.");
+        }, { signal: sessionRequest.current?.signal });
+        if (!mounted.current) return;
+        const next = isRecord(reply.body) ? reply.body.session : null;
+        if (reply.ok && isServerGameSession(next) && next.id === savedId && adoptSession(next, true)) {
+          setFeedback(moveClient.pending
+            ? "A move still needs confirmation. Check the saved move before continuing."
+            : "Your hand is back. Continue where you left off.");
           return;
         }
-        window.localStorage.removeItem(storageKey);
+        // A failed read is not proof that the hand disappeared. Do not turn
+        // authentication errors or an outage into another session creation.
+        if (reply.status !== 404 || resumeSessionId) {
+          throw new Error(gameReplyMessage(reply.body, "Your saved hand could not be opened. Try again."));
+        }
+        writeBrowserStorage("localStorage", storageKey, null);
       }
-      if (mode === "PRACTICE") {
+      // Server-owned resume works even when browser storage is unavailable.
+      const listed = await requestGameJson("/api/game/sessions", { cache: "no-store" }, {
+        signal: sessionRequest.current?.signal,
+      });
+      if (!mounted.current) return;
+      if (!listed.ok || !isRecord(listed.body) || !Array.isArray(listed.body.sessions) ||
+          !listed.body.sessions.every(isServerGameSession)) {
+        throw new Error(gameReplyMessage(listed.body, "Your saved hands could not be checked. Try again."));
+      }
+      const saved = listed.body.sessions.find((candidate) => candidate.mode === mode && candidate.status === "ACTIVE");
+      if (saved && adoptSession(saved, true)) {
+        setFeedback(moveClient.pending
+          ? "A move still needs confirmation. Check the saved move before continuing."
+          : "Your saved hand is ready.");
+      } else if (mode === "PRACTICE") {
         await createPracticeSession();
       } else {
-        setFeedback(
-          "No resumable competition session was found. Return to the competition entry panel.",
-        );
+        setFeedback("No resumable competition session was found. Return to the competition entry panel.");
       }
     } catch (error) {
-      setFeedback(
-        error instanceof Error
-          ? error.message
-          : "Game services are not reachable. No session was started.",
-      );
+      if (mounted.current) setFeedback(error instanceof Error ? error.message : "Your hand could not be confirmed. Try again.");
     } finally {
-      setPending(false);
+      actionBusy.current = false;
+      if (mounted.current) setPending(false);
     }
   }
 
-  async function sendMove(intent: MoveIntent) {
-    if (!session || pending || session.status !== "ACTIVE") return false;
-    setPending(true);
-    try {
-      const response = await fetch(`/api/game/sessions/${session.id}/moves`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          actionId: crypto.randomUUID(),
-          sequence: session.sequence + 1,
-          priorStateHash: session.stateHash,
-          intent,
-        }),
-      });
-      const body = (await response.json().catch(() => null)) as
-        | {
-            accepted?: boolean;
-            currentSession?: ServerGameSession;
-            rejection?: { message?: string };
-            error?: string | { message?: string };
-          }
-        | null;
-      if (body?.currentSession) {
-        setSession(body.currentSession);
-        if (body.currentSession.status !== "ACTIVE") {
-          onSessionTerminal?.();
-        }
-      }
-      if (!response.ok || body?.accepted === false) {
-        setFeedback(apiError(body, "That move is not legal here."));
+  function applyMoveResolution(result: MoveResolution): boolean {
+    if (!mounted.current) return false;
+    setRecoveryNeeded(Boolean(moveClient.pending));
+    if (result.kind === "confirmed") {
+      if (!adoptSession(result.session)) {
+        setFeedback("The reply did not match the latest hand. Reopen the saved hand before continuing.");
         return false;
       }
-      setFeedback(moveFeedback(intent));
-      return true;
+      setFeedback(result.accepted ? moveFeedback(result.command.intent) : result.message ?? "That move is not legal here.");
+      return result.accepted;
+    }
+    if (result.kind === "uncertain") setFeedback(result.message);
+    if (result.kind === "nothing-to-recover") setFeedback("There is no unresolved move for this hand.");
+    return false;
+  }
+
+  async function sendMove(intent: MoveIntent) {
+    const current = sessionRef.current;
+    if (!current || actionBusy.current || current.status !== "ACTIVE") return false;
+    actionBusy.current = true;
+    setPending(true);
+    try {
+      return applyMoveResolution(await moveClient.submit(current, intent));
     } catch {
-      setFeedback("We could not confirm that move. The board was not changed.");
+      if (mounted.current) {
+        setRecoveryNeeded(Boolean(moveClient.pending));
+        setFeedback("We could not confirm the move. Check the saved move before continuing.");
+      }
       return false;
     } finally {
-      setPending(false);
+      actionBusy.current = false;
+      if (mounted.current) setPending(false);
+    }
+  }
+
+  async function recoverMove() {
+    const current = sessionRef.current;
+    if (!current || actionBusy.current) return;
+    actionBusy.current = true;
+    setPending(true);
+    setFeedback("Checking the saved move…");
+    try {
+      applyMoveResolution(await moveClient.recover(current));
+    } catch {
+      if (mounted.current) setFeedback("The saved move still needs confirmation. Try checking it again.");
+    } finally {
+      actionBusy.current = false;
+      if (mounted.current) {
+        setPending(false);
+        setRecoveryNeeded(Boolean(moveClient.pending));
+      }
     }
   }
 
   async function startAnotherSession() {
-    if (mode !== "PRACTICE") return;
+    if (mode !== "PRACTICE" || actionBusy.current || moveClient.pending) return;
+    actionBusy.current = true;
+    sessionRequest.current = new AbortController();
     setPending(true);
     try {
       await createPracticeSession();
     } catch (error) {
-      setFeedback(
-        error instanceof Error ? error.message : "A new session could not be created.",
-      );
+      if (mounted.current) setFeedback(error instanceof Error ? error.message : "The new hand could not be confirmed. Check saved hands before trying again.");
     } finally {
-      setPending(false);
+      actionBusy.current = false;
+      if (mounted.current) setPending(false);
     }
   }
 
@@ -394,6 +395,11 @@ export function SolitaireBoard({
       return;
     }
 
+    if (selection?.source === "tableau" && selection.column === column) {
+      setSelection(null);
+      setFeedback("Selection cleared.");
+      return;
+    }
     if (selection) {
       moveSelectionToTableau(column);
       return;
@@ -437,7 +443,7 @@ export function SolitaireBoard({
   }
 
   function moveWasteToFoundation() {
-    if (!session?.waste.top) return;
+    if (!session?.waste.top || autoFoundationTarget.current !== session.waste.top.id) return;
     setSelection(null);
     void sendMove({ type: "WASTE_TO_FOUNDATION" });
   }
@@ -446,7 +452,7 @@ export function SolitaireBoard({
     if (!session) return;
     const pile = session.tableau[column];
     const card = pile[index];
-    if (!card?.faceUp || index !== pile.length - 1) {
+    if (!card?.faceUp || autoFoundationTarget.current !== card.id || index !== pile.length - 1) {
       setFeedback("Only the exposed top tableau card can move to a foundation.");
       return;
     }
@@ -455,13 +461,18 @@ export function SolitaireBoard({
   }
 
   function beginDrag(event: DragEvent, nextSelection: Selection) {
+    if (actionBusy.current || recoveryNeeded || sessionRef.current?.status !== "ACTIVE") {
+      event.preventDefault();
+      return;
+    }
+    autoFoundationTarget.current = null;
     setSelection(nextSelection);
     event.dataTransfer.effectAllowed = "move";
     event.dataTransfer.setData("text/plain", "monetaire-card");
   }
 
   function allowDrop(event: DragEvent) {
-    if (!selection || pending || terminal) return;
+    if (!selection || actionBusy.current || pending || recoveryNeeded || terminal) return;
     event.preventDefault();
     event.dataTransfer.dropEffect = "move";
   }
@@ -477,7 +488,18 @@ export function SolitaireBoard({
   }
 
   function selectFoundation(suit: Suit) {
-    if (!session) return;
+    if (!session || actionBusy.current || recoveryNeeded) return;
+    const sourceCard = selection?.source === "waste" ? session.waste.top :
+      selection?.source === "tableau" ? session.tableau[selection.column]?.[selection.index] : null;
+    if (sourceCard && sourceCard.suit !== suit) {
+      setFeedback("Choose the foundation with the same suit as the selected card.");
+      return;
+    }
+    if (selection?.source === "foundation" && selection.suit === suit) {
+      setSelection(null);
+      setFeedback("Selection cleared.");
+      return;
+    }
     if (selection?.source === "waste") {
       setSelection(null);
       void sendMove({ type: "WASTE_TO_FOUNDATION" });
@@ -502,13 +524,22 @@ export function SolitaireBoard({
     }
   }
 
-  function handleKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
-    if (event.key.toLowerCase() === "d") {
-      event.preventDefault();
-      drawStock();
-    } else if (event.key === "Escape") {
+  function handleKeyDown(event: React.KeyboardEvent<HTMLElement>) {
+    if (event.key === "Escape") {
+      autoFoundationTarget.current = null;
       setSelection(null);
       setFeedback("Selection cleared.");
+      return;
+    }
+    const target = event.target instanceof HTMLElement ? event.target : null;
+    if (!actionBusy.current && !recoveryNeeded && isDrawShortcut({
+      key: event.key, repeat: event.repeat, ctrlKey: event.ctrlKey,
+      metaKey: event.metaKey, altKey: event.altKey,
+      isComposing: event.nativeEvent.isComposing,
+      targetTag: target?.tagName ?? "", contentEditable: target?.isContentEditable ?? false,
+    })) {
+      event.preventDefault();
+      drawStock();
     }
   }
 
@@ -532,7 +563,7 @@ export function SolitaireBoard({
         </div>
         <button
           className="button button-primary"
-          disabled={pending}
+          disabled={pending || recoveryNeeded}
           type="button"
           onClick={() => void openSession()}
         >
@@ -570,14 +601,14 @@ export function SolitaireBoard({
         </div>
         <div className="game-metrics">
           <span><small>Valid moves</small><strong>{session.validMoveCount}</strong></span>
-          <span><small>Verified time</small><strong>{formattedTime(session.verifiedActivePlayMs)}</strong></span>
+          <span><small>{session.status === "ACTIVE" ? "Active time" : "Final time"}</small><MonetaireLiveTime session={session} /></span>
         </div>
         <div className="solitaire-actions">
           {session.status === "ACTIVE" ? (
             <>
               <button
                 className="button button-secondary"
-                disabled={pending}
+                disabled={pending || recoveryNeeded}
                 type="button"
                 onClick={() => setFeedback(sessionHint(session))}
               >
@@ -585,7 +616,7 @@ export function SolitaireBoard({
               </button>
               <button
                 className="button button-quiet"
-                disabled={pending}
+                disabled={pending || recoveryNeeded}
                 type="button"
                 onClick={() => void sendMove({ type: "ABANDON" })}
               >
@@ -595,7 +626,7 @@ export function SolitaireBoard({
           ) : isPractice ? (
             <button
               className="button button-primary"
-              disabled={pending}
+              disabled={pending || recoveryNeeded}
               type="button"
               onClick={() => void startAnotherSession()}
             >
@@ -627,7 +658,7 @@ export function SolitaireBoard({
           <div className="stock-area">
             <button
               className={session.stock.remaining ? "playing-card card-back" : "playing-card card-slot"}
-              disabled={pending || terminal}
+              disabled={pending || recoveryNeeded || terminal}
               type="button"
               aria-label={
                 session.stock.remaining
@@ -644,18 +675,21 @@ export function SolitaireBoard({
               className={`playing-card ${session.waste.top ? "card-face" : "card-slot"} ${
                 selection?.source === "waste" ? "card-selected" : ""
               }`}
-              disabled={pending || terminal}
+              disabled={pending || recoveryNeeded || terminal}
               type="button"
               aria-label={
                 session.waste.top
                   ? `Waste ${RANK_LABEL[session.waste.top.rank]}${SUIT_GLYPH[session.waste.top.suit]}`
                   : "Waste empty"
               }
-              draggable={Boolean(session.waste.top) && !pending && !terminal}
+              draggable={Boolean(session.waste.top) && !pending && !recoveryNeeded && !terminal}
               onDoubleClick={moveWasteToFoundation}
               onDragStart={(event) => beginDrag(event, { source: "waste" })}
               onClick={(event) => {
-                if (event.detail === 1) selectWaste();
+                if (isCardSelectionClick(event.detail)) {
+                  autoFoundationTarget.current = selection && selection.source !== "waste" ? null : session.waste.top?.id ?? null;
+                  selectWaste();
+                }
               }}
             >
               {session.waste.top ? <CardFace card={session.waste.top} /> : null}
@@ -672,7 +706,7 @@ export function SolitaireBoard({
                   className={`playing-card ${card ? "card-face" : "card-slot"} ${
                     selected ? "card-selected" : ""
                   }`}
-                  disabled={pending || terminal}
+                  disabled={pending || recoveryNeeded || terminal}
                   type="button"
                   aria-label={
                     card
@@ -696,7 +730,7 @@ export function SolitaireBoard({
               {pile.length === 0 ? (
                 <button
                   className="playing-card card-slot"
-                  disabled={pending || terminal}
+                  disabled={pending || recoveryNeeded || terminal}
                   type="button"
                   aria-label={`Empty tableau pile ${column + 1}`}
                   onDragOver={allowDrop}
@@ -717,7 +751,7 @@ export function SolitaireBoard({
                     className={`playing-card tableau-card ${
                       card.faceUp ? "card-face" : "card-back"
                     } ${selected ? "card-selected" : ""}`}
-                    disabled={pending || terminal}
+                    disabled={pending || recoveryNeeded || terminal}
                     style={{ top: `${index * 27}px` }}
                     type="button"
                     aria-label={
@@ -725,7 +759,7 @@ export function SolitaireBoard({
                         ? `${RANK_LABEL[card.rank]}${SUIT_GLYPH[card.suit]}, tableau pile ${column + 1}`
                         : `Face-down card, tableau pile ${column + 1}`
                     }
-                    draggable={card.faceUp && !pending && !terminal}
+                    draggable={card.faceUp && !pending && !recoveryNeeded && !terminal}
                     onDoubleClick={() => moveTableauToFoundation(column, index)}
                     onDragStart={(event) =>
                       beginDrag(event, {
@@ -737,7 +771,11 @@ export function SolitaireBoard({
                     onDragOver={allowDrop}
                     onDrop={(event) => dropOnTableau(event, column)}
                     onClick={(event) => {
-                      if (event.detail === 1) selectTableau(column, index);
+                      if (isCardSelectionClick(event.detail)) {
+                        const selectingSource = !selection || (selection.source === "tableau" && selection.column === column);
+                        autoFoundationTarget.current = selectingSource && card.faceUp && index === pile.length - 1 ? card.id : null;
+                        selectTableau(column, index);
+                      }
                     }}
                   >
                     {card.faceUp ? (
@@ -754,6 +792,12 @@ export function SolitaireBoard({
       </div>
 
       <footer className="solitaire-footer">
+        {recoveryNeeded ? (
+          <button className="button button-secondary" type="button" disabled={pending}
+            onClick={() => void recoverMove()}>
+            {pending ? "Checking saved move…" : "Check saved move"}
+          </button>
+        ) : null}
         <p className="game-feedback" aria-live="polite">
           {pending ? "Checking the move…" : feedback}
         </p>
@@ -781,7 +825,7 @@ export function SolitaireBoard({
             {isPractice ? (
               <button
                 className="button button-primary"
-                disabled={pending}
+                disabled={pending || recoveryNeeded}
                 type="button"
                 onClick={() => void startAnotherSession()}
               >

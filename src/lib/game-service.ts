@@ -23,7 +23,6 @@ import {
   type DemoUser,
 } from "./demo-store";
 import { createId } from "./ids";
-import { getRuntimeEnv } from "./env";
 import { evaluateDemoPlayerAccess } from "./player-access";
 
 export class GameServiceError extends Error {
@@ -261,9 +260,9 @@ function publicCard(
 }
 
 export function publicGameSession(session: DemoGameSession) {
-  const observedAtMs = getRuntimeEnv().DEMO_MODE
-    ? Math.max(Date.now(), session.activityClock.lastServerEventMs)
-    : session.activityClock.lastServerEventMs;
+  // Fresh server-side display observation in both configured and demo modes.
+  // This does not mutate the persisted activity clock or the official score.
+  const observedAtMs = Math.max(Date.now(), session.activityClock.lastServerEventMs);
   const verifiedActivePlayMs =
     session.activityClock.status === "FINALIZED"
       ? session.activityClock.accumulatedActiveMs
@@ -290,6 +289,8 @@ export function publicGameSession(session: DemoGameSession) {
     sequence: session.state.lastSequence,
     validMoveCount: session.state.validMoveCount,
     verifiedActivePlayMs,
+    serverObservedAtMs: observedAtMs,
+    activityClockStatus: session.activityClock.status,
     stock: {
       remaining: session.state.stock.length,
     },
