@@ -1,0 +1,13 @@
+{
+  "src/components/robot-combat-arena.tsx": "07202e1a58a9f885078674e95c441df1cadcbd02",
+  "src/domain/robot-combat.test.ts": "738a1c0bf1ff3fa153c5cd411e4a84262436cacf",
+  "src/domain/robot-combat.ts": "615b814d55c09ba2ac9198afc1f700ae486c51c0",
+  "src/lib/robot-combat-persistence-contract.test.ts": "deb2868d411065149f3251deafffc205c2adf417",
+  "src/lib/robot-combat-service.test.ts": "ea13fe20f8474d7791b3589e9e56125821752acf",
+  "src/lib/robot-combat-service.ts": "6d7b360f0cad7125d92b9d1a8786c144307e016b",
+  "src/lib/robot-match-clock.test.ts": "1e23767926151672b147ab5fb0e09effa7b8fa8a",
+  "src/lib/robot-match-clock.ts": "65409b09db3a5b7621eea81b4975f69ea0cdde2b",
+  "src/lib/robot-match-snapshot.test.ts": "d749c706d70dbfacdfdb89cab834870ea9782474",
+  "src/lib/robot-match-snapshot.ts": "35c1035e16c0cd6bee54ed6530d320aa40344cfd",
+  "tools/verify-robot-repair-isolated.cjs": "a0964bcd060792f8f6ecb91dc9f8d24c77474afc"
+}

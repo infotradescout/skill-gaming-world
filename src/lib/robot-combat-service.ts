@@ -26,6 +26,7 @@ import { getRuntimeEnv } from "./env";
 import { evaluateDemoPlayerAccess } from "./player-access";
 import { assertPersistentPlayerAccess } from "./persistent-player-access";
 import { robotCommandBindingMatches, robotCommandPayload } from "./robot-command-binding";
+import { applyClockedRobotCommand, startRobotServerClock, RobotMatchClockError } from "./robot-match-clock";
 
 export class RobotCombatServiceError extends Error {
   constructor(
@@ -410,24 +411,24 @@ export async function createRobotTestSession(input: {
   if (env.DEMO_MODE) {
     assertDemoAccess(input.user);
     const selected = memoryRevision(input.user.id, input.buildId, input.revision);
-    const state = createRobotTestState({
+    const state = startRobotServerClock(createRobotTestState({
       matchId,
       arenaKey,
       player: { playerId: input.user.id, displayName: input.user.displayName },
       blueprint: selected.revision.blueprint,
-    });
+    }), Date.now());
     memoryMatches.set(matchId, { state, actionIds: new Map() });
     return state;
   }
   return getDatabase().transaction(async (transaction) => {
     await assertPersistentPlayerAccess(transaction, input.user, "ROBOT_COMBAT_FREE");
     const selected = await ownedRevision(transaction, input.user, input.buildId, input.revision);
-    const state = createRobotTestState({
+    const state = startRobotServerClock(createRobotTestState({
       matchId,
       arenaKey,
       player: { playerId: input.user.id, displayName: input.user.displayName },
       blueprint: selected.revision.blueprint,
-    });
+    }), Date.now());
     const now = new Date();
     await transaction.insert(robotCombatMatches).values({
       id: matchId,
@@ -629,6 +630,17 @@ function playerSlot(state: RobotMatchState, userId: string): "A" | "B" {
   return slot;
 }
 
+function applyServerCommand(state: RobotMatchState, command: RobotMatchCommand, serverAtMs: number) {
+  try {
+    return applyClockedRobotCommand(state, command, serverAtMs);
+  } catch (error) {
+    if (error instanceof RobotMatchClockError) {
+      throw new RobotCombatServiceError("MATCH_COMMAND_REJECTED", error.message);
+    }
+    throw error;
+  }
+}
+
 export async function commandRobotMatch(input: {
   user: DemoUser;
   matchId: string;
@@ -655,7 +667,7 @@ export async function commandRobotMatch(input: {
       }
       return { state: match.state, event: existing.event, idempotentReplay: true };
     }
-    const applied = applyRobotMatchCommand(match.state, input.command);
+    const applied = applyServerCommand(match.state, input.command, Date.now());
     match.state = applied.state;
     match.actionIds.set(input.actionId, {
       playerId: input.user.id,
@@ -700,36 +712,54 @@ export async function commandRobotMatch(input: {
         idempotentReplay: true,
       };
     }
-    const applied = applyRobotMatchCommand(current, input.command);
+    // Sample time only after the transaction lock and duplicate lookup.
     const now = new Date();
+    const applied = applyServerCommand(current, input.command, now.getTime());
     await transaction
       .update(robotCombatMatches)
       .set({
         phase: applied.state.phase,
         stateSnapshot: applied.state as unknown as Record<string, unknown>,
         nextSequence: applied.state.nextSequence,
-        terminalReason: applied.state.terminalReason,
+        terminalReason: applied.state.terminalReason ?? null,
         startedAt: applied.state.phase === "ACTIVE" && !record.startedAt ? now : record.startedAt,
-        completedAt: ["COMPLETED", "CANCELLED", "DISCONNECTED"].includes(applied.state.phase)
-          ? now
-          : applied.state.mode === "PRIVATE_TEST" && applied.event.type === "RESET_TEST"
-            ? null
-            : record.completedAt,
+        completedAt: applied.event.accepted
+          && ["COMPLETED", "CANCELLED", "DISCONNECTED"].includes(applied.state.phase)
+          && !["COMPLETED", "CANCELLED", "DISCONNECTED"].includes(current.phase)
+            ? now
+            : applied.event.accepted && applied.state.mode === "PRIVATE_TEST" && applied.event.type === "RESET_TEST"
+              ? null
+              : record.completedAt,
         updatedAt: now,
       })
       .where(eq(robotCombatMatches.id, input.matchId));
-    await transaction.insert(robotCombatMatchEvents).values({
+    const commandEvent = {
       matchId: input.matchId,
       sequence: applied.event.sequence,
       actionId: input.actionId,
       playerId: input.user.id,
       commandType: applied.event.type,
       commandPayload,
-      stateHashBefore: hashRobotMatchState(current),
+      stateHashBefore: hashRobotMatchState(applied.clock?.state ?? current),
       stateHashAfter: hashRobotMatchState(applied.state),
       accepted: applied.event.accepted,
       rejectionCode: applied.event.accepted ? null : "COMMAND_REJECTED",
-    });
+    };
+    const clockEvents = applied.clock ? [{
+      matchId: input.matchId,
+      sequence: applied.clock.event.sequence,
+      // '!' is outside the accepted player action-id alphabet.
+      actionId: `!clock:${randomUUID()}`,
+      playerId: input.user.id,
+      commandType: "TICK",
+      commandPayload: { type: "SERVER_CLOCK", serverAtMs: now.getTime(), stepMs: 50 },
+      stateHashBefore: hashRobotMatchState(current),
+      stateHashAfter: hashRobotMatchState(applied.clock.state),
+      accepted: true,
+      rejectionCode: null,
+    }] : [];
+    // Separate accepted clock evidence keeps rejected-command hashes equal.
+    await transaction.insert(robotCombatMatchEvents).values([...clockEvents, commandEvent]);
     return { state: applied.state, event: applied.event };
   });
 }
