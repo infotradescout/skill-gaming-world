@@ -39,19 +39,19 @@ async function authorizeEntry(request?: Request) {
   return true;
 }
 
-function pruneConfirmations(now = Date.now()) {
+function pruneExpiredConfirmations(now = Date.now()) {
   for (const [ticket, expiresAt] of confirmations) {
     if (expiresAt <= now) confirmations.delete(ticket);
   }
+}
+
+function issueConfirmation() {
+  pruneExpiredConfirmations();
   while (confirmations.size >= maxOutstandingConfirmations) {
     const oldest = confirmations.keys().next().value as string | undefined;
     if (!oldest) break;
     confirmations.delete(oldest);
   }
-}
-
-function issueConfirmation() {
-  pruneConfirmations();
   const ticket = randomBytes(32).toString("base64url");
   confirmations.set(ticket, Date.now() + confirmationLifetimeMs);
   return ticket;
@@ -59,7 +59,7 @@ function issueConfirmation() {
 
 function consumeConfirmation(ticket: string) {
   const now = Date.now();
-  pruneConfirmations(now);
+  pruneExpiredConfirmations(now);
   const expiresAt = confirmations.get(ticket);
   if (!expiresAt || expiresAt <= now) return false;
   confirmations.delete(ticket);
@@ -144,12 +144,12 @@ async function archiveResponse() {
   }
 }
 
-export async function HEAD(request?: Request) {
+export async function HEAD(request: Request) {
   if (!(await authorizeEntry(request))) return expiredLinkResponse();
   return new Response(null, { status: 204, headers: privateHeaders() });
 }
 
-export async function GET(request?: Request) {
+export async function GET(request: Request) {
   if (!(await authorizeEntry(request))) return expiredLinkResponse();
   return confirmationPage(issueConfirmation());
 }

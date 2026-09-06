@@ -49,12 +49,13 @@ describe("Platynum Windows app download", () => {
 
   afterEach(() => {
     delete process.env.P47_DOWNLOAD_TOKEN;
+    vi.restoreAllMocks();
   });
 
   it("requires the owner gate when no private token is supplied", async () => {
     mocks.requireAdminRoles.mockRejectedValue(new Error("redirect:/auth/login"));
 
-    await expect(GET()).rejects.toThrow("redirect:/auth/login");
+    await expect(GET(new Request("http://localhost/admin/platynum/download"))).rejects.toThrow("redirect:/auth/login");
     expect(mocks.stat).not.toHaveBeenCalled();
     expect(mocks.createReadStream).not.toHaveBeenCalled();
   });
@@ -109,10 +110,50 @@ describe("Platynum Windows app download", () => {
   });
 
   it("keeps the Super Admin path but also requires explicit confirmation", async () => {
-    const response = await GET();
+    const response = await GET(new Request("http://localhost/admin/platynum/download"));
 
     expect(mocks.requireAdminRoles).toHaveBeenCalledWith(["SUPER_ADMIN"]);
     expect(response.headers.get("content-type")).toBe("text/html; charset=utf-8");
+    expect(mocks.createReadStream).not.toHaveBeenCalled();
+  });
+
+  it("accepts every valid confirmation at capacity without letting an invalid POST evict one", async () => {
+    mocks.stat.mockResolvedValue({ isFile: () => true, size: 42 });
+    const tickets: string[] = [];
+    for (let index = 0; index < 256; index += 1) {
+      tickets.push(await confirmationTicket(await GET(directRequest())));
+    }
+
+    expect((await POST(postTicket("not-a-real-ticket"))).status).toBe(409);
+    for (const ticket of tickets) {
+      expect((await POST(postTicket(ticket))).status).toBe(200);
+      expect((await POST(postTicket(ticket))).status).toBe(409);
+    }
+    expect(mocks.createReadStream).toHaveBeenCalledTimes(256);
+  });
+
+  it("evicts only the oldest confirmation when a new page exceeds capacity", async () => {
+    mocks.stat.mockResolvedValue({ isFile: () => true, size: 42 });
+    const tickets: string[] = [];
+    for (let index = 0; index < 257; index += 1) {
+      tickets.push(await confirmationTicket(await GET(directRequest())));
+    }
+
+    expect((await POST(postTicket(tickets[0]))).status).toBe(409);
+    for (const ticket of tickets.slice(1)) {
+      expect((await POST(postTicket(ticket))).status).toBe(200);
+    }
+    expect(mocks.createReadStream).toHaveBeenCalledTimes(256);
+  });
+
+  it("expires a confirmation exactly five minutes after issuance without opening the archive", async () => {
+    const issuedAt = Date.now();
+    const now = vi.spyOn(Date, "now").mockReturnValue(issuedAt);
+    const ticket = await confirmationTicket(await GET(directRequest()));
+    now.mockReturnValue(issuedAt + 5 * 60 * 1000);
+
+    expect((await POST(postTicket(ticket))).status).toBe(409);
+    expect(mocks.stat).not.toHaveBeenCalled();
     expect(mocks.createReadStream).not.toHaveBeenCalled();
   });
 
