@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { and, asc, desc, eq, sql } from "drizzle-orm";
+import { and, asc, desc, eq, or, sql } from "drizzle-orm";
 
 import {
   applyRobotMatchCommand,
@@ -25,6 +25,7 @@ import type { DemoUser } from "./demo-store";
 import { getRuntimeEnv } from "./env";
 import { evaluateDemoPlayerAccess } from "./player-access";
 import { assertPersistentPlayerAccess } from "./persistent-player-access";
+import { robotCommandBindingMatches, robotCommandPayload } from "./robot-command-binding";
 
 export class RobotCombatServiceError extends Error {
   constructor(
@@ -62,7 +63,11 @@ export type RobotBuild = {
 type MemoryBuild = RobotBuild & { userId: string };
 type MemoryMatch = {
   state: RobotMatchState;
-  actionIds: Map<string, RobotMatchEvent>;
+  actionIds: Map<string, {
+    playerId: string;
+    commandPayload: Record<string, unknown>;
+    event: RobotMatchEvent;
+  }>;
 };
 
 type RobotCombatMemoryStore = {
@@ -211,8 +216,7 @@ export async function saveRobotBuild(input: {
     await transaction.execute(
       sql`select pg_advisory_xact_lock(
         hashtext('ROBOT_COMBAT_BUILD_V1'),
-        hashtext(${input.user.id}),
-        hashtext(${buildKey})
+        hashtext(${JSON.stringify([input.user.id, buildKey])})
       )`,
     );
     const [existing] = await transaction
@@ -231,21 +235,18 @@ export async function saveRobotBuild(input: {
       .returning())[0];
     if (!build) throw new Error("ROBOT_COMBAT_BUILD_CREATE_FAILED");
 
-    const [latest] = await transaction
+    const savedRevisions = await transaction
       .select()
       .from(robotCombatBuildRevisions)
       .where(eq(robotCombatBuildRevisions.buildId, build.id))
-      .orderBy(desc(robotCombatBuildRevisions.revision))
-      .limit(1);
-    if (latest?.blueprintHash === inspection.blueprintHash) {
-      const revisions = await transaction
-        .select()
-        .from(robotCombatBuildRevisions)
-        .where(eq(robotCombatBuildRevisions.buildId, build.id))
-        .orderBy(asc(robotCombatBuildRevisions.revision));
-      return fromPersistentBuild(build, revisions.map(fromPersistentRevision));
+      .orderBy(asc(robotCombatBuildRevisions.revision));
+    // Re-saving an already stored blueprint is an idempotent no-op, including
+    // older revisions. It must not insert a duplicate hash or silently switch
+    // the latest revision. A match can explicitly select a historical revision.
+    if (savedRevisions.some((revision) => revision.blueprintHash === inspection.blueprintHash)) {
+      return fromPersistentBuild(build, savedRevisions.map(fromPersistentRevision));
     }
-    const revisionNumber = (latest?.revision ?? 0) + 1;
+    const revisionNumber = (savedRevisions.at(-1)?.revision ?? 0) + 1;
     await transaction.insert(robotCombatBuildRevisions).values({
       buildId: build.id,
       userId: input.user.id,
@@ -610,7 +611,10 @@ export async function getRobotMatch(input: { user: DemoUser; matchId: string }):
       .where(
         and(
           eq(robotCombatMatches.id, input.matchId),
-          sql`${robotCombatMatches.playerAId} = ${input.user.id} OR ${robotCombatMatches.playerBId} = ${input.user.id}`,
+          or(
+            eq(robotCombatMatches.playerAId, input.user.id),
+            eq(robotCombatMatches.playerBId, input.user.id),
+          ),
         ),
       )
       .limit(1);
@@ -634,6 +638,7 @@ export async function commandRobotMatch(input: {
   if (!/^[A-Za-z0-9:_-]{12,128}$/.test(input.actionId)) {
     throw new RobotCombatServiceError("ACTION_ID_CONFLICT", "The action id is invalid.");
   }
+  const commandPayload = robotCommandPayload(input.command);
   const env = getRuntimeEnv();
   if (env.DEMO_MODE) {
     assertDemoAccess(input.user);
@@ -643,12 +648,20 @@ export async function commandRobotMatch(input: {
     if (input.command.type !== "TICK" && input.command.slot !== slot) {
       throw new RobotCombatServiceError("MATCH_FORBIDDEN", "The command slot does not belong to this player.");
     }
-    if (match.actionIds.has(input.actionId)) {
-      return { state: match.state, event: match.actionIds.get(input.actionId)!, idempotentReplay: true };
+    const existing = match.actionIds.get(input.actionId);
+    if (existing) {
+      if (!robotCommandBindingMatches(existing, input.user.id, commandPayload)) {
+        throw new RobotCombatServiceError("ACTION_ID_CONFLICT", "That action id belongs to a different command.");
+      }
+      return { state: match.state, event: existing.event, idempotentReplay: true };
     }
     const applied = applyRobotMatchCommand(match.state, input.command);
     match.state = applied.state;
-    match.actionIds.set(input.actionId, applied.event);
+    match.actionIds.set(input.actionId, {
+      playerId: input.user.id,
+      commandPayload,
+      event: applied.event,
+    });
     return { state: applied.state, event: applied.event };
   }
 
@@ -672,6 +685,9 @@ export async function commandRobotMatch(input: {
       .where(and(eq(robotCombatMatchEvents.matchId, input.matchId), eq(robotCombatMatchEvents.actionId, input.actionId)))
       .limit(1);
     if (existing) {
+      if (!robotCommandBindingMatches(existing, input.user.id, commandPayload)) {
+        throw new RobotCombatServiceError("ACTION_ID_CONFLICT", "That action id belongs to a different command.");
+      }
       return {
         state: current,
         event: {
@@ -708,7 +724,7 @@ export async function commandRobotMatch(input: {
       actionId: input.actionId,
       playerId: input.user.id,
       commandType: applied.event.type,
-      commandPayload: input.command as unknown as Record<string, unknown>,
+      commandPayload,
       stateHashBefore: hashRobotMatchState(current),
       stateHashAfter: hashRobotMatchState(applied.state),
       accepted: applied.event.accepted,
