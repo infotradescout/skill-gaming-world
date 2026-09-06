@@ -1,0 +1,50 @@
+{
+  "schemaVersion": "si.progress-checkpoint.v1",
+  "checkpointId": "progress-20260906T014636Z-58260eb0",
+  "createdAt": "2026-09-06T01:46:36.938192+00:00",
+  "outcome": "Fix valid confirmation rejection at capacity",
+  "scope": [
+    "Only the hosted Platynum download route and its tests"
+  ],
+  "prohibitions": [
+    "Do not read production download secrets or start a real archive download"
+  ],
+  "progress": {
+    "completedVerified": [
+      "Moved capacity eviction into issuance; added capacity, invalid-POST, one-use, and expiry coverage"
+    ],
+    "changedUnverified": [],
+    "proof": [
+      "Two new capacity regressions fail on the original route; all 11 focused download and route-access tests pass after the fix"
+    ],
+    "externalEffects": [],
+    "doNotRepeat": [],
+    "nextSafeAction": "Finish typecheck, configured build, and exact-source release review"
+  },
+  "repository": {
+    "root": ".",
+    "rootKind": "repository_relative",
+    "branch": "fix/platynum-confirmation-capacity-2026-09-06",
+    "headBefore": "55f1e7d860797f5b610c5903b8f673f09edea5f2",
+    "checkpointCommit": "containing_commit",
+    "pushRequested": true,
+    "pushRemote": "origin",
+    "protectedBranchAuthorized": false,
+    "selectedStatusBefore": [
+      " M src/app/admin/platynum/download/route.test.ts",
+      " M src/app/admin/platynum/download/route.ts"
+    ],
+    "unrelatedChangeCountExcluded": 0
+  },
+  "savedFiles": [
+    {
+      "path": "src/app/admin/platynum/download/route.ts",
+      "sha256": "1410f238a504c329f55efba7e3787a8a83a9ba5ac64bb8b55341e1303970fc77"
+    },
+    {
+      "path": "src/app/admin/platynum/download/route.test.ts",
+      "sha256": "5eeaea23fde2ae0d9eece4b99a9cccccfc2a0c8fd4107fc7fa7b111e6c4b18b4"
+    }
+  ],
+  "privacyBoundary": "bounded summaries and selected file identities only; absolute paths, unrelated file names, raw prompts, and secrets are excluded"
+}
