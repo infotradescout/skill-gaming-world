@@ -1,0 +1,43 @@
+name: Wildlife reserve - Blender world
+on:
+  push:
+    branches: [feature/wildlife-ranch-realism-core-20260920]
+    paths:
+      - games/wildlife-ranch/blender/**
+      - .github/workflows/wildlife-blender.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: wildlife-blender-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  build-world:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Blender in disposable build runner
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y blender
+          blender --version
+      - name: Build editable world and render native previews
+        run: |
+          mkdir -p world-output
+          blender --background --threads 4 --python games/wildlife-ranch/blender/build_world.py -- --output world-output
+      - name: Reopen native scene and verify artifacts
+        run: blender --background --threads 4 --python games/wildlife-ranch/blender/verify_world.py -- world-output
+      - name: Package reproducible authoring source
+        if: always()
+        run: |
+          mkdir -p world-output/source
+          cp games/wildlife-ranch/blender/*.py games/wildlife-ranch/blender/README.md world-output/source/
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: wildlife-reserve-blender-${{ github.sha }}
+          path: world-output/
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 6
