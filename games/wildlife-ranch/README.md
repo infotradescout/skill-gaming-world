@@ -1,18 +1,31 @@
-# Wildlife Ranch — mortality and encounter foundation
+# Wildlife Ranch — full-game direction and simulation foundation
 
-Working label, not a final game title. Original game, separate from GrindZone.
+Working label, not a final game title. Original first-person hunting game with
+built-in GrindZone capabilities; the existing multi-game companion remains intact.
+
+**Start with [PRODUCT_CONTRACT.md](PRODUCT_CONTRACT.md).** The owner's target is
+COTW-scale complexity and production quality, WMA-like reserve management and an
+integrated companion, not a browser management dashboard. That contract separates
+required outcomes, recommendations and implemented evidence. This documentation
+update does not add a native runtime or claim a playable build.
 
 ## Owner's game contract
 
-Inherit a 10,000-acre ranch. Manage birds, deer, foxes, fish, other predators,
-prey and habitat, with births, growth, permanent deaths and an NPC hunt-leasing
-business. There are no replacement respawns. An animal watched for eight
-hunting seasons can still be killed by an existing predator or a vehicle.
-Names, trophy desirability, attachment and bookings must not grant immunity or
-trigger an artificial tragedy. Hunting seasons are not biological age units.
-Age is measured in days; a calendar and hunting seasons will be separate.
+Inherit and manage a WMA-scale private wildlife reserve. Final acreage and region
+remain unresolved; 10,000 acres was the initial premise and 100,000 acres was an
+assistant sizing proposal, not an approved final map. Manage birds, deer, foxes,
+fish, other predators, prey and habitat, with births, growth, permanent deaths
+and an NPC hunt-leasing business. There are no replacement respawns. An animal
+watched for eight hunting seasons can still be killed by an existing predator
+or a vehicle. Names, trophy desirability, attachment and bookings must not grant
+immunity or trigger an artificial tragedy. Hunting seasons are not biological
+age units. Age is measured in days; calendar and hunting seasons will be separate.
 
-## What this revision actually implements
+GrindZone's maps, journal, tracking, statistics and sharing are intended to be
+available inside the game, using native committed events rather than requiring
+a second companion process or save scanner. No runtime integration is claimed yet.
+
+## What the implemented core actually does
 
 This is a small, headless JavaScript foundation, not a playable game or a
 calibrated ecological simulation. Run from this directory:
@@ -21,9 +34,11 @@ calibrated ecological simulation. Run from this directory:
 node --test test/core.test.mjs
 ```
 
-No package installation or network access is needed for these tests. Tested
-using Node 22.16.0 on Linux. No parent-app build, deployment, native engine or
-production integration has been performed.
+No package installation or network access is needed for these tests. The earlier
+execution receipt records Node 22.16.0 on Linux for the initial core snapshot.
+The product-contract/README update does not constitute new test execution.
+No parent-app build, deployment, native engine or production integration has
+been performed by this work.
 
 - Age-dependent competing mortality hazards, optional sex-specific profiles,
   region matching, exact age-band integration, and one death cause per animal.
@@ -83,9 +98,10 @@ It must not impose 'one kill every seven days' or 'must finish every carcass'.
 NPS's Santa Monica Mountains summary describes about one deer per week and
 local typical home ranges of 150 square miles for males and 50 for females.
 These are scoped references, not universal scheduler constants. [NPS-SAMO]
-The 10,000-acre playable property is 15.625 square miles; surrounding habitat
-must eventually be modeled rather than forcing every predator's entire life
-inside the ownership boundary. Regional presence remains a design choice.
+The former 10,000-acre concept was 15.625 square miles, not a biologically
+closed world. Whatever playable acreage is selected, surrounding habitat must
+be considered rather than forcing every predator's entire life inside the
+ownership boundary. Regional presence remains a design choice.
 
 ### Accidents require exposure
 
@@ -101,6 +117,7 @@ local calibration and more detailed movement/road behavior.
 The simulation's known death cause must eventually be separated from what a
 player has discovered. A camera absence is not a confirmed death. Player
 observation, tracks, carcass discovery and uncertain reports are not implemented.
+See the product contract for proposed knowledge views and native companion data.
 
 ## Explicit limitations / next dependencies
 
@@ -109,6 +126,7 @@ breeding, gestation, egg/fry cohort model, autonomous feeding or territory AI,
 vegetation model, disease transmission, energy reserve, seasonal weather,
 immigration, NPC lease workflow, hunting controls, 3D scene or UI yet. The
 birth counter is reserved for the future birth adapter; no birth API exists.
+There is no native GrindZone event bridge or embedded companion runtime yet.
 
 `advanceLife` advances background life clocks only. It is NOT a full-world
 'advance year' command: a future chronological scheduler must interleave
@@ -125,18 +143,28 @@ catch structural inconsistencies; they are not tamper-proof multiplayer security
 
 ## Resume here
 
-Base inspected: `infotradescout/skill-gaming-world` at
+Original core: `f39f561c3d12bd35a5e6c45edaeac4fa542fb0e9`, based on
+`infotradescout/skill-gaming-world` at
 `74e0ce7859a6cd70f9e8048ee1e9b940e1f38969`.
+Continue the existing `feature/wildlife-ranch-realism-core-20260920` branch /
+PR #43. Current product requirements are in `PRODUCT_CONTRACT.md`.
 Scope: only `games/wildlife-ranch/`; existing games, payments, authentication,
-GrindZone, shared services and deployment configuration remain untouched.
+the standalone companion, shared services and deployment configuration remain
+untouched by these changes.
 
-Next: choose the first ranch region, obtain compatible age/sex survival and
-cause-of-death datasets, then integrate an exposure-aware chronological
-scheduler and a reproduction/energy slice using the existing IDs and events.
-Do not replace unknown rates with plausible-looking percentages. Evaluate
-population survival, age structure, causes of death, predator kills AND consumed
-biomass across many seeds against independent field observations. Synthetic
+Next player-facing delivery: a native playable hunting-to-GrindZone path in a
+representative district. Develop ecological calibration and presentation alongside
+that path, not another backend-only substitute for the game. Unreal Engine 5 is
+currently a recommendation, not a selected/installed version or delivered runtime.
+
+Obtain compatible regional age/sex survival and cause-of-death datasets; integrate
+chronological movement, reproduction, energy, predation and management using the
+existing identity/event rules. Do not replace unknown rates with plausible-looking
+percentages. Evaluate survival, age structure, causes of death, predator kills AND
+consumed biomass across seeds against independent field observations. Synthetic
 Monte Carlo agreement proves sampling math, not wildlife accuracy.
 
 Source provenance and unresolved calibration categories are in
-`research/source-registry.json`; execution scope is in `verification.json`.
+`research/source-registry.json`. `verification.json` is the earlier execution
+receipt for the initial core snapshot; its README fingerprint predates this
+product-scope documentation update and must not be represented as covering it.
