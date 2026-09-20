@@ -25,9 +25,9 @@ jobs:
       - name: Build editable world and render native previews
         run: |
           mkdir -p world-output
-          blender --background --threads 4 --python games/wildlife-ranch/blender/build_world.py -- --output world-output
+          blender --background --threads 4 --python-exit-code 1 --python games/wildlife-ranch/blender/build_world.py -- --output world-output
       - name: Reopen native scene and verify artifacts
-        run: blender --background --threads 4 --python games/wildlife-ranch/blender/verify_world.py -- world-output
+        run: blender --background --threads 4 --python-exit-code 1 --python games/wildlife-ranch/blender/verify_world.py -- world-output
       - name: Package reproducible authoring source
         if: always()
         run: |
