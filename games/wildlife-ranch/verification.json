@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "executionScope": "isolated local Node tests only",
+  "baseCommit": "74e0ce7859a6cd70f9e8048ee1e9b940e1f38969",
+  "command": "node --test test/core.test.mjs",
+  "runtime": "v22.16.0",
+  "tests": 35,
+  "passed": 35,
+  "failed": 0,
+  "skipped": 0,
+  "monteCarlo": {
+    "samples": 60000,
+    "purpose": "synthetic competing-hazard sampling only; NOT empirical validation"
+  },
+  "notVerified": [
+    "field calibration",
+    "complete ecology",
+    "full application integration",
+    "hosted CI",
+    "3D gameplay",
+    "deployment"
+  ],
+  "gitBlobSha1": {
+    "src/risk.mjs": "01ece3f56f3b5d50d4e91011dda6f47cd96e307c",
+    "src/world.mjs": "6c5938327a33978f707f68be8ce21fe5a45aeb35",
+    "test/core.test.mjs": "3597e310b16896fd24fbd4b947303b423fd3b138",
+    "README.md": "58e190d201dd7845199f27b848dd9f8118e91535",
+    "research/source-registry.json": "69c11abfc0ea3b1f64b2625f9ca4cb14663b9dd3"
+  },
+  "testOutputSha256": "11beef1c024d0bfa556cba1e376924341fabddb48e884cef2b26036a9e7d9342"
+}

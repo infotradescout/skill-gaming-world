@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "reviewDate": "2026-09-20",
+  "ranchRegion": null,
+  "biologicallyValidated": false,
+  "calibratedProfiles": [],
+  "sources": [
+    {
+      "id": "MSU-AGE",
+      "title": "Age-Structured Survival and Reproduction",
+      "publisher": "Mississippi State University Deer Ecology and Management Lab",
+      "url": "https://www.msudeer.msstate.edu/age-structured-survival-and-reproduction.php",
+      "scope": "White-tailed deer; age, density and habitat concepts with Mississippi examples",
+      "evidenceType": "University research-lab synthesis",
+      "use": "Structural rationale for age-dependent survival and reproduction",
+      "limitation": "Not a complete age-by-sex life table; no lifespan or numeric survival profile extracted"
+    },
+    {
+      "id": "ELBROCH-2014",
+      "title": "The difference between killing and eating: ecological shortcomings of puma energetic models",
+      "authors": "Elbroch, Allen, Lowrey and Wittmer",
+      "publication": "Ecosphere 5(5):53, 2014",
+      "doi": "10.1890/ES13-00373.1",
+      "url": "https://www.originalwisdom.com/wp-content/uploads/bsk-pdf-manager/2019/03/Elbroch-et-al_2014_Puma-killing-vs-eating_CT.pdf",
+      "scope": "Primary field study in California, Colorado and Patagonia",
+      "evidenceType": "Peer-reviewed primary paper; full-text mirror",
+      "use": "Separate kills, consumption, carcass access and loss; energy alone is insufficient to predict kills",
+      "limitation": "Do not translate pooled biomass estimates into a universal daily food requirement or attack probability"
+    },
+    {
+      "id": "NPS-SAMO",
+      "title": "Lions in the Santa Monica Mountains",
+      "publisher": "US National Park Service",
+      "url": "https://www.nps.gov/samo/learn/nature/pumapage.htm",
+      "scope": "Santa Monica Mountains study area, California; facts section dated December 19, 2022",
+      "evidenceType": "Agency account of its field monitoring",
+      "referenceObservations": [
+        {"metric": "typical adult male home range", "value": 150, "unit": "square miles"},
+        {"metric": "typical adult female home range", "value": 50, "unit": "square miles"},
+        {"metric": "approximate deer eaten", "value": 1, "unit": "deer per week"}
+      ],
+      "use": "Check spatial scale and site-specific predator-prey plausibility",
+      "limitation": "Descriptive local observations, not probability distributions; not production constants or a claim about current abundance"
+    },
+    {
+      "id": "FHWA-2008",
+      "title": "Wildlife-Vehicle Collision Reduction Study: Report to Congress, Chapter 2",
+      "publisher": "US Federal Highway Administration",
+      "publication": "FHWA-HRT-08-034, August 2008",
+      "url": "https://www.fhwa.dot.gov/publications/research/safety/08034/02.cfm",
+      "scope": "US collision literature and historical collision data",
+      "evidenceType": "Commissioned technical report with analyses and literature review",
+      "use": "Require exposure, time, traffic, species and landscape context; distinguish data denominators",
+      "limitation": "Archived report, not current local per-deer collision rates; does not validate the prototype Poisson model"
+    }
+  ],
+  "calibrationRequirements": [
+    "Select region and scientific species identities before applying field rates",
+    "Age-sex survival curves with study interval, sample size, uncertainty and censoring method",
+    "Cause-specific mortality compatible with survival, without double-counting explicit events",
+    "Species reproduction, juvenile survival, maturation and seasonal timing",
+    "Predator food/energy budgets separately from kill rates and prey selection",
+    "Movement, territory, outside-ranch exposure and road-crossing behavior",
+    "Fish growth, spawning, water quality, temperature and size-selective predation",
+    "Bird nesting, fledging, migration and supporting prey/vegetation",
+    "Independent validation observations and sensitivity analyses across seeds"
+  ],
+  "runtimeParameterPolicy": "All current test parameters are synthetic. No reviewed source has been promoted to a calibrated production probability."
+}
