@@ -3,6 +3,14 @@ set -euo pipefail
 root="$PWD"
 source_dir="$root/games/wildlife-ranch/blender"
 out="$root/wildlife-preview-public"
+# Read-only live review uses this existing builder, never another service. It
+# deliberately does not publish or rerender; exit 3 leaves the live site intact.
+if [ "${WILDLIFE_ART03_LIVE_REVIEW_ONLY:-0}" = 1 ]; then
+ npx playwright install chromium
+ node "$source_dir/art03_live_review.mjs"
+ echo 'LIVE_REVIEW_ONLY_COMPLETE: no publication, native files unchanged.'
+ exit 3
+fi
 version=4.5.3
 cache="${HOME}/.cache/wildlife-blender-$version"
 archive="blender-$version-linux-x64.tar.xz"
