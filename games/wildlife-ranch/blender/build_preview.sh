@@ -3,14 +3,9 @@ set -euo pipefail
 root="$PWD"
 source_dir="$root/games/wildlife-ranch/blender"
 out="$root/wildlife-preview-public"
-# Read-only live review uses this existing builder, never another service. It
-# deliberately does not publish or rerender; exit 3 leaves the live site intact.
-if [ "${WILDLIFE_ART03_LIVE_REVIEW_ONLY:-0}" = 1 ]; then
- npx playwright install chromium
- node "$source_dir/art03_live_review.mjs"
- echo 'LIVE_REVIEW_ONLY_COMPLETE: no publication, native files unchanged.'
- exit 3
-fi
+# Historical WILDLIFE_ART03_LIVE_REVIEW_ONLY is retired from normal publishing.
+# Its previous read-only check did not replace the live site or alter native art.
+# This pass reuses the exact packed 03 scene, not another download/rebuild of assets.
 version=4.5.3
 cache="${HOME}/.cache/wildlife-blender-$version"
 archive="blender-$version-linux-x64.tar.xz"
@@ -22,14 +17,21 @@ if [ ! -x "$cache/blender-$version-linux-x64/blender" ]; then
 fi
 blender="$cache/blender-$version-linux-x64/blender"
 "$blender" --version
-python3 "$source_dir/art03_assets.py"
-if [ "${WILDLIFE_ART03_INSPECT_ONLY:-0}" = 1 ]; then
- "$blender" --background --disable-autoexec --threads 4 --python-exit-code 17 --python "$source_dir/art03_inspect.py"
- echo 'ASSET_INSPECTION_ONLY: keeping public preview unchanged; no art publication.'
- exit 3
-fi
-mkdir -p "$out/art03" "$out/source" "$out/acceptance03"
-"$blender" --background --disable-autoexec --threads 4 --python-exit-code 17 --python "$source_dir/art03_replace.py" -- "$out/art03"
+PYTHONPATH="$source_dir" python3 - <<'PY'
+from art03_assets import ROOT,request
+# All images needed to render are packed in the immutable native input. The
+# registry is attribution/provenance, not an instruction to redownload 50 files.
+if not (ROOT/'asset_registry.json').is_file():
+ with request('https://wildlife-reserve-world-preview.onrender.com/art03/asset_registry.json') as r:
+  (ROOT/'asset_registry.json').write_bytes(r.read())
+PY
+mkdir -p "$out/art03" "$out/art03_base" "$out/source03" "$out/acceptance03"
+"$blender" --background --disable-autoexec --threads 4 --python-exit-code 17 --python-expr "import sys; sys.path.insert(0, r'$source_dir')" --python "$source_dir/art03_composition.py" -- "$out/art03"
+# Retain the immutable parent at a stable URL so a future cache miss cannot
+# accidentally read this revision's output as its own input.
+asset_cache="${WILDLIFE_ASSET_CACHE:-${HOME}/.cache/wildlife-art03}"
+cp "$asset_cache/input/Environment03_source.blend" "$out/art03_base/Wildlife_Lodge_Shore_03.blend"
 python3 "$source_dir/art03_publish.py" "$out"
+cp "$source_dir/build_preview.sh" "$out/source03/"
 npx playwright install chromium
 node "$source_dir/art03_browser.mjs" "$out"
