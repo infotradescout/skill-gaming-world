@@ -1,64 +1,63 @@
-# Blender world — native scenes and Render preview
+# Blender world — sourced environment and current native scene
 
-Current task: build the editable original wildlife-reserve world in Blender first,
-with COTW-level quality as the target. Current files are environment-development
-art, not a completed game or accepted final visual quality.
-
-**Resume from [NATIVE_CHECKPOINT.md](NATIVE_CHECKPOINT.md).** It records the exact
-native build, Render deployment, artifact hashes, failures and next dependencies.
-Do not restart a broad repository audit or treat old blockout receipts as current.
-
-## Open the current build
+**Resume from [NATIVE_CHECKPOINT.md](NATIVE_CHECKPOINT.md).** The owner rejected
+the former lodge/forest screenshot. Current work replaces the asset/material
+approach and improves scene composition; final COTW-quality acceptance remains OPEN.
 
 Preview: https://wildlife-reserve-world-preview.onrender.com
 
-- `Wildlife_Blender_World_02.zip`: native scenes, images, GLB and authoring source.
-- `district/Wildlife_Lodge_Shore_02.blend`: refined, editable lodge/shore district.
-- `macro/Wildlife_Reserve_World_01.blend`: separate full-reserve layout.
-- `district/approach_eye.png`, `shore_eye.png`, `porch_eye.png`,
-  `district_overview.png`: actual native Blender Cycles renders.
+The page compares the current candidate with the rejected 02 scene from the same
+camera and lens. It does not load the formerly unresponsive heavy GLB viewer.
 
-Native build source: `d9da1bc6752f3b22c266a1be2b5636995f74f904`.
-Blender 4.5.3 LTS executed successfully on Render; the refined district was saved
-and reopened, and four 1280x720 images were generated. The macro file was generated
-and existence-checked, not independently reopened by that publisher.
+## Current files
 
-Browser inspection is NOT fully accepted. Image loading and 390px layout checks
-passed, and the actual GLB loaded, but 3D capture/close timed out in software-rendered
-Chromium. The full GLB is approximately 120 MB. Use the native image views to
-inspect the scene without loading that model. Hardware performance is unmeasured.
+- `/art03/Wildlife_Lodge_Shore_03.blend`: editable district, image textures packed,
+  approximately 170 MB. Actual revision is `0.3.1-forest-composition`.
+- `/Wildlife_Environment_03.zip`: approximately 176 MB, current district, four
+  native images, asset provenance and art scripts. Not the entire repository.
+- `/art03/approach_eye.png`, `shore_eye.png`, `porch_eye.png`,
+  `district_overview.png`: 1280x720 native Blender Cycles renders.
+- `/art03/art_receipt.json`: source identity, camera/reopen checks and hashes.
+- `/art03/asset_registry.json`: third-party asset attribution and fingerprints.
+- `/acceptance03/browser.json`: exact-candidate image/control checks.
 
-## Scene scope
+Executed native source: `96142043ac0117f98fc09027ff3401fbee9b783a`.
+Render deploy `dep-dao8c4h42hec738rnj5g` confirmed LIVE at
+2026-09-21T01:30:46.708215Z. Blender 4.5.3 LTS saved and reopened the scene,
+verified unchanged cameras and packed images, and generated all four native views.
+These execution checks are not proof of final visual quality or playable gameplay.
 
-The 20x20 km macro reserve remains an editable sizing proposal, not approved final
-acreage or geography. Its 64 terrain tiles, water, roads, bridge, facilities,
-districts and tree proxies establish a layout only.
+## What changed
 
-The 330x330 m lodge/shore art study adds modeled siding, roof seams, porch framing,
-glazing, stairs, dock, branching trees, ground vegetation, rocks, deadfall and
-procedural materials. The latest correction adds fuller crowns, denser ground
-cover, adjusted lighting/materials, west-gable windows and an entry footpath.
-It is NOT yet stitched into the macro terrain. Do not present the two scenes as
-one continuous finished reserve. No COTW or third-party game assets are included.
+Original project-authored lodge/layout/cameras are retained. Placeholder vegetation
+and stones were replaced by Poly Haven pine, grass, fern, mossy-rock and deadwood
+assets, with forest-floor/leafy-ground/gravel image materials. The first replacement
+was still too sparse; the current pass adds overlapping canopy, forest-edge layers,
+more continuous ground cover, soil tone adjustment and less arbitrary stone scatter.
+Environment assets are CC0 from Poly Haven, not all project-original geometry.
+Source metadata, credits and packed textures are retained; no COTW assets are used.
 
-## Reproduce the native district
+## Authoring and proof boundaries
 
-Run in a dedicated Blender 4.5.3 process, never an unsaved artist session:
+Use `build_preview.sh` to reproduce the current pass. `art03_composition.py` reads
+the hash-pinned packed 0.3.0 parent preserved at
+`/art03_base/Wildlife_Lodge_Shore_03.blend`, then edits and rerenders it. Current
+`/art03/` is the 0.3.1 result, not that immutable parent. The current .blend can
+also be opened and edited directly. The build shell is served in /source03 but is
+not inside the ZIP; required art scripts are included. Full checkpoint has hashes.
 
-    blender --background --threads 4 --python build_refined.py -- DISTRICT_OUTPUT
+All four images, before/after controls, 390px layout and native availability passed
+against actual candidate files before publication. The current deployment is live;
+post-deploy browser checks from the earlier 0.3.0 pass must not be relabeled as
+0.3.1 proof. Coarse thumbnail inspection cannot approve fine material/scale detail.
+No interactive 3D responsiveness or game-performance acceptance is claimed.
 
-The wrapper checks the existing base author's exact fingerprint and applies the
-art refinement before native serialization. Retain build_district.py,
-build_refined.py and refine_district.py together. The output remains editable.
-The complete publisher is `build_preview.sh`; normal builds always generate the
-current native scene instead of silently reusing an earlier art revision.
+The approximately 330x330m detailed district is not stitched into the provisional
+20x20km macro reserve. The earlier macro .blend and 02 package remain available,
+explicitly as earlier layout work. Final map acreage, region and title stay open.
 
-Authoring template/district/facility IDs are not runtime account ownership or
-leases. Non-rendering district boundaries are not physical fences. Frontline,
-GrindZone, SI and Infinity remain separate canonical systems; no replacement
-commerce or game engine is introduced by this art work.
-
-Next: resolve heavy browser inspection without discarding full native detail;
-review the actual eye-level art; develop continuous ground/shore/vegetation detail;
-then stitch the district into the reserve. Wildlife animation, gameplay, collision,
-LOD, streaming, biological calibration and built-in GrindZone remain unaccepted.
+Next: full-resolution art review, authored forest-edge/midstory and ground
+transitions, then continuity with the larger terrain. Native first-person gameplay,
+wildlife animation/biology, leases, integrated GrindZone, collision, LOD/streaming
+and hardware acceptance remain outside this delivered art pass. Preserve the
+original game target instead of treating a lodge study as the completed world.
