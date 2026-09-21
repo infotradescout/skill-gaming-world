@@ -5,6 +5,8 @@ source_dir="$root/games/wildlife-ranch/unreal"
 out="$root/wildlife-preview-public"
 python3 -m unittest discover -s "$source_dir/tests" -v
 python3 "$source_dir/Tools/stage_handoff.py" prepare "$out"
+mkdir -p "$out/unreal01/project/AssetProvenance"
+cp "$out/art03/asset_registry.json" "$out/unreal01/project/AssetProvenance/PolyHaven_assets.json"
 version=4.5.3
 cache="${HOME}/.cache/wildlife-blender-$version"
 archive="blender-$version-linux-x64.tar.xz"
