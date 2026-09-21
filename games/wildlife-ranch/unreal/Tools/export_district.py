@@ -157,7 +157,7 @@ for key,matrix,ident,role,name in instances:
 bpy.ops.object.select_all(action='DESELECT')
 exports=bpy.data.collections.new('UE_EXPORT_TEMP');scene.collection.children.link(exports)
 scene.unit_settings.scale_length=.01
-from io_scene_fbx import parse
+from io_scene_fbx import parse_fbx as parse
 
 def fbx_geometry_bounds(filename):
     tree,_=parse.parse(str(filename))
