@@ -1,5 +1,5 @@
 """Preserve the existing static art; prepare/export a native import kit only."""
-import os,sys,json,hashlib,shutil,urllib.request,zipfile,stat
+import os,sys,json,hashlib,shutil,urllib.request,zipfile,stat,re
 from pathlib import Path,PurePosixPath
 sys.path.insert(0,str(Path(__file__).resolve().parent))
 from contract import BASE_SHA,digest_file,validate
@@ -67,7 +67,12 @@ elif sys.argv[1]=='finish':
     shutil.copy2(bundle/'transport_receipt.json',OUT/'unreal01/transport_receipt.json')
     page=(OUT/'index.html').read_text()
     note='<section id="unreal-transition" class="notice"><strong>Unreal 5.7 transition</strong><p><a class="button" href="Wildlife_Unreal_57_Transition_01.zip">Unreal project + import assets</a></p><p>Source/import kit, not a compiled game. Existing Blender art is unchanged. Native editor compilation, import, Windows packaging and walkthrough have not run.</p><a href="unreal01/status.json">Actual export status</a></section>'
-    if 'id="unreal-transition"' in page:raise RuntimeError('Repeated publication needs explicit version handling')
-    page=page.replace('<main>','<main>'+note,1);(OUT/'index.html').write_text(page)
+    if 'id="unreal-transition"' in page:
+        page,n=re.subn(r'<section id="unreal-transition" class="notice">.*?</section>',lambda _:note,page,count=1,flags=re.S)
+        if n!=1:raise RuntimeError('Existing transition section is not the owned format')
+    else:
+        if page.count('<main>')!=1:raise RuntimeError('Ambiguous existing preview main')
+        page=page.replace('<main>','<main>'+note,1)
+    (OUT/'index.html').write_text(page)
     print('UNREAL_HANDOFF_PUBLISHED',json.dumps(report),flush=True)
 else:raise SystemExit('Expected prepare or finish')
