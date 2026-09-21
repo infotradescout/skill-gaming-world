@@ -1,121 +1,154 @@
-# Native Blender world / Render continuation
+# Native Blender world — current continuation
 
-Owner outcome: build the original COTW-quality wildlife-reserve world in Blender
-first. Built-in GrindZone, persistent ecology and future compatible player ranch/
-lease sales remain the game target. This art work does not implement those runtimes.
+## Owner outcome and correction
 
-## Latest actual delivery
+The owner rejected the 0.2.1 lodge/forest screenshot as still far from the requested
+COTW-quality world. The immediate task remains actual editable Blender environment
+production, not a generated image, a management dashboard or a marketplace.
+Preserve the full native hunting/ecology/GrindZone goal and Frontline/SI/Infinity
+reuse boundaries. Do not confuse this district's art progress with a finished game.
 
-Native art source: `d9da1bc6752f3b22c266a1be2b5636995f74f904`.
-Branch: `feature/wildlife-ranch-realism-core-20260920`; draft PR 43.
-Render deploy: `dep-dao6nmh42hec738lqh40`, confirmed LIVE; finished
-2026-09-20T23:36:35.685497Z.
+## Latest actual native delivery
+
+Native build source: `96142043ac0117f98fc09027ff3401fbee9b783a`.
+Art revision: `0.3.1-forest-composition`.
+Branch: `feature/wildlife-ranch-realism-core-20260920`, draft PR #43.
+Render service: `srv-dao6d43tqb8s73e36rk0`.
+Confirmed workspace: `tea-d191jph5pdvs73drglkg`, My Workspace.
+Deploy: `dep-dao8c4h42hec738rnj5g`, confirmed LIVE.
+Started: 2026-09-21T01:19:14.717815Z.
+Finished: 2026-09-21T01:30:46.708215Z.
 
 Preview: https://wildlife-reserve-world-preview.onrender.com
-Package: /Wildlife_Blender_World_02.zip
-Native district: /district/Wildlife_Lodge_Shore_02.blend
-Native full-reserve layout: /macro/Wildlife_Reserve_World_01.blend
-Native views: /district/approach_eye.png, shore_eye.png, porch_eye.png,
-district_overview.png.
 
-Blender 4.5.3 LTS actually executed on the isolated Render builder. The current
-native district was saved, rendered from four 1280x720 cameras, exported to GLB,
-saved again and reopened. Identity, units, object count and required meshes were
-checked after reopening. The macro .blend was generated and existence-checked;
-it was NOT separately reopened by this publisher. Do not claim otherwise.
+| Artifact | Public path | Bytes / SHA-256 |
+| --- | --- | --- |
+| Packed editable district | /art03/Wildlife_Lodge_Shore_03.blend | 170287752 / 6fdfe8d118d4ec8f9f009e397d771eea56bdf50986af99c3a6889405e16314e1 |
+| Approach native PNG | /art03/approach_eye.png | 1946534 / 8272cff29b85b0d95cc1c723d2477736352706a7c7859f600e207414690973ac |
+| Shore native PNG | /art03/shore_eye.png | 1847511 / e8ac945c07f0b11816e7921c4122eb2a9e0655e2d63810d8b2a8fad3f6949bc1 |
+| Porch native PNG | /art03/porch_eye.png | 1526919 / 60f2f13741c50790440973e66b85d1625487c5212030e1ca94023bfbdec2b570 |
+| Overview native PNG | /art03/district_overview.png | 1622806 / 117e7a3b60d0fe00d2852ec1c2219e490db55ad4aca20d5d481019e8bb342d6b |
+| Scene/art-source package | /Wildlife_Environment_03.zip | 176181970 / 8aae38179dc6afb3eb1750d10230765fc23bc7062bdae2ce29b10488a00e0697 |
 
-District receipt: /district/district_receipt.json
-- revision: 0.2.1-native-art-refinement
-- native_reopen_verified: true
-- objects: 2838; mesh datablocks: 891
-- native .blend: 69623697 bytes
-- .blend SHA-256: 6f282ac04ae9282596eaa855cc2606f2e6bd559af609d7d67078c8e3009901f7
-- full GLB: 120489076 bytes
-- GLB SHA-256: c56e6703583b930627ae787cd6041fdc84ae0d1e71f2d320cf5a1e037272a4b1
-- native approach PNG SHA-256: 3852b5b69db3d49fd5e1a6bac18c5c60775446bc398cdff07c5868aa79f5885b
-- package: 143763180 bytes
-- package SHA-256: d8474a7a6782d89789a41730c7349ea8d3d661a185d088562b0fac607b38d2da
+Native receipt: /art03/art_receipt.json.
+Asset provenance: /art03/asset_registry.json.
+Package receipt: /art03_package.json.
+Candidate browser receipt: /acceptance03/browser.json.
 
-These are generated native scene artifacts, not AI images, VTK substitutes or a
-claim that the requested final visual quality has been reached.
+Blender 4.5.3 LTS actually ran on the existing Render builder: the packed scene was
+saved, four 1280x720 Cycles views were rendered, the file was saved again and reopened.
+The script verified the expected revision, terrain presence, used image textures
+packed, and unchanged camera transforms/lenses. `native_reopen_verified=true` and
+`same_camera_verified=true`. `visual_approval=false` remains deliberate.
 
-## Visual correction and actual acceptance limits
+## What changed, and what the images do not establish
 
-The first native pass at 9f92ad7f5aaa5946827e61f9137d63f74af8d4e7 was generated,
-reopened and published. Its actual approach image was inspected and rejected for
-sparse tree crowns and washed-out ground; successful execution was not accepted
-as successful art direction.
+The original project-authored lodge, terrain layout, water and cameras were retained.
+Rejected placeholder trees, blade clumps and faceted rocks were replaced using
+Poly Haven native pine, grass, fern, mossy-rock and deadwood assets. The ground and
+trail now use image-based diffuse/roughness/normal/displacement materials rather
+than flat vertex colours. A subsequent composition pass changes canopy overlap,
+forest-edge placement, ground coverage, exposed-soil tone and scattered stones.
 
-The current pass retains the camera and existing lodge geometry, adds full-crown
-foliage and dense grass, separates sky illumination from the directional sun,
-changes soil/stone/timber shading, adds west-facing window openings and connects
-the entry path to the lodge. Four new native views exist. Final human-scale art
-acceptance remains OPEN, not passed by these implementation or render counts.
+The sourced 0.3.0 pass was built first and inspected, but still showed sparse
+composition and exposed ground. That observation led to the executed 0.3.1 pass,
+not a claim that asset downloads alone satisfied the user. The final approach
+was inspected through a 320x180 JPEG diagnostic reconstructed from the actual PNG;
+it shows changed canopy and foreground coverage, but is NOT sufficient for
+fine-detail, species-scale, material or final-quality approval. Enlarging that
+thumbnail does not increase its evidence quality. Full native PNGs remain available.
 
-Current Chromium receipt: /acceptance/browser_acceptance.json.
-Scope: actual built candidate artifacts served by an ephemeral loopback server
-inside the builder before publication, NOT a fresh live-CDN or game-performance test.
-Passed parts: HTML 200; all four native images decoded; 390px viewport had no
-horizontal overflow; the actual 120 MB GLB loaded; reset-camera action applied.
-Overall passed=false: software-rendered 3D screenshot timed out at 20 seconds and
-close-button action timed out at 30 seconds. A loaded GLB is not sufficient evidence
-of a responsive interactive viewer. Physical Android/PC GPU performance was not
-measured. Do not relabel this as full browser acceptance. Native image viewing and
-native downloadable artifacts remain available; the full GLB is heavy.
+The canopy still needs species/age variation and authored transitions rather than
+reading as repeated tree trunks and a dense crown band. Ground-plant distribution,
+plant scale, soil transitions and the lodge surroundings remain art-review work.
+No reference-matched COTW visual acceptance has passed. Do not use object counts,
+file sizes, successful rendering or these thumbnail checks as substitutes.
 
-Earlier hosted inspection at b17871ee229c0f13f42870b76e754a13198f9b04 also failed
-its 3D screenshot after confirming image loading and a smaller GLB load. Retain
-this failure history; the newer failure is not solved merely by changing a test.
+## Sources, licensing and exact reuse
 
-## Owning source and reproducibility
+Environment models from Poly Haven: pine_tree_01 (static LOD2, three variants),
+grass_medium_01 (LOD1), fern_02, rock_moss_set_01 and dead_tree_trunk_02 (LOD0).
+Textures: forest_floor, leafy_grass and gravel_road, with 2k image maps.
+Official asset license: https://polyhaven.com/license (CC0).
+API conditions: https://polyhaven.com/our-api.
+The downloader uses a unique User-Agent, attribution, bounded HTTPS downloads,
+upstream size/MD5 checks and retained SHA-256 fingerprints. Initial download:
+50 files, 712113700 bytes. Their native static collections were actually inspected.
+Do not repeat that discovery without evidence of asset changes.
 
-`build_district.py` is the existing base author, SHA-256
-0387a37276704095888e6b6a838500ca96cb60c4e2e4821b652ace9229ab6b74.
-`refine_district.py` supplies the art correction. `build_refined.py` applies it at
-a checked pre-save hook and refuses an unreviewed change to the base source.
-Run in a dedicated Blender process, not an artist's unsaved session:
+The lodge/layout remains project-authored; the environment assets are THIRD-PARTY
+CC0 assets. Do not describe the entire scene as original geometry or imply COTW
+asset reuse. Attribution and source metadata are included. Current used image
+textures are packed in the delivered .blend. No standalone font files are distributed.
+Native source downloads were opened with automatic script execution disabled.
 
-    blender --background --threads 4 --python build_refined.py -- DISTRICT_OUTPUT
+## Proof scope
 
-`build_preview.sh` creates native scenes, images, GLB, source package and browser
-inspection artifacts. Blender binaries are verified against the vendor SHA-256
-manifest and are NOT included in the published site. Procedural geometry is original.
-Google model-viewer 4.1.0 supplies optional browser inspection; its Apache-2.0
-license and notice are included in /vendor/.
+Current exact-candidate Chromium checks passed before publication: native receipt,
+all four decoded images, current/rejected matched-camera switching, 390px viewport
+without horizontal overflow, and native-file availability. Those ran against actual
+candidate files served by an ephemeral loopback server in the same builder.
+They do not establish post-deploy CDN operation, fine visual quality, game performance
+or an interactive 3D experience. Render subsequently reported this exact source LIVE.
 
-The old fixed-artifact reuse mode is retired from the normal publisher. Historical
-`inspect_published.py` is pinned to the first native pass and must not be used to
-present old art as a new source build. Changes only to documentation must not cause
-unchanged native scenes to be rerendered as a substitute for useful work.
+A separate read-only live browser check DID verify the first sourced 0.3.0 build
+at `5529248ebb899ba10ce36e4fa7021f343edcd216`: four live image hashes, comparison
+controls, 390px layout, native-file HEAD and source receipt. Do not reuse that as
+post-deploy browser proof for the newer 0.3.1 source.
 
-## External state and retry safety
+The new page is an image-first before/after inspection surface. The previous heavy
+GLB viewer's responsiveness failure is NOT marked repaired; no current interactive
+3D or game-performance claim is made. Prior 02 downloads and /macro remain available.
 
-Confirmed workspace: tea-d191jph5pdvs73drglkg, My Workspace.
-Static preview service: srv-dao6d43tqb8s73e36rk0. Auto-deploy is OFF.
-An environment update starts a Render deploy itself; do not trigger a second one.
-WILDLIFE_INSPECT_PUBLISHED is 0 and ignored by the new normal build path.
-The site uses workspace build/bandwidth resources; no extra paid runtime compute
-service was created. The existing production Skill Gaming World service,
-Frontline, standalone GrindZone, SI, Infinity, payments and game saves are unchanged.
+## Active authoring path / immutable inputs
 
-## Remaining substantive work / resume here
+`art03_replace.py` creates the first sourced pass from the exact 02 native file.
+`art03_composition.py` is the current correction and opens the exact packed 0.3.0
+parent instead of repeating the initial assets download and scene replacement.
+Parent 0.3.0 is preserved at:
+`/art03_base/Wildlife_Lodge_Shore_03.blend`
+SHA-256: `0754f9db70d016be60c7aa5b249036bbc9a110af26722b212dfe3d95644cb7f6`
+Bytes: 168970705. It is not the current 0.3.1 download.
 
-The 20x20 km macro reserve is a provisional layout, not approved final acreage or
-finished scenery. The 330x330 m detailed district remains a separate replacement
-study: it is NOT stitched into the macro heightfield. Two native files are not
-one continuous completed world. Do not shrink the full-game target to this district.
+Run through `build_preview.sh`, which resolves the required Python module path,
+checks inputs, runs the native composition author, preserves that parent, publishes
+and runs the candidate browser checks. The saved current .blend itself is directly
+editable and does not require rebuilding. Art scripts are in the ZIP; the build
+shell is also served under /source03 but was copied there after ZIP creation.
+The ZIP does not contain the immutable parent scene or the entire repository.
 
-Next browser dependency: make an optimized inspection representation from the
-existing native scene, preserve the full-detail .blend, verify that opening,
-resetting and closing the viewer remain responsive, and inspect actual rendered
-geometry. Reuse the exact current native files and hashes for browser-only work
-rather than rerendering four unchanged art views. Do not waive the timeout.
+## External state / retry safety
 
-Next art dependency: review all native eye-level views and develop a continuous
-lodge -> trail -> shoreline with credible vegetation, banks, ground materials and
-exterior detail; then merge the area spatially into the larger reserve while
-preserving authored district/facility identities. Botanical fidelity, production
-materials, collision, LOD, streaming and hardware performance remain unaccepted.
-Native hunting, wildlife AI, reproduction, leasing and embedded GrindZone remain
-future integration work. Do not start a marketplace, another engine audit, a new
-proof service or an unrelated project in place of this continuation.
+Auto-deploy is OFF. Documentation-only commits must not trigger another render.
+The environment variable WILDLIFE_ART03_LIVE_REVIEW_ONLY remains 1 from an earlier
+read-only inspection, but is RETIRED/IGNORED in the current normal publisher.
+Do not reset it for cosmetic cleanup: environment updates themselves trigger deploys.
+Likewise old WILDLIFE_INSPECT_PUBLISHED is ignored. Use one trigger only when a real
+new art change is ready; no additional static or compute service is needed.
+
+Historical read-only review deploy `dep-dao88omgekts73b976s0` reported build_failed
+because its script intentionally exited 3 after successful live checks, leaving
+published native artifacts unchanged. Initial asset inspection also deliberately
+stopped before publication. Earlier KeyError on texture channel names was repaired;
+Diffuse/Rough/Displacement aliases are already handled.
+
+Existing production Skill Gaming World, Frontline, standalone GrindZone, SI,
+Infinity, payments, player accounts and game saves remain untouched by this work.
+
+## Next exact work; preserve full scope
+
+Review the four FULL-RESOLUTION native views, not just the low-resolution diagnostic.
+Continue authored forest-edge/midstory structure and scale-correct ground transitions;
+fix remaining artificial repetition before another density-only change. Keep the
+same comparison camera, inspect the actual scene, and record remaining failures.
+Do not substitute another concept image, platform audit or proof service.
+
+The detailed approximately 330x330m district is STILL SEPARATE from the provisional
+20x20km macro terrain. Final acreage and region remain open. The larger reserve is
+not complete or continuous. Stitching, collision, streaming/LOD, botanical diversity,
+material refinement and hardware performance remain unaccepted. Scaled small trees
+are art proxies, not a validated simulation of juveniles.
+
+Wildlife animation, natural reproduction, ecological calibration, NPC/player leases,
+first-person hunting and integrated GrindZone are not implemented by this art pass.
+Maintain those product requirements without presenting this lodge study as the game.
