@@ -15,11 +15,13 @@ fi
 blender="$cache/blender-$version-linux-x64/blender"
 "$blender" --version
 python3 "$source_dir/art03_assets.py"
-"$blender" --background --disable-autoexec --threads 4 --python-exit-code 17 --python "$source_dir/art03_inspect.py"
-if [ "${WILDLIFE_ART03_INSPECT_ONLY:-1}" = 1 ]; then
- echo 'ASSET_INSPECTION_ONLY: keeping the current public preview unchanged; no candidate art publication.'
+if [ "${WILDLIFE_ART03_INSPECT_ONLY:-0}" = 1 ]; then
+ "$blender" --background --disable-autoexec --threads 4 --python-exit-code 17 --python "$source_dir/art03_inspect.py"
+ echo 'ASSET_INSPECTION_ONLY: keeping public preview unchanged; no art publication.'
  exit 3
 fi
-mkdir -p "$out/art03" "$out/source" "$out/acceptance"
+mkdir -p "$out/art03" "$out/source" "$out/acceptance03"
 "$blender" --background --disable-autoexec --threads 4 --python-exit-code 17 --python "$source_dir/art03_replace.py" -- "$out/art03"
 python3 "$source_dir/art03_publish.py" "$out"
+npx playwright install chromium
+node "$source_dir/art03_browser.mjs" "$out"
