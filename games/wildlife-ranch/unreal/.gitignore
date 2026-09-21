@@ -1,0 +1,8 @@
+**/Binaries/
+**/Intermediate/
+**/Saved/
+**/DerivedDataCache/
+**/InputBundle/
+**/__pycache__/
+Packaged/
+*.sln
