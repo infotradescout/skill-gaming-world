@@ -139,6 +139,9 @@ for key,me in mesh_cache.items():
         a=np.empty(len(seq)*n,dtype=np.float32 if attr=='co' else np.int32);seq.foreach_get(attr,a);h.update(a.tobytes())
     h.update(json.dumps([p.loop_total for p in me.polygons]).encode())
     h.update(bytes(int(p.use_smooth) for p in me.polygons))
+    # Identical topology/slots may still assign different materials to faces.
+    assignments=np.empty(len(me.polygons),dtype=np.int32)
+    me.polygons.foreach_get('material_index',assignments);h.update(assignments.tobytes())
     for uv in me.uv_layers:
         a=np.empty(len(me.loops)*2,dtype=np.float32);uv.data.foreach_get('uv',a);h.update(uv.name.encode());h.update(a.tobytes())
     digest=h.hexdigest();asset_id='SM_'+digest[:20];key_assets[key]=asset_id
