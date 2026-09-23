@@ -113,9 +113,10 @@ test("authenticated app exposes the exported 3D runtime with its boundary stated
   await registerPlayer(page);
   await page.goto("/app/robot-combat/runtime");
 
-  await expect(page.getByRole("heading", { name: "Workshop and arena prototype", exact: true })).toBeVisible();
-  await expect(page.getByText(/Open it from a live match/i)).toBeVisible();
-  await expect(page.locator("iframe[title='Robot Combat 3D runtime prototype']")).toHaveAttribute(
+  await expect(page.getByRole("heading", { name: "Workshop preview", exact: true })).toBeVisible();
+  await expect(page.getByText(/Preview the visual build and arena view/i)).toBeVisible();
+  await expect(page.getByText(/This view is a visual preview of the Robot Combat world and remains separate from the match controls/i)).toBeVisible();
+  await expect(page.locator("iframe[title='Robot Combat visual arena']")).toHaveAttribute(
     "src",
     "/games/robot-combat/index.html",
   );
