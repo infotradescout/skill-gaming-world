@@ -54,9 +54,13 @@ test("public landing page states the noncash product boundary", async ({ page })
   await page.goto("/");
 
   await expect(
-    page.getByRole("heading", { name: /Play where\s*fair means provable\./ }),
+    page.getByRole("heading", { name: "Choose your game." }),
   ).toBeVisible();
+  await expect(page.getByText("NO PAID ADVANTAGE", { exact: true })).toBeVisible();
   await expect(page.getByText(/Play Coins have no cash value/).first()).toBeVisible();
+
+  await page.goto("/legal/terms");
+  await expect(page.getByRole("heading", { name: "Platform terms" })).toBeVisible();
   await expect(
     page.getByText(/Monetaire Play does not award cash or valuable prizes\./).first(),
   ).toBeVisible();
