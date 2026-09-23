@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 import { createCuratedSolutionIntents } from "@/domain";
+import { submitPacedRegistration } from "./registration-pacer";
 
 async function registerPlayer(page: Page) {
   const identity = randomUUID().slice(0, 12);
@@ -12,7 +13,7 @@ async function registerPlayer(page: Page) {
   await page.getByLabel("Password", { exact: true }).fill(password);
   await page.getByLabel("Confirm password").fill(password);
   await page.locator('input[name="termsAccepted"]').check();
-  await page.getByRole("button", { name: "Create account" }).click();
+  await submitPacedRegistration(page);
   await expect(page).toHaveURL(/\/app(?:\?welcome=1)?$/);
   return { email, password };
 }
