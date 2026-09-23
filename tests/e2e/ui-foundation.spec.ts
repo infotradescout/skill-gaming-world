@@ -139,7 +139,11 @@ test("practice and competition use authoritative state and exact retries", async
   await expect(page.getByText("Complete all four foundations")).toBeVisible();
 
   await page.getByRole("button", { name: "Start or resume" }).click();
-  await expect(page.getByText("Authoritative session")).toBeVisible();
+  await expect(
+    page
+      .getByRole("region", { name: "Monetaire practice board" })
+      .getByRole("button", { name: /Draw from stock/ }),
+  ).toBeEnabled();
   await page.getByRole("button", { name: /Draw from stock/ }).click();
   await expect(page.getByText("Stock draw accepted by the server.")).toBeVisible();
   await expect(page.locator(".game-metrics")).toContainText("Valid moves1");
