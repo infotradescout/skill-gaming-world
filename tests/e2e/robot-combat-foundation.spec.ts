@@ -127,24 +127,103 @@ test("authenticated app exposes the exported 3D runtime with its boundary stated
 });
 
 test("authenticated workshop opens a private test bay and records consequences before rebuild", async ({ page }) => {
+  type PrivateTestState = {
+    matchId: string;
+    mode: string;
+    phase: string;
+    elapsedMs: number;
+    testReport?: {
+      controlsAccepted: number;
+      contacts: number;
+      weaponUses: number;
+      resets: number;
+      consequences: Array<{ kind: string; damage: number }>;
+    };
+  };
   await registerPlayer(page);
   await page.goto("/app/robot-combat");
-  await page.getByRole("button", { name: "Inspect & save revision" }).click();
-  await expect(page.getByText(/Revision \d+ saved/i)).toBeVisible();
-  await page.getByRole("button", { name: "Enter private test bay" }).click();
-  await expect(page).toHaveURL(/\/app\/robot-combat\/test-bay\//);
+  const [saveResponse] = await Promise.all([
+    page.waitForResponse((response) =>
+      new URL(response.url()).pathname === "/api/robot-combat/builds" &&
+      response.request().method() === "POST",
+    ),
+    page.getByRole("button", { name: "Save build & check it" }).click(),
+  ]);
+  expect(saveResponse.status()).toBe(201);
+  const saved = (await saveResponse.json()).build as {
+    id: string;
+    latestRevision: number;
+    revisions: Array<{ revision: number; inspection: { valid: boolean } }>;
+  };
+  expect(saved.id).toBeTruthy();
+  expect(saved.latestRevision).toBeGreaterThan(0);
+  expect(saved.revisions.at(-1)?.revision).toBe(saved.latestRevision);
+  expect(saved.revisions.at(-1)?.inspection.valid).toBe(true);
+  await expect(page.getByRole("status").filter({ hasText: "Build saved. Your machine is ready to test." })).toBeVisible();
+  await expect(page.getByText("Ready to test", { exact: true })).toBeVisible();
+
+  const [createResponse] = await Promise.all([
+    page.waitForResponse((response) =>
+      new URL(response.url()).pathname === "/api/robot-combat/test-bay" &&
+      response.request().method() === "POST",
+    ),
+    page.getByRole("button", { name: "Open private test" }).click(),
+  ]);
+  expect(createResponse.status()).toBe(201);
+  expect(createResponse.request().postDataJSON()).toEqual(
+    expect.objectContaining({ buildId: saved.id, revision: saved.latestRevision }),
+  );
+  await expect(page).toHaveURL(/\/app\/robot-combat\/test-bay\/[^/]+$/);
+  const sessionId = new URL(page.url()).pathname.split("/").at(-1) ?? "";
+  expect(sessionId).toBeTruthy();
+  const retrieval = await page.request.get(`/api/robot-combat/test-bay/${sessionId}`);
+  expect(retrieval.status()).toBe(200);
+  const privateTest = (await retrieval.json()).test as PrivateTestState;
+  expect(privateTest.matchId).toBe(sessionId);
+  expect(privateTest.mode).toBe("PRIVATE_TEST");
+  expect(privateTest.phase).toBe("ACTIVE");
   await expect(page.getByRole("heading", { name: "Private test bay", exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Learn what the machine does", exact: true })).toBeVisible();
 
-  await page.getByRole("button", { name: "Drive toward contact gate" }).click();
-  for (let tick = 0; tick < 6; tick += 1) {
-    await page.getByRole("button", { name: "Advance test clock" }).click();
+  async function sendAction(label: string, commandType: string): Promise<PrivateTestState> {
+    const [response] = await Promise.all([
+      page.waitForResponse((candidate) =>
+        new URL(candidate.url()).pathname === `/api/robot-combat/test-bay/${privateTest.matchId}/commands` &&
+        candidate.request().method() === "POST",
+      ),
+      page.getByRole("button", { name: label, exact: true }).click(),
+    ]);
+    expect(response.status(), label).toBe(200);
+    expect(response.request().postDataJSON().command.type).toBe(commandType);
+    const result = (await response.json()) as { accepted: boolean; test: PrivateTestState };
+    expect(result.accepted, label).toBe(true);
+    expect(result.test.matchId).toBe(privateTest.matchId);
+    return result.test;
   }
-  await page.getByRole("button", { name: "Record contact" }).click();
+
+  const driven = await sendAction("Drive toward contact gate", "CONTROL");
+  expect(driven.testReport?.controlsAccepted).toBeGreaterThan(0);
+  let ticked: PrivateTestState | undefined;
+  for (let tick = 0; tick < 6; tick += 1) {
+    ticked = await sendAction("Advance test clock", "TICK");
+  }
+  expect(ticked?.elapsedMs).toBeGreaterThan(0);
+  const contact = await sendAction("Record contact", "TEST_CONTACT");
+  expect(contact.testReport?.contacts).toBeGreaterThan(0);
+  expect(contact.testReport?.consequences.some((item) => item.kind === "CONTACT" && item.damage > 0)).toBe(true);
   await expect(page.getByText("Contact consequence", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Use weapon" }).click();
+  const weapon = await sendAction("Use weapon", "FIRE");
+  expect(weapon.testReport?.weaponUses).toBeGreaterThan(0);
+  expect(weapon.testReport?.consequences.some((item) => item.kind === "WEAPON" && item.damage > 0)).toBe(true);
   await expect(page.getByText("Weapon consequence", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Reset private test" }).click();
+  const reset = await sendAction("Reset private test", "RESET_TEST");
+  expect(reset.testReport).toMatchObject({
+    controlsAccepted: 0,
+    contacts: 0,
+    weaponUses: 0,
+    resets: 1,
+    consequences: [],
+  });
   await expect(page.getByText("Private test reset. The saved machine is ready for another trial.", { exact: true })).toBeVisible();
   await expect(page.getByText("No consequence recorded yet", { exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: "Rebuild this machine", exact: true })).toHaveAttribute(
