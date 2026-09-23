@@ -15,19 +15,20 @@ async function registerPlayer(page: import("@playwright/test").Page) {
   await expect(page).toHaveURL(/\/app(?:\?welcome=1)?$/);
 }
 
-test("Robot Combat public page describes the workshop-first product truth", async ({ page }) => {
+test("Robot Combat public page states the free build-and-fight boundary", async ({ page }) => {
   await page.goto("/robot-combat");
 
-  await expect(
-    page.getByRole("heading", { name: "Build the machine. Learn what it does.", exact: true }),
-  ).toBeVisible();
-  await expect(page.getByText(/workshop and arena are being built as one product/i)).toBeVisible();
-  await expect(page.getByRole("link", { name: /enter the workshop/i })).toHaveAttribute(
+  await expect(page.getByRole("heading", { name: "Build & fight.", exact: true })).toBeVisible();
+  await expect(page.getByText(/choose the parts, test the machine, and take your build onto the free arena floor/i)).toBeVisible();
+  await expect(page.getByRole("link", { name: "Enter the garage" })).toHaveAttribute(
     "href",
-    "/auth/login",
+    "/auth/register",
   );
-  await expect(page.getByText(/In active development/i)).toBeVisible();
-  await expect(page.getByText(/no wagering, deposit, prize, payout/i)).toBeVisible();
+  await expect(page.getByText(/Robot Combat is in active development/i)).toBeVisible();
+  await expect(page.getByText(/the current free game has no entry fee, wagering, deposits, valuable prizes, or payouts/i)).toBeVisible();
+  await expect(page.getByText("Assemble", { exact: true })).toBeVisible();
+  await expect(page.getByText("Inspect", { exact: true })).toBeVisible();
+  await expect(page.getByText("Fight", { exact: true })).toBeVisible();
 });
 
 test("authenticated workshop saves an inspected revision and opens a match", async ({ page }) => {
