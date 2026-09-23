@@ -151,7 +151,9 @@ test("practice and competition use authoritative state and exact retries", async
   await page.reload();
   await page.getByRole("button", { name: "Start or resume" }).click();
   await expect(
-    page.getByText("Server session resumed from its authoritative state."),
+    page.getByText("Your hand is back. Continue where you left off.", {
+      exact: true,
+    }),
   ).toBeVisible();
   await expect(page.locator(".game-metrics")).toContainText("Valid moves1");
 
