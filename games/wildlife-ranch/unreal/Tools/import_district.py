@@ -146,6 +146,7 @@ def execute(project, run_id, importer_sha):
                 if channel == 'alpha': mat.set_editor_property('blend_mode', ue.BlendMode.BLEND_MASKED)
             E.set_metadata_tag(mat, 'WildlifeTransport', identity)
             E.set_metadata_tag(mat, 'NeedsNativeMaterialReview', json.dumps(md['warnings']))
+            mat.set_editor_property('used_with_instanced_static_meshes', True)
             ML.recompile_material(mat)
             if not E.save_loaded_asset(mat): raise RuntimeError('Could not save material')
         materials[md['id']] = mat
