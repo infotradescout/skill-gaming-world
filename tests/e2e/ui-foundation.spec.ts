@@ -255,7 +255,12 @@ test("practice and competition use authoritative state and exact retries", async
   await expect(
     page.getByRole("region", { name: "Monetaire competition board" }),
   ).toBeVisible();
-  await expect(page.getByText("Noncash competition · Server")).toBeVisible();
+  await expect(
+    page.getByRole("region", { name: "Monetaire competition board" }),
+  ).toContainText("Draw 3 rules · no cash value");
+  await expect(page.getByRole("status")).toContainText(
+    "No Play Coins were charged and no valuable prize is offered.",
+  );
 
   if (testInfo.project.name === "desktop-chromium") {
     const competitionSession = await page.evaluate(async () => {
