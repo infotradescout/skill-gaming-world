@@ -29,7 +29,7 @@ try {
     $uat = Join-Path $EngineRoot 'Engine/Build/BatchFiles/RunUAT.bat'
     Invoke-WildlifeStage 'Compile Unreal project' $build @('WildlifeReserveEditor','Win64','Development',"-Project=$project",'-WaitMutex') (Join-Path $logs '01-compile.log')
     $state.compiled = $true
-    Invoke-WildlifeStage 'Import the Blender district' $editor @($project,"-ExecutePythonScript=$script",'-unattended','-nullrhi','-nosound','-nop4','-UTF8Output') (Join-Path $logs '02-import.log')
+    Invoke-WildlifeStage 'Import the Blender district' $editor @($project,"-ExecutePythonScript=$script",'-unattended','-RenderOffscreen','-nosound','-nop4','-UTF8Output') (Join-Path $logs '02-import.log')
     $receiptPath = Join-Path $PSScriptRoot 'WildlifeReserve/Saved/UnrealDistrictImport.json'
     if (-not (Test-Path -LiteralPath $receiptPath)) { throw 'Unreal produced no import receipt.' }
     $r = Get-Content -Raw -LiteralPath $receiptPath | ConvertFrom-Json

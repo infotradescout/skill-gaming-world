@@ -176,7 +176,9 @@ def execute(project, run_id, importer_sha):
             if not body: raise RuntimeError('Missing collision body')
             body.set_editor_property('collision_trace_flag', ue.CollisionTraceFlag.CTF_USE_COMPLEX_AS_SIMPLE)
         if ad['collision'] == 'trunk_proxy':
-            if ue.get_editor_subsystem(ue.StaticMeshEditorSubsystem).get_simple_collision_count(mesh) < 1:
+            body = mesh.get_editor_property('body_setup')
+            hulls = body.get_editor_property('agg_geom').get_editor_property('convex_elems') if body else []
+            if len(hulls) < 1:
                 raise RuntimeError('Trunk collision hull not imported')
         if not E.save_loaded_asset(mesh): raise RuntimeError('Could not save mesh')
         meshes[ad['id']] = mesh
