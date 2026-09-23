@@ -36,17 +36,57 @@ test("authenticated workshop saves an inspected revision and opens a match", asy
   await registerPlayer(page);
   await page.goto("/app/robot-combat");
 
-  await expect(page.getByRole("heading", { name: "Robot Combat", exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Inspect & save revision" }).click();
-  await expect(page.getByText(/Revision \d+ saved/i)).toBeVisible();
-  await expect(page.getByText("Inspection valid", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Open a free 1v1 match" }).click();
-  await expect(page.getByText("WAITING_FOR_OPPONENT", { exact: true })).toBeVisible();
-  await page.getByRole("link", { name: "Enter authority arena" }).click();
+  await expect(page.getByRole("heading", { name: "Build & fight.", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Build your contender.", exact: true })).toBeVisible();
+  const [saveResponse] = await Promise.all([
+    page.waitForResponse((response) =>
+      new URL(response.url()).pathname === "/api/robot-combat/builds" &&
+      response.request().method() === "POST",
+    ),
+    page.getByRole("button", { name: "Save build & check it" }).click(),
+  ]);
+  expect(saveResponse.status()).toBe(201);
+  const saved = (await saveResponse.json()).build as {
+    id: string;
+    latestRevision: number;
+    revisions: Array<{ revision: number; inspection: { valid: boolean } }>;
+  };
+  expect(saved.id).toBeTruthy();
+  expect(saved.latestRevision).toBeGreaterThan(0);
+  expect(saved.revisions.at(-1)?.revision).toBe(saved.latestRevision);
+  expect(saved.revisions.at(-1)?.inspection.valid).toBe(true);
+  await expect(page.getByRole("status").filter({ hasText: "Build saved. Your machine is ready to test." })).toBeVisible();
+  await expect(page.getByText("Ready to test", { exact: true })).toBeVisible();
+  await expect(page.getByText("Weight", { exact: true })).toBeVisible();
+
+  const [matchResponse] = await Promise.all([
+    page.waitForResponse((response) =>
+      new URL(response.url()).pathname === "/api/robot-combat/matches" &&
+      response.request().method() === "POST",
+    ),
+    page.getByRole("button", { name: "Open a free match" }).click(),
+  ]);
+  expect(matchResponse.status()).toBe(201);
+  expect(matchResponse.request().postDataJSON()).toEqual(
+    expect.objectContaining({ buildId: saved.id, revision: saved.latestRevision }),
+  );
+  const match = (await matchResponse.json()).match as {
+    matchId: string;
+    phase: string;
+    players: { A?: { inspection?: { valid: boolean } } };
+  };
+  expect(match.matchId).toBeTruthy();
+  expect(match.phase).toBe("WAITING_FOR_OPPONENT");
+  expect(match.players.A?.inspection?.valid).toBe(true);
+  await expect(page.getByRole("status").filter({ hasText: "Match opened. Share the code with another builder." })).toBeVisible();
+  await expect(page.getByText("1 of 2", { exact: true })).toBeVisible();
+  const arenaLink = page.getByRole("link", { name: "Open match arena" });
+  await expect(arenaLink).toHaveAttribute("href", `/app/robot-combat/matches/${match.matchId}`);
+  await arenaLink.click();
   await expect(page).toHaveURL(/\/app\/robot-combat\/matches\//);
-  await expect(page.getByRole("heading", { name: "Authority arena", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "The arena", exact: true })).toBeVisible();
   await expect(page.getByText("Waiting for another builder", { exact: true })).toBeVisible();
-  const mirrorLink = page.getByRole("link", { name: "Open the live 3D authority mirror", exact: true });
+  const mirrorLink = page.getByRole("link", { name: "Open the 3D match view", exact: true });
   const mirrorHref = await mirrorLink.getAttribute("href");
   expect(mirrorHref).toMatch(/\/app\/robot-combat\/runtime\?matchId=[^&]+&slot=A$/);
   await expect(mirrorLink).toHaveAttribute("target", "_blank");
@@ -56,8 +96,8 @@ test("authenticated workshop saves an inspected revision and opens a match", asy
   });
   await page.goto(mirrorHref ?? "");
   await expect(page).toHaveURL(/\/app\/robot-combat\/runtime\?matchId=[^&]+&slot=A$/);
-  await expect(page.getByRole("heading", { name: "Live authority mirror", exact: true })).toBeVisible();
-  await expect(page.locator("iframe[title='Robot Combat 3D runtime prototype']")).toHaveAttribute(
+  await expect(page.getByRole("heading", { name: "Live arena view", exact: true })).toBeVisible();
+  await expect(page.locator("iframe[title='Robot Combat visual arena']")).toHaveAttribute(
     "src",
     /\/games\/robot-combat\/index\.html\?matchId=[^&]+&slot=A$/,
   );
@@ -66,7 +106,7 @@ test("authenticated workshop saves an inspected revision and opens a match", asy
     () => authorityRequests.some((requestUrl) => requestUrl.includes("/api/robot-combat/matches/" + liveMatchId)),
     { timeout: 15000 },
   ).toBeTruthy();
-  await expect(page.locator("iframe[title='Robot Combat 3D runtime prototype']").contentFrame().locator("canvas")).toBeVisible({ timeout: 15000 });
+  await expect(page.locator("iframe[title='Robot Combat visual arena']").contentFrame().locator("canvas")).toBeVisible({ timeout: 15000 });
 });
 
 test("authenticated app exposes the exported 3D runtime with its boundary stated", async ({ page, request }) => {
