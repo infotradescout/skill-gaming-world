@@ -145,7 +145,7 @@ test("practice and competition use authoritative state and exact retries", async
       .getByRole("button", { name: /Draw from stock/ }),
   ).toBeEnabled();
   await page.getByRole("button", { name: /Draw from stock/ }).click();
-  await expect(page.getByText("Stock draw accepted by the server.")).toBeVisible();
+  await expect(page.getByText("Stock drawn.", { exact: true })).toBeVisible();
   await expect(page.locator(".game-metrics")).toContainText("Valid moves1");
 
   await page.reload();
