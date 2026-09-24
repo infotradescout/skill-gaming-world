@@ -33,6 +33,7 @@ test("Robot Combat public page states the free build-and-fight boundary", async 
 });
 
 test("authenticated workshop saves an inspected revision and opens a match", async ({ page }) => {
+  test.setTimeout(90_000);
   await registerPlayer(page);
   await page.goto("/app/robot-combat");
 
@@ -90,10 +91,17 @@ test("authenticated workshop saves an inspected revision and opens a match", asy
   const mirrorHref = await mirrorLink.getAttribute("href");
   expect(mirrorHref).toMatch(/\/app\/robot-combat\/runtime\?matchId=[^&]+&slot=A$/);
   await expect(mirrorLink).toHaveAttribute("target", "_blank");
-  const authorityRequests: string[] = [];
-  page.on("request", (request) => {
-    if (request.url().includes("/api/robot-combat/matches/")) authorityRequests.push(request.url());
-  });
+  const navigationStartedAt = Date.now();
+  const authorityResponse = page.waitForResponse((response) => {
+    if (response.request().method() !== "GET") return false;
+    if (new URL(response.url()).pathname !== `/api/robot-combat/matches/${match.matchId}`) return false;
+    const frame = response.frame();
+    if (frame.parentFrame() !== page.mainFrame()) return false;
+    const frameUrl = new URL(frame.url());
+    return frameUrl.pathname === "/games/robot-combat/index.html" &&
+      frameUrl.searchParams.get("matchId") === match.matchId &&
+      frameUrl.searchParams.get("slot") === "A";
+  }, { timeout: 30_000 }).then((response) => ({ response, latencyMs: Date.now() - navigationStartedAt }));
   await page.goto(mirrorHref ?? "");
   await expect(page).toHaveURL(/\/app\/robot-combat\/runtime\?matchId=[^&]+&slot=A$/);
   await expect(page.getByRole("heading", { name: "Live arena view", exact: true })).toBeVisible();
@@ -101,11 +109,12 @@ test("authenticated workshop saves an inspected revision and opens a match", asy
     "src",
     /\/games\/robot-combat\/index\.html\?matchId=[^&]+&slot=A$/,
   );
-  const liveMatchId = new URL(mirrorHref ?? "", page.url()).searchParams.get("matchId") ?? "";
-  await expect.poll(
-    () => authorityRequests.some((requestUrl) => requestUrl.includes("/api/robot-combat/matches/" + liveMatchId)),
-    { timeout: 15000 },
-  ).toBeTruthy();
+  const { response: liveResponse, latencyMs } = await authorityResponse;
+  expect(liveResponse.status()).toBe(200);
+  const liveMatch = (await liveResponse.json()).match as { matchId: string; phase: string };
+  expect(liveMatch.matchId).toBe(match.matchId);
+  expect(liveMatch.phase).toBe("WAITING_FOR_OPPONENT");
+  console.info(`[robot-visual] navigationToAuthorityResponseMs=${latencyMs}`);
   await expect(page.locator("iframe[title='Robot Combat visual arena']").contentFrame().locator("canvas")).toBeVisible({ timeout: 15000 });
 });
 
