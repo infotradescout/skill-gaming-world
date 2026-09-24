@@ -55,9 +55,12 @@ describe("configured player UI boundaries", () => {
       resolve(process.cwd(), "src/app/app/page.tsx"),
       "utf8",
     );
+    expect(dashboard).toContain('session.mode === "PRACTICE" && session.status === "ACTIVE"');
     expect(dashboard).toContain(
-      "/app/monetaire/practice?session=${encodeURIComponent(session.id)}",
+      '"/app/monetaire/practice?session=" + encodeURIComponent(activePractice.id)',
     );
+    expect(dashboard).toContain(': "/app/monetaire/practice";');
+    expect(dashboard).toContain("href={monetaireHref}");
   });
 
   it("keeps the public game floor factual while held casino modes stay unnamed", () => {
@@ -66,9 +69,26 @@ describe("configured player UI boundaries", () => {
       "utf8",
     );
 
-    expect(home).toContain("Monetaire · Rules preview");
-    expect(home).toContain("Illustrated layout");
+    const siteShell = readFileSync(
+      resolve(process.cwd(), "src/components/site-shell.tsx"),
+      "utf8",
+    );
+    const terms = readFileSync(
+      resolve(process.cwd(), "src/app/(marketing)/legal/terms/page.tsx"),
+      "utf8",
+    );
+
+    expect(home).toContain("Choose your game.");
+    expect(home).toContain("Two free games. One place to play.");
+    expect(home).toContain("FREE PLAY");
+    expect(home).toContain("NO PAID ADVANTAGE");
+    expect(home).toContain('href="/monetaire"');
+    expect(home).toContain('href="/robot-combat"');
     expect(home).toContain("Draw 3");
+    expect(home).toContain("Build &amp; fight");
+    expect(siteShell).toContain("Free play · Play Coins have no cash value.");
+    expect(terms).toContain("Monetaire Play does not award cash or valuable prizes.");
+    expect(terms).toContain("Casino cash wagering is not currently available.");
     expect(home).not.toContain("Monetaire · Live table");
     expect(home).not.toContain("4,280");
     expect(home).not.toContain("#12");
