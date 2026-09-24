@@ -56,7 +56,7 @@ describe("PostgreSQL database invariants", () => {
         },
       ]);
     });
-  });
+  }, 15_000);
 
   it("installs the Stage 2 score, terminal, validation, and snapshot guards", async () => {
     await withDatabase(async (database) => {

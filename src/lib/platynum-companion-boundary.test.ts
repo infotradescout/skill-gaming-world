@@ -22,7 +22,7 @@ const downloadRoute = resolve(
 const releaseBuilder = resolve(process.cwd(), "tools", "build-platynum-installer.mjs");
 
 describe("Platynum companion boundary", () => {
-  it("requires the owner role and never turns the game service into a remote work engine", () => {
+  it("bounds the owner and private-link download paths without a remote work engine", () => {
     const source = readFileSync(companionPage, "utf8");
     const downloadSource = readFileSync(downloadRoute, "utf8");
 
@@ -32,7 +32,16 @@ describe("Platynum companion boundary", () => {
     expect(source).not.toMatch(/<iframe|fetch\(|\/api\/(runtime|model|pair)|github\/oauth|archive\//i);
     expect(downloadSource).toContain('requireAdminRoles(["SUPER_ADMIN"])');
     expect(downloadSource).toContain('Platynum-47-0.2.0-windows-x64.zip');
-    expect(downloadSource).not.toMatch(/searchParams|params|\[\.\.\./i);
+    expect(downloadSource).toContain('const desktopArchivePath = resolve(process.cwd(), ".platynum-artifacts", desktopArchiveName);');
+    expect(downloadSource).toContain('searchParams.get("access")?.trim()');
+    expect(downloadSource).toContain('const expected = process.env.P47_DOWNLOAD_TOKEN?.trim();');
+    expect(downloadSource).toContain('expected.length < 32 || !supplied || supplied.length < 32');
+    expect(downloadSource).toContain('return timingSafeEqual(expectedDigest, suppliedDigest);');
+    expect(downloadSource).toContain('if (supplied) return hasValidDirectAccess(supplied);');
+    expect(downloadSource).toContain('return confirmationPage(issueConfirmation());');
+    expect(downloadSource).toContain('if (!ticket || !consumeConfirmation(ticket))');
+    expect(downloadSource).toContain('"Cache-Control": "private, no-store"');
+    expect(downloadSource).not.toMatch(/\[\.\.\.|\/api\/(runtime|model|pair)|github\/oauth|archive\/\$\{/i);
   });
 
   it("keeps the release decryption key out of package and packaging child processes", () => {

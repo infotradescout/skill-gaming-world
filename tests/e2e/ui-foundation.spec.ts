@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 import { createCuratedSolutionIntents } from "@/domain";
+import { submitPacedRegistration } from "./registration-pacer";
 
 async function registerPlayer(page: Page) {
   const identity = randomUUID().slice(0, 12);
@@ -12,7 +13,7 @@ async function registerPlayer(page: Page) {
   await page.getByLabel("Password", { exact: true }).fill(password);
   await page.getByLabel("Confirm password").fill(password);
   await page.locator('input[name="termsAccepted"]').check();
-  await page.getByRole("button", { name: "Create account" }).click();
+  await submitPacedRegistration(page);
   await expect(page).toHaveURL(/\/app(?:\?welcome=1)?$/);
   return { email, password };
 }
@@ -54,9 +55,13 @@ test("public landing page states the noncash product boundary", async ({ page })
   await page.goto("/");
 
   await expect(
-    page.getByRole("heading", { name: /Play where\s*fair means provable\./ }),
+    page.getByRole("heading", { name: "Choose your game." }),
   ).toBeVisible();
+  await expect(page.getByText("NO PAID ADVANTAGE", { exact: true })).toBeVisible();
   await expect(page.getByText(/Play Coins have no cash value/).first()).toBeVisible();
+
+  await page.goto("/legal/terms");
+  await expect(page.getByRole("heading", { name: "Platform terms" })).toBeVisible();
   await expect(
     page.getByText(/Monetaire Play does not award cash or valuable prizes\./).first(),
   ).toBeVisible();
@@ -71,10 +76,16 @@ test("account access, held modes, and Play Coin exact retry remain coherent", as
   const player = await registerPlayer(page);
 
   await expect(
-    page.getByRole("heading", { name: "Your next deliberate move." }),
+    page.getByRole("heading", { name: "Choose your game." }),
   ).toBeVisible();
-  await expect(page.getByText("Practice available")).toBeVisible();
+  await expect(page.getByRole("link", { name: /Draw 3/ })).toHaveAttribute(
+    "href",
+    "/app/monetaire/practice",
+  );
+  await expect(page.getByText("FREE PLAY", { exact: true })).toBeVisible();
 
+  await page.locator("details.launcher-account > summary").click();
+  await expect(page.getByRole("button", { name: "Log out" })).toBeVisible();
   await page.getByRole("button", { name: "Log out" }).click();
   await expect(page).toHaveURL(/\/auth\/login$/);
   await page.getByLabel("Email").fill(player.email);
@@ -82,8 +93,12 @@ test("account access, held modes, and Play Coin exact retry remain coherent", as
   await page.getByRole("button", { name: "Log in" }).click();
   await expect(page).toHaveURL(/\/app$/);
   await expect(
-    page.getByRole("heading", { name: "Your next deliberate move." }),
+    page.getByRole("heading", { name: "Choose your game." }),
   ).toBeVisible();
+  await expect(page.getByRole("link", { name: /Draw 3/ })).toHaveAttribute(
+    "href",
+    "/app/monetaire/practice",
+  );
 
   await page.goto("/admin/feature-gates");
   await expect(page).toHaveURL(/\/app$/);
@@ -135,15 +150,21 @@ test("practice and competition use authoritative state and exact retries", async
   await expect(page.getByText("Complete all four foundations")).toBeVisible();
 
   await page.getByRole("button", { name: "Start or resume" }).click();
-  await expect(page.getByText("Authoritative session")).toBeVisible();
+  await expect(
+    page
+      .getByRole("region", { name: "Monetaire practice board" })
+      .getByRole("button", { name: /Draw from stock/ }),
+  ).toBeEnabled();
   await page.getByRole("button", { name: /Draw from stock/ }).click();
-  await expect(page.getByText("Stock draw accepted by the server.")).toBeVisible();
+  await expect(page.getByText("Stock drawn.", { exact: true })).toBeVisible();
   await expect(page.locator(".game-metrics")).toContainText("Valid moves1");
 
   await page.reload();
   await page.getByRole("button", { name: "Start or resume" }).click();
   await expect(
-    page.getByText("Server session resumed from its authoritative state."),
+    page.getByText("Your hand is back. Continue where you left off.", {
+      exact: true,
+    }),
   ).toBeVisible();
   await expect(page.locator(".game-metrics")).toContainText("Valid moves1");
 
@@ -245,7 +266,12 @@ test("practice and competition use authoritative state and exact retries", async
   await expect(
     page.getByRole("region", { name: "Monetaire competition board" }),
   ).toBeVisible();
-  await expect(page.getByText("Noncash competition · Server")).toBeVisible();
+  await expect(
+    page.getByRole("region", { name: "Monetaire competition board" }),
+  ).toContainText("Draw 3 rules · no cash value");
+  await expect(page.getByRole("status")).toContainText(
+    "No Play Coins were charged and no valuable prize is offered.",
+  );
 
   if (testInfo.project.name === "desktop-chromium") {
     const competitionSession = await page.evaluate(async () => {
@@ -279,7 +305,9 @@ test("cooldown and self-exclusion block practice resume and moves", async ({
   await registerPlayer(page);
   await page.goto("/app/monetaire/practice");
   await page.getByRole("button", { name: "Start or resume" }).click();
-  await expect(page.getByText("Authoritative session")).toBeVisible();
+  await expect(page.getByRole("region", { name: "Monetaire practice board" })).toBeVisible();
+  await expect(page.getByText("Practice hand", { exact: true })).toBeVisible();
+  await expect(page.getByText("Table open", { exact: true })).toBeVisible();
   const activeSession = await page.evaluate(async () => {
     const sessionId = window.localStorage.getItem(
       "monetaire.practice.session-id",
@@ -289,12 +317,22 @@ test("cooldown and self-exclusion block practice resume and moves", async ({
       cache: "no-store",
     });
     const body = await response.json();
-    return body.session as {
+    return {
+      httpStatus: response.status,
+      storedSessionId: sessionId,
+      ...body.session,
+    } as {
+      httpStatus: number;
+      storedSessionId: string;
       id: string;
+      status: string;
       sequence: number;
       stateHash: string;
     };
   });
+  expect(activeSession.httpStatus).toBe(200);
+  expect(activeSession.id).toBe(activeSession.storedSessionId);
+  expect(activeSession.status).toBe("ACTIVE");
 
   await page.goto("/app/responsible-play");
   await page.getByRole("button", { name: "Start cooldown" }).click();

@@ -1,0 +1,11 @@
+{
+  "FileVersion": 3,
+  "EngineAssociation": "5.7",
+  "Category": "Games",
+  "Description": "Original persistent wildlife reserve. Native district transition; not a completed game.",
+  "Modules": [{"Name":"WildlifeReserve","Type":"Runtime","LoadingPhase":"Default"}],
+  "Plugins": [
+    {"Name":"PythonScriptPlugin","Enabled":true,"TargetAllowList":["Editor"]},
+    {"Name":"EditorScriptingUtilities","Enabled":true,"TargetAllowList":["Editor"]}
+  ]
+}

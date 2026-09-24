@@ -16,6 +16,10 @@ export default function RobotCombatMarketingPage() {
           <p>
             Choose the parts, test the machine, and take your build onto the free arena floor.
           </p>
+          <p>
+            Robot Combat is in active development. The current free game has no entry fee,
+            wagering, deposits, valuable prizes, or payouts.
+          </p>
           <div className="launcher-action-row">
             <Link className="launcher-play-button launcher-play-button-large" href="/auth/register">
               Enter the garage

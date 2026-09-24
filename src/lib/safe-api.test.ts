@@ -82,6 +82,23 @@ describe("safe local API boundaries", () => {
     expect(second.status).toBe(409);
   });
 
+  it("keeps the eighth anonymous signup allowed and blocks the ninth even with unique emails", async () => {
+    const statuses: number[] = [];
+    for (let index = 0; index < 9; index += 1) {
+      const response = await register(
+        post("/api/auth/register", {
+          displayName: `Rate Test ${index}`,
+          email: `rate-test-${index}@example.test`,
+          password: "correct-horse-battery-staple",
+          acceptPlayCoinTerms: true,
+        }),
+      );
+      statuses.push(response.status);
+    }
+    expect(statuses).toEqual([201, 201, 201, 201, 201, 201, 201, 201, 429]);
+    expect(getDemoStore().usersById.size).toBe(8);
+  });
+
   it("simulates a Play Coin package without a real charge and is idempotent", async () => {
     const cookie = await registerPlayer();
     const body = {
