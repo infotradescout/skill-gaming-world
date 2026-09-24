@@ -233,41 +233,175 @@ test("authenticated workshop opens a private test bay and records consequences b
 });
 
 test("two builders can ready, control, damage, and report a match", async ({ page, browser }) => {
+  type SavedBuild = {
+    id: string;
+    latestRevision: number;
+    revisions: Array<{ revision: number; inspection: { valid: boolean } }>;
+  };
+  type MatchSnapshot = {
+    matchId: string;
+    phase: string;
+    players: {
+      A?: { playerId: string; inspection?: { valid: boolean } };
+      B?: { playerId: string; inspection?: { valid: boolean } };
+    };
+    robots: { B?: { integrity: number; damageLog: Array<{ damage: number }> } };
+    winnerSlot?: string;
+    terminalReason?: string;
+  };
+
   await registerPlayer(page);
   await page.goto("/app/robot-combat");
-  await page.getByRole("button", { name: "Inspect & save revision" }).click();
-  await expect(page.getByText(/Revision \d+ saved/i)).toBeVisible();
-  await page.getByRole("button", { name: "Open a free 1v1 match" }).click();
-  await expect(page.getByText("WAITING_FOR_OPPONENT", { exact: true })).toBeVisible();
-  await page.getByRole("link", { name: "Enter authority arena" }).click();
-  await expect(page).toHaveURL(/\/app\/robot-combat\/matches\//);
-  const matchId = new URL(page.url()).pathname.split("/").at(-1);
+  const [firstSave] = await Promise.all([
+    page.waitForResponse((response) =>
+      new URL(response.url()).pathname === "/api/robot-combat/builds" &&
+      response.request().method() === "POST",
+    ),
+    page.getByRole("button", { name: "Save build & check it" }).click(),
+  ]);
+  expect(firstSave.status()).toBe(201);
+  const firstBuild = ((await firstSave.json()) as { build: SavedBuild }).build;
+  expect(firstBuild.id).toBeTruthy();
+  expect(firstBuild.latestRevision).toBeGreaterThan(0);
+  expect(firstBuild.revisions.at(-1)?.revision).toBe(firstBuild.latestRevision);
+  expect(firstBuild.revisions.at(-1)?.inspection.valid).toBe(true);
 
-  const opponentContext = await browser.newContext();
+  const [createResponse] = await Promise.all([
+    page.waitForResponse((response) =>
+      new URL(response.url()).pathname === "/api/robot-combat/matches" &&
+      response.request().method() === "POST",
+    ),
+    page.getByRole("button", { name: "Open a free match" }).click(),
+  ]);
+  expect(createResponse.status()).toBe(201);
+  expect(createResponse.request().postDataJSON()).toEqual(
+    expect.objectContaining({ buildId: firstBuild.id, revision: firstBuild.latestRevision }),
+  );
+  const created = ((await createResponse.json()) as { match: MatchSnapshot }).match;
+  expect(created.matchId).toBeTruthy();
+  expect(created.phase).toBe("WAITING_FOR_OPPONENT");
+  expect(created.players.A?.inspection?.valid).toBe(true);
+  expect(created.players.B).toBeUndefined();
+  await expect(page.getByRole("link", { name: "Open match arena" })).toHaveAttribute(
+    "href",
+    `/app/robot-combat/matches/${created.matchId}`,
+  );
+  await page.getByRole("link", { name: "Open match arena" }).click();
+  await expect(page.getByText("Waiting for another builder", { exact: true })).toBeVisible();
+
+  const opponentContext = await browser.newContext({ baseURL: "http://127.0.0.1:3000" });
   const opponentPage = await opponentContext.newPage();
   try {
     await registerPlayer(opponentPage);
     await opponentPage.goto("/app/robot-combat");
-    await opponentPage.getByRole("button", { name: "Inspect & save revision" }).click();
-    await expect(opponentPage.getByText(/Revision \d+ saved/i)).toBeVisible();
-    await opponentPage.getByLabel("Join an existing match").fill(matchId ?? "");
-    await opponentPage.getByRole("button", { name: "Join with this revision" }).click();
-    await expect(opponentPage.getByText("READY_CHECK", { exact: true })).toBeVisible();
-    await opponentPage.getByRole("link", { name: "Enter authority arena" }).click();
+    await opponentPage.getByRole("button", { name: /Striker/ }).click();
+    const [secondSave] = await Promise.all([
+      opponentPage.waitForResponse((response) =>
+        new URL(response.url()).pathname === "/api/robot-combat/builds" &&
+        response.request().method() === "POST",
+      ),
+      opponentPage.getByRole("button", { name: "Save build & check it" }).click(),
+    ]);
+    expect(secondSave.status()).toBe(201);
+    const secondBuild = ((await secondSave.json()) as { build: SavedBuild }).build;
+    expect(secondBuild.id).toBeTruthy();
+    expect(secondBuild.id).not.toBe(firstBuild.id);
+    expect(secondBuild.latestRevision).toBeGreaterThan(0);
+    expect(secondBuild.revisions.at(-1)?.revision).toBe(secondBuild.latestRevision);
+    expect(secondBuild.revisions.at(-1)?.inspection.valid).toBe(true);
 
-    await expect(page.getByText("READY CHECK", { exact: true })).toBeVisible();
-    await page.getByRole("button", { name: "Ready this machine" }).click();
-    await opponentPage.getByRole("button", { name: "Ready this machine" }).click();
-    await expect(page.getByText("ACTIVE", { exact: true })).toBeVisible();
-    await expect(opponentPage.getByText("ACTIVE", { exact: true })).toBeVisible();
+    await opponentPage.getByLabel("Join with a match code").fill(created.matchId);
+    const [joinResponse] = await Promise.all([
+      opponentPage.waitForResponse((response) =>
+        new URL(response.url()).pathname === `/api/robot-combat/matches/${created.matchId}/join` &&
+        response.request().method() === "POST",
+      ),
+      opponentPage.getByRole("button", { name: "Join match" }).click(),
+    ]);
+    expect(joinResponse.status()).toBe(200);
+    expect(joinResponse.request().postDataJSON()).toEqual(
+      expect.objectContaining({ buildId: secondBuild.id, revision: secondBuild.latestRevision }),
+    );
+    const joined = ((await joinResponse.json()) as { match: MatchSnapshot }).match;
+    expect(joined.matchId).toBe(created.matchId);
+    expect(joined.phase).toBe("READY_CHECK");
+    expect(joined.players.A?.playerId).toBe(created.players.A?.playerId);
+    expect(joined.players.B?.playerId).toBeTruthy();
+    expect(joined.players.B?.playerId).not.toBe(joined.players.A?.playerId);
+    expect(joined.players.A?.inspection?.valid).toBe(true);
+    expect(joined.players.B?.inspection?.valid).toBe(true);
+    await opponentPage.getByRole("link", { name: "Open match arena" }).click();
+    await expect(opponentPage.getByText("Both machines must be ready", { exact: true })).toBeVisible();
+    await expect(page.getByText("Both machines must be ready", { exact: true })).toBeVisible();
 
-    await page.getByRole("button", { name: "Drive forward" }).click();
-    for (let hit = 0; hit < 6; hit += 1) {
-      await page.getByRole("button", { name: "Fire weapon" }).click();
+    const readyPath = `/api/robot-combat/matches/${created.matchId}/commands`;
+    const [firstReady] = await Promise.all([
+      page.waitForResponse((response) =>
+        new URL(response.url()).pathname === readyPath && response.request().method() === "POST",
+      ),
+      page.getByRole("button", { name: "Ready my machine" }).click(),
+    ]);
+    expect(firstReady.status()).toBe(200);
+    expect(firstReady.request().postDataJSON().command).toEqual({ type: "READY", slot: "A" });
+    const firstReadyResult = (await firstReady.json()) as { accepted: boolean; match: MatchSnapshot };
+    expect(firstReadyResult.accepted).toBe(true);
+    expect(firstReadyResult.match.phase).toBe("READY_CHECK");
+
+    const [secondReady] = await Promise.all([
+      opponentPage.waitForResponse((response) =>
+        new URL(response.url()).pathname === readyPath && response.request().method() === "POST",
+      ),
+      opponentPage.getByRole("button", { name: "Ready my machine" }).click(),
+    ]);
+    expect(secondReady.status()).toBe(200);
+    expect(secondReady.request().postDataJSON().command).toEqual({ type: "READY", slot: "B" });
+    const secondReadyResult = (await secondReady.json()) as { accepted: boolean; match: MatchSnapshot };
+    expect(secondReadyResult.accepted).toBe(true);
+    expect(secondReadyResult.match.phase).toBe("ACTIVE");
+    await expect(page.getByRole("button", { name: "Drive forward" })).toBeVisible();
+    await expect(opponentPage.getByRole("button", { name: "Drive forward" })).toBeVisible();
+
+    const [driveResponse] = await Promise.all([
+      page.waitForResponse((response) =>
+        new URL(response.url()).pathname === readyPath &&
+        response.request().method() === "POST" &&
+        response.request().postDataJSON()?.command?.type === "CONTROL",
+      ),
+      page.getByRole("button", { name: "Drive forward" }).click(),
+    ]);
+    expect(driveResponse.status()).toBe(200);
+    expect(driveResponse.request().postDataJSON().command).toEqual({
+      type: "CONTROL", slot: "A", throttle: 1, steering: 0,
+    });
+    expect(((await driveResponse.json()) as { accepted: boolean }).accepted).toBe(true);
+
+    let latest: MatchSnapshot | undefined;
+    for (let shot = 0; shot < 12; shot += 1) {
+      const [fireResponse] = await Promise.all([
+        page.waitForResponse((response) =>
+          new URL(response.url()).pathname === readyPath &&
+          response.request().method() === "POST" &&
+          response.request().postDataJSON()?.command?.type === "FIRE",
+        ),
+        page.getByRole("button", { name: "Fire weapon" }).click(),
+      ]);
+      expect(fireResponse.status()).toBe(200);
+      expect(fireResponse.request().postDataJSON().command).toEqual({ type: "FIRE", slot: "A" });
+      const fired = (await fireResponse.json()) as { accepted: boolean; match: MatchSnapshot };
+      expect(fired.accepted).toBe(true);
+      latest = fired.match;
+      if (latest.phase === "COMPLETED") break;
     }
+    expect(latest?.robots.B?.damageLog.length).toBeGreaterThan(0);
+    expect(latest?.robots.B?.damageLog.some((hit) => hit.damage > 0)).toBe(true);
+    expect(latest?.phase).toBe("COMPLETED");
+    expect(latest?.winnerSlot).toBe("A");
+    expect(latest?.terminalReason).toBe("OPPONENT_DISABLED");
     await expect(page.getByText("Match report ready", { exact: true })).toBeVisible();
     await expect(page.getByText("Machine A won", { exact: true })).toBeVisible();
     await expect(opponentPage.getByText("Questions for your next revision", { exact: true })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Rebuild this machine" })).toHaveAttribute("href", "/app/robot-combat");
+    await expect(opponentPage.getByRole("link", { name: "Rebuild this machine" })).toHaveAttribute("href", "/app/robot-combat");
   } finally {
     await opponentContext.close();
   }
