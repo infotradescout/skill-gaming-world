@@ -84,6 +84,8 @@ test("account access, held modes, and Play Coin exact retry remain coherent", as
   );
   await expect(page.getByText("FREE PLAY", { exact: true })).toBeVisible();
 
+  await page.locator("details.launcher-account > summary").click();
+  await expect(page.getByRole("button", { name: "Log out" })).toBeVisible();
   await page.getByRole("button", { name: "Log out" }).click();
   await expect(page).toHaveURL(/\/auth\/login$/);
   await page.getByLabel("Email").fill(player.email);
