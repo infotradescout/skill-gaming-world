@@ -76,9 +76,13 @@ test("account access, held modes, and Play Coin exact retry remain coherent", as
   const player = await registerPlayer(page);
 
   await expect(
-    page.getByRole("heading", { name: "Your next deliberate move." }),
+    page.getByRole("heading", { name: "Choose your game." }),
   ).toBeVisible();
-  await expect(page.getByText("Practice available")).toBeVisible();
+  await expect(page.getByRole("link", { name: /Draw 3/ })).toHaveAttribute(
+    "href",
+    "/app/monetaire/practice",
+  );
+  await expect(page.getByText("FREE PLAY", { exact: true })).toBeVisible();
 
   await page.getByRole("button", { name: "Log out" }).click();
   await expect(page).toHaveURL(/\/auth\/login$/);
@@ -87,8 +91,12 @@ test("account access, held modes, and Play Coin exact retry remain coherent", as
   await page.getByRole("button", { name: "Log in" }).click();
   await expect(page).toHaveURL(/\/app$/);
   await expect(
-    page.getByRole("heading", { name: "Your next deliberate move." }),
+    page.getByRole("heading", { name: "Choose your game." }),
   ).toBeVisible();
+  await expect(page.getByRole("link", { name: /Draw 3/ })).toHaveAttribute(
+    "href",
+    "/app/monetaire/practice",
+  );
 
   await page.goto("/admin/feature-gates");
   await expect(page).toHaveURL(/\/app$/);
@@ -295,7 +303,9 @@ test("cooldown and self-exclusion block practice resume and moves", async ({
   await registerPlayer(page);
   await page.goto("/app/monetaire/practice");
   await page.getByRole("button", { name: "Start or resume" }).click();
-  await expect(page.getByText("Authoritative session")).toBeVisible();
+  await expect(page.getByRole("region", { name: "Monetaire practice board" })).toBeVisible();
+  await expect(page.getByText("Practice hand", { exact: true })).toBeVisible();
+  await expect(page.getByText("Table open", { exact: true })).toBeVisible();
   const activeSession = await page.evaluate(async () => {
     const sessionId = window.localStorage.getItem(
       "monetaire.practice.session-id",
@@ -305,12 +315,22 @@ test("cooldown and self-exclusion block practice resume and moves", async ({
       cache: "no-store",
     });
     const body = await response.json();
-    return body.session as {
+    return {
+      httpStatus: response.status,
+      storedSessionId: sessionId,
+      ...body.session,
+    } as {
+      httpStatus: number;
+      storedSessionId: string;
       id: string;
+      status: string;
       sequence: number;
       stateHash: string;
     };
   });
+  expect(activeSession.httpStatus).toBe(200);
+  expect(activeSession.id).toBe(activeSession.storedSessionId);
+  expect(activeSession.status).toBe("ACTIVE");
 
   await page.goto("/app/responsible-play");
   await page.getByRole("button", { name: "Start cooldown" }).click();
