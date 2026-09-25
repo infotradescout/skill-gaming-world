@@ -7,6 +7,7 @@ import sys, os, json, math, hashlib, struct, array
 from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parent))
 from contract import SCHEMA,BASE_SHA,digest_file,validate,point_to_unreal
+from grass_material import recover_grass_channels
 import bpy, bmesh
 import numpy as np
 from mathutils import Matrix,Vector
@@ -115,18 +116,21 @@ def input_value(sock):
     return {'warning':'Native shader reconstruction required: '+node.type,'source_node':node.name}
 
 for name,m in sorted(used_materials.items()):
-    principals=[n for n in m.node_tree.nodes if n.type=='BSDF_PRINCIPLED'] if m.use_nodes and m.node_tree else []
-    p=principals[0] if len(principals)==1 else None
-    channels={};warnings=[]
-    for target,socket in [('base_color','Base Color'),('roughness','Roughness'),('metallic','Metallic'),('normal','Normal'),('alpha','Alpha')]:
-        if p:
-            value=input_value(p.inputs.get(socket))
-            if target=='normal' and not p.inputs[socket].is_linked:continue
-            channels[target]=value
-            if value.get('warning'):warnings.append(target+': '+value['warning'])
-        elif target=='base_color':channels[target]={'constant':list(m.diffuse_color),'warning':'No unique Principled shader'};warnings.append('No unique Principled shader')
-    if p and p.inputs.get('Transmission Weight') and p.inputs['Transmission Weight'].default_value>0:
-        warnings.append('Transmission/water requires native material review')
+    if name=='grass_medium_01':
+        channels,warnings=recover_grass_channels(m,texture_ids)
+    else:
+        principals=[n for n in m.node_tree.nodes if n.type=='BSDF_PRINCIPLED'] if m.use_nodes and m.node_tree else []
+        p=principals[0] if len(principals)==1 else None
+        channels={};warnings=[]
+        for target,socket in [('base_color','Base Color'),('roughness','Roughness'),('metallic','Metallic'),('normal','Normal'),('alpha','Alpha')]:
+            if p:
+                value=input_value(p.inputs.get(socket))
+                if target=='normal' and not p.inputs[socket].is_linked:continue
+                channels[target]=value
+                if value.get('warning'):warnings.append(target+': '+value['warning'])
+            elif target=='base_color':channels[target]={'constant':list(m.diffuse_color),'warning':'No unique Principled shader'};warnings.append('No unique Principled shader')
+        if p and p.inputs.get('Transmission Weight') and p.inputs['Transmission Weight'].default_value>0:
+            warnings.append('Transmission/water requires native material review')
     receipt['materials'].append({'id':mat_ids[name],'source_name':name,'channels':channels,'fallback_base_color':list(m.diffuse_color),
        'two_sided':not m.use_backface_culling,'warnings':warnings})
 
